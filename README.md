@@ -102,6 +102,15 @@ export default defineConfig([
 - Stage 21 receives an extended ceremonial procession before racing begins in Paris.
 
 
-## Alpha 3.7 Full-Length Stages
+## Alpha 3.8 Full-Length Stages
 
 All 21 Tour stages are now paced as complete indoor sessions lasting approximately 45 to 90 minutes. Flat and time-trial stages stay closer to 45–55 minutes, hilly stages run 60–70 minutes, and major mountain stages extend to 75–90 minutes. Neutral starts, kilometre zero, race phases, and cooldowns remain included in the listed duration.
+
+## Alpha 3.8 Living Climb Profile
+
+- Moves the live stage tracker to the top of the ride cockpit.
+- Adds a moving rider marker across the stage profile.
+- Detects climb, mountain, summit, col, cote, and ascent sectors.
+- Opens a live gradient profile during climbs with color-coded ramp sections.
+- Highlights the rider's current section and shows the current gradient plus average gradient.
+- Keeps power, cadence, resistance, Jean radio, and stage progress immediately below the road view.

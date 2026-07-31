@@ -1,7 +1,8 @@
+import { useState } from 'react'
 import { raceStages } from '../data/raceStages'
 import { teamLoriot } from '../game/team'
 import { useCareer } from '../state/CareerContext'
-import { formatDistance, formatElevation } from '../utils/units'
+import { formatDistance, formatElevation, kmToMi, mToFt } from '../utils/units'
 
 type TeamBusScreenProps = {
   selectedStageNumber: number
@@ -9,6 +10,14 @@ type TeamBusScreenProps = {
   onBack: () => void
   onContinue: () => void
   onOpenRestDay: () => void
+}
+
+function dualDistance(km: number) {
+  return `${km.toFixed(1)} km • ${kmToMi(km).toFixed(1)} mi`
+}
+
+function dualElevation(meters: number) {
+  return `${Math.round(meters).toLocaleString()} m • ${Math.round(mToFt(meters)).toLocaleString()} ft`
 }
 
 function TeamBusScreen({
@@ -19,105 +28,113 @@ function TeamBusScreen({
   onOpenRestDay,
 }: TeamBusScreenProps) {
   const { career } = useCareer()
-  const system = career.settings.measurementSystem
-  const selectedStage =
-    raceStages.find((stage) => stage.number === selectedStageNumber) ?? raceStages[0]
+  const [expandedStage, setExpandedStage] = useState(selectedStageNumber)
+  const [showRoster, setShowRoster] = useState(false)
+  const selectedStage = raceStages.find((stage) => stage.number === selectedStageNumber) ?? raceStages[0]
+
+  function selectStage(stageNumber: number) {
+    onSelectStage(stageNumber)
+    setExpandedStage((current) => current === stageNumber ? 0 : stageNumber)
+  }
 
   return (
-    <section className="team-bus-screen" style={{ width: '100%', maxWidth: '1100px', margin: '0 auto', padding: '32px 24px 48px' }}>
+    <section className="team-bus-screen alpha38-team-bus">
       <button type="button" onClick={onBack}>← Back Home</button>
 
-      <header style={{ textAlign: 'center', marginBottom: '32px' }}>
-        <p className="eyebrow" style={{ marginBottom: '6px' }}>{teamLoriot.name.toUpperCase()}</p>
-        <h1 style={{ margin: 0, fontSize: 'clamp(3rem, 8vw, 5rem)', lineHeight: 1 }}>Team Bus</h1>
-        <p style={{ marginTop: '18px', marginBottom: 0, fontSize: '1.1rem', opacity: 0.8 }}>
-          Tour Roadbook • Complete 21-Stage Career
-        </p>
+      <header className="compact-page-header">
+        <p className="eyebrow">{teamLoriot.name.toUpperCase()}</p>
+        <h1>Team Bus</h1>
+        <p>Tour Roadbook • 21 stages • Two rest days</p>
       </header>
 
-      <div className="dashboard-card" style={{ padding: '24px' }}>
-        <p className="eyebrow">SELECT A STAGE</p>
-        <h2 style={{ marginTop: 0 }}>Stages 1–21 Roadbook</h2>
-        <div style={{ display: 'grid', gap: '10px' }}>
+      <div className="bus-toolbar">
+        <button type="button" onClick={() => setShowRoster((value) => !value)}>
+          👥 Team Roster <span>{teamLoriot.riders.length} riders</span>
+        </button>
+        <div className="bus-status">
+          <span>Selected</span>
+          <strong>Stage {selectedStage.number}</strong>
+        </div>
+      </div>
+
+      {showRoster && (
+        <section className="dashboard-card compact-roster">
+          <div className="section-title-row">
+            <div><p className="eyebrow">TEAM LORIOT</p><h2>Roster</h2></div>
+            <button type="button" onClick={() => setShowRoster(false)}>Close</button>
+          </div>
+          <div className="roster-grid">
+            {teamLoriot.riders.map((rider) => (
+              <article key={rider.name}>
+                <strong>{rider.name}</strong>
+                <span>Climb {rider.climbing} • Endurance {rider.endurance} • IQ {rider.raceIQ}</span>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section className="dashboard-card roadbook-calendar">
+        <div className="section-title-row">
+          <div><p className="eyebrow">TOUR CALENDAR</p><h2>Stage Roadbook</h2></div>
+          <small>Tap a stage to expand</small>
+        </div>
+
+        <div className="calendar-stage-list">
           {raceStages.map((stage) => {
             const minutes = Math.round(stage.segments.reduce((sum, segment) => sum + segment.sec, 0) / 60)
             const selected = stage.number === selectedStageNumber
-
+            const expanded = stage.number === expandedStage
             return (
-              <div key={stage.number} style={{ display: 'grid', gap: '10px' }}>
-                <button
-                  type="button"
-                  onClick={() => onSelectStage(stage.number)}
-                  aria-pressed={selected}
-                  style={{
-                    textAlign: 'left',
-                    display: 'grid',
-                    gridTemplateColumns: 'auto 1fr auto',
-                    gap: '14px',
-                    alignItems: 'center',
-                    outline: selected ? '2px solid rgba(255,170,90,.9)' : undefined,
-                  }}
-                >
-                  <strong>{stage.number}</strong>
-                  <span>
-                    <strong style={{ display: 'block' }}>{stage.route}</strong>
-                    <small style={{ opacity: 0.72 }}>{stage.theme}</small>
+              <div className={`calendar-stage${selected ? ' selected' : ''}`} key={stage.number}>
+                <button type="button" className="calendar-stage-row" onClick={() => selectStage(stage.number)} aria-expanded={expanded}>
+                  <span className="calendar-day">{String(stage.number).padStart(2, '0')}</span>
+                  <span className="calendar-route">
+                    <strong>{stage.route}</strong>
+                    <small>{stage.theme} • {minutes} min</small>
                   </span>
-                  <span>{minutes} min</span>
+                  <span className="calendar-state">{career.season.completedStages.includes(stage.number) ? '✓' : selected ? 'TODAY' : expanded ? '−' : '+'}</span>
                 </button>
 
-                {stage.number === 9 && (
-                  <button type="button" onClick={onOpenRestDay} style={{ textAlign: 'left' }}>
-                    🛌 Rest Day 1 • Recovery after Stage 9
-                  </button>
+                {expanded && (
+                  <div className="stage-expansion">
+                    <div className="mini-stage-profile" aria-label={`Stage ${stage.number} profile`}>
+                      <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+                        <polygon points={`0,100 ${stage.profilePoints.join(' ')} 100,100`} />
+                        <polyline points={stage.profilePoints.join(' ')} />
+                      </svg>
+                    </div>
+                    <div className="stage-preview-metrics">
+                      <span><small>DISTANCE</small><strong>{dualDistance(stage.distanceKm)}</strong></span>
+                      <span><small>ELEVATION</small><strong>{dualElevation(stage.elevationM)}</strong></span>
+                      <span><small>RIDE TIME</small><strong>{minutes} min</strong></span>
+                    </div>
+                    <p>{stage.objective}</p>
+                    {selected && <button type="button" className="primary-cta" onClick={onContinue}>Open Race Briefing →</button>}
+                  </div>
                 )}
 
-                {stage.number === 15 && (
-                  <button type="button" onClick={onOpenRestDay} style={{ textAlign: 'left' }}>
-                    🛌 Rest Day 2 • Recovery after Stage 15
-                  </button>
-                )}
+                {stage.number === 9 && <button type="button" className="rest-day-row" onClick={onOpenRestDay}>🛌 Rest Day 1 • Recovery and team review</button>}
+                {stage.number === 15 && <button type="button" className="rest-day-row" onClick={onOpenRestDay}>🛌 Rest Day 2 • Recovery and final-week preparation</button>}
               </div>
             )
           })}
         </div>
-      </div>
+      </section>
 
-      <div className="dashboard-card" style={{ padding: '24px' }}>
-        <p className="eyebrow">TODAY'S SELECTION</p>
-        <h2 style={{ marginTop: 0 }}>Stage {selectedStage.number}: {selectedStage.route}</h2>
-        <p>{selectedStage.objective}</p>
-        <p style={{ opacity: 0.75 }}>
-          {formatDistance(selectedStage.distanceKm, system)} • {formatElevation(selectedStage.elevationM, system)} D+ • Difficulty {selectedStage.difficulty}
-        </p>
-      </div>
-
-      <div className="dashboard-card" style={{ padding: '24px' }}>
-        <h2 style={{ marginTop: 0, marginBottom: '24px', textAlign: 'center' }}>Stage Roster</h2>
-        <div>
-          {teamLoriot.riders.map((rider, index) => (
-            <article
-              key={rider.name}
-              style={{
-                padding: '18px 20px',
-                marginBottom: index === teamLoriot.riders.length - 1 ? 0 : '14px',
-                border: '1px solid rgba(255, 255, 255, 0.14)',
-                borderRadius: '14px',
-                background: 'rgba(255, 255, 255, 0.035)',
-              }}
-            >
-              <h3 style={{ margin: 0, marginBottom: '7px', fontSize: '1.2rem' }}>{rider.name}</h3>
-              <p style={{ margin: 0, lineHeight: 1.6, opacity: 0.88 }}>
-                Age {rider.age} • Endurance {rider.endurance} • Sprint {rider.sprint} • Climbing {rider.climbing} • Time Trial {rider.timeTrial} • Race IQ {rider.raceIQ}
-              </p>
-            </article>
-          ))}
+      <section className="dashboard-card compact-start-list">
+        <div className="section-title-row">
+          <div><p className="eyebrow">STAGE {selectedStage.number}</p><h2>Start List</h2></div>
+          <small>All eight riders active</small>
         </div>
-      </div>
+        <p>{teamLoriot.riders.map((rider) => rider.name.split(' ')[0]).join(' • ')}</p>
+        <div className="selected-stage-summary">
+          <strong>{selectedStage.route}</strong>
+          <span>{formatDistance(selectedStage.distanceKm, career.settings.measurementSystem)} • {formatElevation(selectedStage.elevationM, career.settings.measurementSystem)} D+</span>
+        </div>
+      </section>
 
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '28px' }}>
-        <button type="button" onClick={onContinue}>Open Stage {selectedStage.number} Tactics</button>
-      </div>
+      <button type="button" className="primary-cta team-bus-continue" onClick={onContinue}>Open Stage {selectedStage.number} Race Briefing</button>
     </section>
   )
 }

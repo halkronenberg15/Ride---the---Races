@@ -3,6 +3,7 @@ import { getRaceStage } from '../data/raceStages'
 import { adaptSegment, strategyProfiles } from '../engine/adaptiveRide'
 import { useCareer } from '../state/CareerContext'
 import type { RaceStrategy } from '../types/tactics'
+import { kmToMi } from '../utils/units'
 
 type TacticsScreenProps = {
   stageNumber: number
@@ -20,62 +21,56 @@ function TacticsScreen({ stageNumber, onBack, onStartRide }: TacticsScreenProps)
   const profile = strategyProfiles[strategy]
 
   return (
-    <section className="tactics-screen" style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px 24px' }}>
-      <button type="button" onClick={onBack}>← Back to Team Bus</button>
+    <section className="tactics-screen race-briefing-screen">
+      <button type="button" onClick={onBack}>← Team Bus</button>
 
-      <header style={{ textAlign: 'center', marginBottom: '30px' }}>
+      <header className="compact-page-header">
         <p className="eyebrow">TEAM LORIOT • STAGE {stage.number}</p>
-        <h1 style={{ margin: 0, fontSize: 'clamp(2.6rem, 7vw, 5rem)' }}>{stage.route}</h1>
-        <p style={{ opacity: 0.8 }}>{minutes} minutes • {stage.theme} • Difficulty {stage.difficulty}</p>
+        <h1>Race Briefing</h1>
+        <p>{stage.route} • {stage.distanceKm.toFixed(1)} km / {kmToMi(stage.distanceKm).toFixed(1)} mi • {minutes} min</p>
       </header>
 
-      <div className="dashboard-card">
-        <h2>Today&apos;s Objective</h2>
-        <p>{stage.objective}</p>
-      </div>
+      <section className="briefing-board">
+        <div className="briefing-mission">
+          <p className="eyebrow">TODAY'S MISSION</p>
+          <h2>{stage.objective}</h2>
+        </div>
 
-      <div className="dashboard-card">
-        <h2>Select Strategy</h2>
-        <div style={{ display: 'grid', gap: '12px', marginTop: '18px' }}>
+        <div className="strategy-selector" aria-label="Race strategy">
           {(['Conservative', 'Balanced', 'Aggressive'] as RaceStrategy[]).map((option) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => setStrategy(option)}
-              aria-pressed={strategy === option}
-              style={{ outline: strategy === option ? '2px solid rgba(255,170,90,.9)' : undefined }}
-            >
-              {option === 'Conservative' ? '🟢' : option === 'Balanced' ? '🟡' : '🔴'} {option}<br />
+            <button key={option} type="button" onClick={() => setStrategy(option)} aria-pressed={strategy === option} className={strategy === option ? 'selected' : ''}>
+              <span>{option === 'Conservative' ? '🟢' : option === 'Balanced' ? '🟡' : '🔴'}</span>
+              <strong>{option}</strong>
               <small>{strategyProfiles[option].label}</small>
             </button>
           ))}
         </div>
-        <p style={{ marginTop: '24px', fontSize: '1.1rem' }}><strong>Current Strategy:</strong> {strategy}</p>
-        <p>{profile.description}</p>
-        <p style={{ opacity: .72 }}>{profile.tradeoff}</p>
-      </div>
 
+        <div className="briefing-columns">
+          <article className="team-plan-card">
+            <p className="eyebrow">TEAM OBJECTIVES & ORDERS</p>
+            <ul>
+              <li>{stage.objective}</li>
+              {stage.teamOrders.map((order) => <li key={order}>{order}</li>)}
+            </ul>
+          </article>
 
-      <div className="dashboard-card">
-        <p className="eyebrow">LIVE WORKOUT IMPACT</p>
-        <h2>{decisiveSegment.name}</h2>
-        <div className="status-grid" style={{ marginTop: 16 }}>
-          <article className="status-card"><small>POWER</small><strong>{decisiveSegment.power}</strong><span>Scaled from FTP {career.rider.ftp} W</span></article>
-          <article className="status-card"><small>RESISTANCE</small><strong>{decisiveSegment.resistance}</strong><span>Changed by strategy</span></article>
-          <article className="status-card"><small>STAGE TIME</small><strong>{minutes} min</strong><span>Recovery blocks adapt</span></article>
+          <article className="workout-impact-card">
+            <p className="eyebrow">LIVE WORKOUT IMPACT</p>
+            <h3>{decisiveSegment.name}</h3>
+            <div className="impact-grid">
+              <span><small>POWER</small><strong>{decisiveSegment.power}</strong></span>
+              <span><small>CADENCE</small><strong>{decisiveSegment.cadence}</strong></span>
+              <span><small>RESISTANCE</small><strong>{decisiveSegment.resistance}</strong></span>
+              <span><small>TIME</small><strong>{minutes} min</strong></span>
+            </div>
+            <p>{profile.description}</p>
+            <small>{profile.tradeoff}</small>
+          </article>
         </div>
-      </div>
 
-      <div className="dashboard-card">
-        <h2>Team Orders</h2>
-        <ul style={{ lineHeight: 1.9 }}>
-          {stage.teamOrders.map((order) => <li key={order}>{order}</li>)}
-        </ul>
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '28px' }}>
-        <button type="button" onClick={() => onStartRide(strategy)}>🚴 Start Stage {stage.number}</button>
-      </div>
+        <button type="button" className="primary-cta briefing-start" onClick={() => onStartRide(strategy)}>🚩 Roll Out • Stage {stage.number}</button>
+      </section>
     </section>
   )
 }

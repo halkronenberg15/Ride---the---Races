@@ -746,3 +746,95 @@ footer {
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible { outline:3px solid rgba(255,106,0,.55); outline-offset:3px; }
 @media (max-width:1000px) { .quick-actions { grid-template-columns:repeat(3,1fr); } .settings-grid { grid-template-columns:1fr 1fr; } }
 @media (max-width:700px) { .quick-actions,.settings-grid { grid-template-columns:1fr; } .hq-topbar { padding-top:24px; } }
+
+/* Alpha 3.8: mobile clarity, calendar roadbook, compact briefing */
+.hq-topbar h1,
+.jean-identity h2,
+.compact-page-header h1,
+.alpha38-team-bus h2,
+.race-briefing-screen h1,
+.race-briefing-screen h2,
+.race-briefing-screen h3 { color: #fff !important; }
+.hq-topbar .subtitle,
+.jean-identity span { color: rgba(255,255,255,.72) !important; }
+
+.alpha38-team-bus,
+.race-briefing-screen { width: 100%; max-width: 980px; margin: 0 auto; padding: 22px 16px 44px; }
+.compact-page-header { text-align: center; margin: 18px 0 20px; }
+.compact-page-header h1 { margin: 2px 0 6px; font-size: clamp(2.4rem, 10vw, 4.5rem); line-height: .96; }
+.compact-page-header p:last-child { margin: 0; color: rgba(255,255,255,.7); }
+.section-title-row { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.section-title-row h2 { margin: 2px 0 0; }
+.section-title-row small { color: rgba(255,255,255,.58); }
+.bus-toolbar { display:grid; grid-template-columns:1fr auto; gap:12px; margin-bottom:12px; }
+.bus-toolbar > button { display:flex; justify-content:space-between; align-items:center; }
+.bus-toolbar > button span { opacity:.62; }
+.bus-status { display:grid; place-content:center; min-width:112px; padding:9px 14px; border:1px solid rgba(255,255,255,.12); border-radius:13px; background:rgba(255,255,255,.04); }
+.bus-status span { font-size:.68rem; color:#999; text-transform:uppercase; letter-spacing:.08em; }
+.roadbook-calendar { min-height:0 !important; padding:18px !important; }
+.calendar-stage-list { display:grid; gap:7px; margin-top:14px; }
+.calendar-stage { overflow:hidden; border:1px solid rgba(255,255,255,.1); border-radius:14px; background:rgba(255,255,255,.025); }
+.calendar-stage.selected { border-color:rgba(255,106,0,.75); box-shadow:0 0 0 1px rgba(255,106,0,.25) inset; }
+.calendar-stage-row { width:100%; display:grid; grid-template-columns:42px 1fr auto; align-items:center; gap:11px; padding:12px; text-align:left; border:0; border-radius:0; background:transparent; }
+.calendar-day { width:38px; height:38px; display:grid; place-items:center; border-radius:10px; background:rgba(255,106,0,.13); color:#ff9b57; font-weight:950; }
+.calendar-route strong,.calendar-route small { display:block; }
+.calendar-route small { margin-top:3px; color:#858585; }
+.calendar-state { color:#ff8b3d; font-size:.72rem; font-weight:950; }
+.stage-expansion { padding:0 13px 14px; border-top:1px solid rgba(255,255,255,.08); }
+.mini-stage-profile { height:94px; margin:10px 0; }
+.mini-stage-profile svg { width:100%; height:100%; overflow:visible; }
+.mini-stage-profile polygon { fill:rgba(255,106,0,.15); }
+.mini-stage-profile polyline { fill:none; stroke:#ff9148; stroke-width:2.3; vector-effect:non-scaling-stroke; }
+.stage-preview-metrics { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+.stage-preview-metrics span { padding:9px; border-radius:10px; background:rgba(255,255,255,.045); }
+.stage-preview-metrics small,.stage-preview-metrics strong { display:block; }
+.stage-preview-metrics small { color:#8c8c8c; font-size:.62rem; letter-spacing:.08em; }
+.stage-preview-metrics strong { margin-top:4px; font-size:.78rem; }
+.rest-day-row { width:100%; border:0; border-radius:0; text-align:left; background:rgba(73,112,151,.12); color:#d8e9f7; }
+.compact-roster,.compact-start-list { min-height:0 !important; padding:18px !important; }
+.roster-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
+.roster-grid article { display:grid; gap:4px; padding:11px; border-radius:11px; background:rgba(255,255,255,.04); }
+.roster-grid span { color:#8b8b8b; font-size:.74rem; }
+.compact-start-list > p { margin:12px 0; color:#d8d8d8; line-height:1.6; }
+.selected-stage-summary { display:flex; justify-content:space-between; gap:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,.1); }
+.selected-stage-summary span { color:#8a8a8a; text-align:right; }
+.team-bus-continue { width:100%; margin-top:12px; min-height:58px; }
+
+.briefing-board { display:grid; gap:12px; padding:14px; border:1px solid rgba(255,255,255,.1); border-radius:22px; background:rgba(16,16,16,.92); }
+.briefing-mission { padding:13px 15px; border-left:4px solid #ff6a00; border-radius:0 12px 12px 0; background:rgba(255,106,0,.08); }
+.briefing-mission h2 { margin:4px 0 0; font-size:clamp(1.1rem,4vw,1.45rem); line-height:1.35; }
+.strategy-selector { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.strategy-selector button { min-height:82px; padding:10px 7px; display:grid; place-items:center; gap:2px; background:rgba(255,255,255,.04); }
+.strategy-selector button.selected { border-color:#ff7a21; box-shadow:0 0 0 2px rgba(255,106,0,.32) inset; }
+.strategy-selector button span,.strategy-selector button strong,.strategy-selector button small { display:block; }
+.strategy-selector button small { color:#888; font-size:.65rem; }
+.briefing-columns { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.team-plan-card,.workout-impact-card { padding:15px; border:1px solid rgba(255,255,255,.1); border-radius:15px; background:rgba(255,255,255,.03); }
+.team-plan-card ul { margin:9px 0 0; padding-left:18px; line-height:1.55; }
+.team-plan-card li { margin:3px 0; }
+.workout-impact-card h3 { margin:4px 0 10px; }
+.impact-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+.impact-grid span { padding:8px; border-radius:9px; background:rgba(0,0,0,.22); }
+.impact-grid small,.impact-grid strong { display:block; }
+.impact-grid small { color:#858585; font-size:.62rem; }
+.impact-grid strong { margin-top:3px; font-size:.82rem; }
+.workout-impact-card > p { margin:10px 0 3px; font-size:.83rem; color:#c9c9c9; }
+.workout-impact-card > small { color:#7f7f7f; }
+.briefing-start { width:100%; min-height:58px; }
+
+@media (max-width:700px) {
+  .bus-toolbar { grid-template-columns:1fr; }
+  .bus-status { display:none; }
+  .stage-preview-metrics { grid-template-columns:1fr; }
+  .stage-preview-metrics span { display:flex; justify-content:space-between; align-items:center; }
+  .stage-preview-metrics strong { margin-top:0; }
+  .roster-grid { grid-template-columns:1fr; }
+  .selected-stage-summary { display:grid; }
+  .selected-stage-summary span { text-align:left; }
+  .briefing-columns { grid-template-columns:1fr; }
+  .race-briefing-screen { padding:12px 10px 28px; }
+  .briefing-board { gap:8px; padding:9px; border-radius:17px; }
+  .strategy-selector button { min-height:72px; }
+  .team-plan-card,.workout-impact-card { padding:11px; }
+  .team-plan-card ul { font-size:.82rem; line-height:1.42; }
+}

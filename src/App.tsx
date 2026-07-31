@@ -11,7 +11,6 @@ import HealthScreen from './screens/HealthScreen'
 import RiderProfileScreen from './screens/RiderProfileScreen'
 import { CareerProvider, useCareer } from './state/CareerContext'
 import OnboardingScreen from './screens/OnboardingScreen'
-import UnitToggle from './components/UnitToggle'
 import SettingsScreen from './screens/SettingsScreen'
 import { useEffect } from 'react'
 import FinaleScreen from './screens/FinaleScreen'
@@ -49,7 +48,6 @@ function RideTheRacesApp() {
 
   return (
     <main className="app">
-      <UnitToggle />
       {screen === 'hq' && (
         <TeamHQScreen
           onContinue={() => setScreen('teamBus')}
@@ -105,7 +103,7 @@ function RideTheRacesApp() {
           onReviewStages={() => setScreen('teamBus')}
         />
       )}
-      <footer className="build-footer">Ride the Races • Alpha 3.7 | Full-Length Stages</footer>
+      <footer className="build-footer">Ride the Races • Alpha 3.8 | Living Climb Profile</footer>
     </main>
   )
 }

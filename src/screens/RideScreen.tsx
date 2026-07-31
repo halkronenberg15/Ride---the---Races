@@ -25,6 +25,53 @@ function formatTime(totalSeconds: number) {
 }
 
 
+type GradientBlock = {
+  gradient: number
+  label: string
+}
+
+function isClimbSegment(name: string, type: string) {
+  const value = `${name} ${type}`.toLowerCase()
+  return /climb|mountain|summit|col |côte|cote|alpe|pyren|ascent/.test(value)
+}
+
+function buildGradientBlocks(
+  stageNumber: number,
+  segmentIndex: number,
+  segmentName: string,
+  segmentType: string,
+  zone: string,
+  durationSeconds: number,
+): GradientBlock[] {
+  const seedText = `${stageNumber}-${segmentIndex}-${segmentName}-${segmentType}`
+  let seed = 0
+  for (let index = 0; index < seedText.length; index += 1) {
+    seed = (seed * 31 + seedText.charCodeAt(index)) >>> 0
+  }
+
+  const blockCount = Math.max(5, Math.min(10, Math.round(durationSeconds / 90)))
+  const zoneNumber = Number(zone.match(/Z(\d)/i)?.[1] ?? 3)
+  const base = zoneNumber >= 5 ? 8.6 : zoneNumber === 4 ? 7.4 : zoneNumber === 3 ? 6.2 : 5.2
+
+  return Array.from({ length: blockCount }, (_, index) => {
+    seed = (seed * 1664525 + 1013904223) >>> 0
+    const random = seed / 4294967296
+    const wave = Math.sin((index / Math.max(1, blockCount - 1)) * Math.PI * 2) * 1.15
+    const finishKick = index >= blockCount - 2 ? 0.9 : 0
+    const gradient = Math.max(2.8, Math.min(13.5, base + (random - 0.5) * 3.2 + wave + finishKick))
+    return { gradient: Number(gradient.toFixed(1)), label: `${index + 1}` }
+  })
+}
+
+function gradientColor(gradient: number) {
+  if (gradient < 4) return '#55b96f'
+  if (gradient < 6) return '#d8d34a'
+  if (gradient < 8) return '#f0a13a'
+  if (gradient < 10) return '#ef5b3f'
+  return '#c9233d'
+}
+
+
 type WakeLockSentinelLike = {
   released: boolean
   release: () => Promise<void>
@@ -40,7 +87,7 @@ function RideScreen({
   onBack,
   onFinish,
 }: RideScreenProps) {
-  const { career, setMeasurementSystem } = useCareer()
+  const { career } = useCareer()
   const measurementSystem = career.settings.measurementSystem
   const stage = useMemo(() => getRaceStage(stageNumber), [stageNumber])
   const segments = useMemo(() => adaptSegments(stage.segments, career.rider.ftp, strategy), [stage, career.rider.ftp, strategy])
@@ -173,6 +220,51 @@ function RideScreen({
     Math.max(progress, 1),
     99,
   )
+
+  const currentSegmentProgress = Math.min(
+    Math.max(segmentData.elapsedInSegment / Math.max(1, currentSegment.sec), 0),
+    1,
+  )
+
+  const currentSegmentIsClimb = isClimbSegment(
+    currentSegment.name,
+    currentSegment.type,
+  )
+
+  const gradientBlocks = useMemo(
+    () =>
+      currentSegmentIsClimb
+        ? buildGradientBlocks(
+            stage.number,
+            segmentData.index,
+            currentSegment.name,
+            currentSegment.type,
+            currentSegment.zone,
+            currentSegment.sec,
+          )
+        : [],
+    [
+      currentSegment.name,
+      currentSegment.sec,
+      currentSegment.type,
+      currentSegment.zone,
+      currentSegmentIsClimb,
+      segmentData.index,
+      stage.number,
+    ],
+  )
+
+  const activeGradientIndex = gradientBlocks.length
+    ? Math.min(
+        gradientBlocks.length - 1,
+        Math.floor(currentSegmentProgress * gradientBlocks.length),
+      )
+    : 0
+
+  const activeGradient = gradientBlocks[activeGradientIndex]?.gradient ?? 0
+  const climbAverage = gradientBlocks.length
+    ? gradientBlocks.reduce((sum, block) => sum + block.gradient, 0) / gradientBlocks.length
+    : 0
 
   function speak(text: string) {
     setRadioText(text)
@@ -566,29 +658,102 @@ function RideScreen({
           gap: 10px;
         }
 
-        .ride-unit-toggle {
-          display: inline-flex;
-          padding: 3px;
-          border-radius: 999px;
-          background: rgba(255,255,255,0.06);
-          border: 1px solid rgba(255,255,255,0.12);
+        .live-profile-card {
+          margin-top: 10px;
+          padding: 14px 16px 12px;
+          border-radius: 20px;
+          border: 1px solid rgba(255,255,255,0.14);
+          background: linear-gradient(160deg, rgba(255,255,255,0.055), rgba(0,0,0,0.22));
+          overflow: hidden;
         }
 
-        .ride-unit-toggle button {
-          min-width: 48px;
-          padding: 8px 11px;
-          border-radius: 999px;
-          border: 0;
-          background: transparent;
+        .live-profile-head {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 6px;
         }
 
-        .ride-unit-toggle button.active {
-          background: #f46a00;
+        .live-profile-wrap {
+          position: relative;
+          height: 116px;
+        }
+
+        .climb-live-card {
+          margin-top: 10px;
+          padding-top: 10px;
+          border-top: 1px solid rgba(255,255,255,0.10);
+        }
+
+        .gradient-summary {
+          display: flex;
+          justify-content: space-between;
+          align-items: end;
+          gap: 10px;
+          margin-bottom: 8px;
+        }
+
+        .gradient-blocks {
+          display: flex;
+          align-items: flex-end;
+          gap: 3px;
+          height: 112px;
+          padding: 8px 2px 0;
+          border-bottom: 3px solid rgba(255,255,255,0.5);
+        }
+
+        .gradient-block {
+          position: relative;
+          flex: 1 1 0;
+          min-width: 0;
+          border-radius: 5px 5px 1px 1px;
+          opacity: .52;
+          transition: opacity .25s linear, transform .25s linear, filter .25s linear;
+        }
+
+        .gradient-block.completed { opacity: .88; }
+        .gradient-block.active {
+          opacity: 1;
+          transform: translateY(-4px);
+          filter: drop-shadow(0 0 8px rgba(255,255,255,.35));
+          outline: 2px solid rgba(255,255,255,.9);
+          outline-offset: 1px;
+        }
+
+        .gradient-rider {
+          position: absolute;
+          left: 50%;
+          top: -30px;
+          transform: translateX(-50%);
+          font-size: 1.35rem;
+          filter: drop-shadow(0 3px 5px rgba(0,0,0,.75));
+        }
+
+        .climb-footer {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          margin-top: 9px;
+          font-size: .82rem;
+          opacity: .82;
+        }
+
+        .gradient-value {
+          position: absolute;
+          left: 50%;
+          bottom: 6px;
+          transform: translateX(-50%) rotate(-90deg);
+          transform-origin: center;
           color: #fff;
+          font-weight: 900;
+          font-size: .68rem;
+          white-space: nowrap;
+          text-shadow: 0 1px 3px rgba(0,0,0,.8);
         }
 
         .cockpit-card {
-          margin-top: 12px;
+          margin-top: 8px;
           padding: 18px;
           border-radius: 22px;
           border: 1px solid rgba(244,106,0,0.42);
@@ -747,9 +912,20 @@ function RideScreen({
             font-size: .86rem;
           }
 
+          .live-profile-card {
+            padding: 10px 11px 9px;
+            border-radius: 16px;
+          }
+
+          .live-profile-wrap { height: 92px; }
+
+          .gradient-blocks { height: 88px; }
+
+          .gradient-value { font-size: .58rem; }
+
           .cockpit-card {
-            margin-top: 8px;
-            padding: 12px;
+            margin-top: 7px;
+            padding: 10px;
             border-radius: 18px;
           }
 
@@ -891,25 +1067,6 @@ function RideScreen({
           ← Tactics
         </button>
 
-        <div
-          className="ride-unit-toggle"
-          aria-label="Distance units"
-        >
-          <button
-            type="button"
-            className={measurementSystem === 'imperial' ? 'active' : ''}
-            onClick={() => setMeasurementSystem('imperial')}
-          >
-            MI
-          </button>
-          <button
-            type="button"
-            className={measurementSystem === 'metric' ? 'active' : ''}
-            onClick={() => setMeasurementSystem('metric')}
-          >
-            KM
-          </button>
-        </div>
       </div>
 
       <header
@@ -938,10 +1095,91 @@ function RideScreen({
 
       {!isFinished && (
         <>
+          <div className="live-profile-card" aria-label={currentSegmentIsClimb ? "Live climb gradient profile" : "Live stage profile"}>
+            {currentSegmentIsClimb ? (
+              <>
+                <div className="gradient-summary">
+                  <div>
+                    <p className="eyebrow">LIVE CLIMB PROFILE</p>
+                    <strong>{currentSegment.name}</strong>
+                    <small style={{ display: 'block', opacity: .72 }}>
+                      {climbAverage.toFixed(1)}% average • section {activeGradientIndex + 1} of {gradientBlocks.length}
+                    </small>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <small>CURRENT RAMP</small>
+                    <strong style={{ display: 'block', fontSize: '1.55rem', color: gradientColor(activeGradient) }}>
+                      {activeGradient.toFixed(1)}%
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="gradient-blocks" aria-label={`${currentSegment.name} gradient sections`}>
+                  {gradientBlocks.map((block, index) => {
+                    const isActive = index === activeGradientIndex
+                    const isCompleted = index < activeGradientIndex
+                    return (
+                      <div
+                        key={`${currentSegment.name}-${index}`}
+                        className={`gradient-block${isCompleted ? ' completed' : ''}${isActive ? ' active' : ''}`}
+                        style={{
+                          height: `${34 + block.gradient * 5}%`,
+                          background: gradientColor(block.gradient),
+                        }}
+                        title={`Section ${index + 1}: ${block.gradient}%`}
+                      >
+                        {isActive && <span className="gradient-rider">🚴</span>}
+                        <span className="gradient-value">{block.gradient}%</span>
+                      </div>
+                    )
+                  })}
+                </div>
+                <div className="climb-footer">
+                  <span>{Math.round(currentSegmentProgress * 100)}% of climb complete</span>
+                  <strong>{formatTime(segmentRemaining)} to summit</strong>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="live-profile-head">
+                  <div>
+                    <p className="eyebrow">LIVE STAGE TRACKER</p>
+                    <strong>{currentSegment.terrainLabel}</strong>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <small>{Math.round(progress)}% COMPLETE</small>
+                    <strong style={{ display: 'block' }}>
+                      {formatDistance(Math.max(stage.distanceKm - routeKm, 0), measurementSystem)} left
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="live-profile-wrap">
+                  <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ width: '100%', height: '100%', display: 'block', overflow: 'visible' }}>
+                    <defs>
+                      <linearGradient id="liveMountainFill" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="rgba(244,106,0,0.62)" />
+                        <stop offset="100%" stopColor="rgba(244,106,0,0.05)" />
+                      </linearGradient>
+                      <clipPath id="completedStageClip">
+                        <rect x="0" y="0" width={riderMarkerX} height="100" />
+                      </clipPath>
+                    </defs>
+                    <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="rgba(255,255,255,0.04)" />
+                    <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="url(#liveMountainFill)" clipPath="url(#completedStageClip)" />
+                    <polyline points={profilePoints.join(' ')} fill="none" stroke="rgba(255,174,96,0.98)" strokeWidth="2.4" vectorEffect="non-scaling-stroke" />
+                    <line x1={riderMarkerX} x2={riderMarkerX} y1="2" y2="98" stroke="rgba(255,255,255,0.68)" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
+                  </svg>
+                  <div style={{ position: 'absolute', left: `${riderMarkerX}%`, top: '0px', transform: 'translateX(-50%)', fontSize: '1.35rem', transition: 'left .25s linear' }}>🚴</div>
+                </div>
+              </>
+            )}
+          </div>
+
           <div className="cockpit-card">
             <div className="cockpit-header">
               <div>
-                <p className="eyebrow">CURRENT EFFORT</p>
+                <p className="eyebrow">CURRENT SECTOR</p>
                 <h2 className="cockpit-title">
                   {currentSegment.icon}{' '}
                   {currentSegment.name}
@@ -1031,7 +1269,7 @@ function RideScreen({
               onClick={handleStart}
             >
               {elapsedSeconds === 0
-                ? '▶ Start Ride'
+                ? '🚩 Roll Out'
                 : '▶ Resume Ride'}
             </button>
           ) : (
@@ -1056,101 +1294,6 @@ function RideScreen({
 
           {showDetails && (
             <div className="ride-details">
-              <div className="dashboard-card">
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    gap: '14px',
-                    alignItems: 'center',
-                    marginBottom: '8px',
-                  }}
-                >
-                  <div>
-                    <p className="eyebrow">STAGE PROFILE</p>
-                    <strong>
-                      {currentSegment.terrainLabel}
-                    </strong>
-                  </div>
-
-                  <div style={{ textAlign: 'right' }}>
-                    <small>ROUTE</small>
-                    <strong style={{ display: 'block' }}>
-                      {formatDistance(routeKm, measurementSystem)}
-                    </strong>
-                  </div>
-                </div>
-
-                <div className="profile-wrap">
-                  <svg
-                    viewBox="0 0 100 100"
-                    preserveAspectRatio="none"
-                    style={{
-                      width: '100%',
-                      height: '115px',
-                      display: 'block',
-                      overflow: 'visible',
-                    }}
-                  >
-                    <defs>
-                      <linearGradient
-                        id="mountainFill"
-                        x1="0"
-                        x2="0"
-                        y1="0"
-                        y2="1"
-                      >
-                        <stop
-                          offset="0%"
-                          stopColor="rgba(244,106,0,0.55)"
-                        />
-                        <stop
-                          offset="100%"
-                          stopColor="rgba(244,106,0,0.04)"
-                        />
-                      </linearGradient>
-                    </defs>
-
-                    <polygon
-                      points={`0,100 ${profilePoints.join(
-                        ' ',
-                      )} 100,100`}
-                      fill="url(#mountainFill)"
-                    />
-
-                    <polyline
-                      points={profilePoints.join(' ')}
-                      fill="none"
-                      stroke="rgba(255,170,90,0.95)"
-                      strokeWidth="2.2"
-                      vectorEffect="non-scaling-stroke"
-                    />
-
-                    <line
-                      x1={riderMarkerX}
-                      x2={riderMarkerX}
-                      y1="4"
-                      y2="96"
-                      stroke="rgba(255,255,255,0.55)"
-                      strokeDasharray="4 4"
-                      vectorEffect="non-scaling-stroke"
-                    />
-                  </svg>
-
-                  <div
-                    style={{
-                      position: 'absolute',
-                      left: `${riderMarkerX}%`,
-                      top: '2px',
-                      transform: 'translateX(-50%)',
-                      fontSize: '1.5rem',
-                      transition: 'left .25s linear',
-                    }}
-                  >
-                    🚴
-                  </div>
-                </div>
-              </div>
 
               <div className="detail-grid">
                 <div
