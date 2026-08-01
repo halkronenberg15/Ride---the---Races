@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import DirectorReport from '../components/DirectorReport'
 import { getRaceStage } from '../data/raceStages'
 import { halRider } from '../game/rider'
 import type { RaceStrategy } from '../types/tactics'
 import { adaptSegments } from '../engine/adaptiveRide'
 import { useCareer } from '../state/CareerContext'
 import { formatDistance, formatElevation } from '../utils/units'
+import { createStageTimeline, isClimb } from '../engine/stageEngine'
 
 type RideScreenProps = {
   stageNumber: number
@@ -28,11 +28,6 @@ function formatTime(totalSeconds: number) {
 type GradientBlock = {
   gradient: number
   label: string
-}
-
-function isClimbSegment(name: string, type: string) {
-  const value = `${name} ${type}`.toLowerCase()
-  return /climb|mountain|summit|col |côte|cote|alpe|pyren|ascent/.test(value)
 }
 
 function buildGradientBlocks(
@@ -92,6 +87,7 @@ function RideScreen({
   const stage = useMemo(() => getRaceStage(stageNumber), [stageNumber])
   const segments = useMemo(() => adaptSegments(stage.segments, career.rider.ftp, strategy), [stage, career.rider.ftp, strategy])
   const profilePoints = stage.profilePoints
+  const timeline = useMemo(() => createStageTimeline(segments), [segments])
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [isRunning, setIsRunning] = useState(false)
   const [isFinished, setIsFinished] = useState(false)
@@ -115,79 +111,15 @@ function RideScreen({
     null,
   )
   const isRunningRef = useRef(false)
+  const didLaunchMetrics = useRef(false)
 
-  const stageDuration = useMemo(
-    () =>
-      segments.reduce(
-        (total, segment) => total + segment.sec,
-        0,
-      ),
-    [segments],
-  )
+  const stageDuration = timeline.duration
 
-  const climbingTime = useMemo(() => {
-    return segments
-      .filter((segment) =>
-        segment.type.toLowerCase().includes('climb'),
-      )
-      .reduce(
-        (total, segment) => total + segment.sec,
-        0,
-      )
-  }, [])
-
-  const highIntensityTime = useMemo(() => {
-    return segments
-      .filter(
-        (segment) =>
-          segment.zone.includes('Z4') ||
-          segment.zone.includes('Z5') ||
-          segment.zone.includes('Z6'),
-      )
-      .reduce(
-        (total, segment) => total + segment.sec,
-        0,
-      )
-  }, [])
-
-  const segmentData = useMemo(() => {
-    let accumulatedSeconds = 0
-
-    for (
-      let index = 0;
-      index < segments.length;
-      index += 1
-    ) {
-      const segment = segments[index]
-      const segmentEnd =
-        accumulatedSeconds + segment.sec
-
-      if (elapsedSeconds < segmentEnd) {
-        return {
-          index,
-          segment,
-          elapsedInSegment:
-            elapsedSeconds - accumulatedSeconds,
-          segmentStart: accumulatedSeconds,
-        }
-      }
-
-      accumulatedSeconds = segmentEnd
-    }
-
-    return {
-      index: segments.length - 1,
-      segment: segments[segments.length - 1],
-      elapsedInSegment:
-        segments[segments.length - 1].sec,
-      segmentStart:
-        stageDuration -
-        segments[segments.length - 1].sec,
-    }
-  }, [elapsedSeconds, stageDuration])
+  const engine = useMemo(() => timeline.snapshot(elapsedSeconds), [elapsedSeconds, timeline])
+  const segmentData = { index: engine.segmentIndex, segment: engine.segment, elapsedInSegment: engine.elapsedInSegment }
 
   const currentSegment = segmentData.segment
-  const nextSegment = segments[segmentData.index + 1]
+  const nextSegment = engine.nextSegment
   const openingStatus = currentSegment.type.toLowerCase().includes('neutral')
     ? 'NEUTRALIZED'
     : currentSegment.name === 'Kilometre Zero'
@@ -196,40 +128,25 @@ function RideScreen({
         ? 'START RAMP'
         : null
 
-  const segmentRemaining = Math.max(
-    currentSegment.sec - segmentData.elapsedInSegment,
-    0,
-  )
+  const segmentRemaining = engine.segmentRemaining
 
-  const progress = Math.min(
-    (elapsedSeconds / stageDuration) * 100,
-    100,
-  )
+  const progress = engine.stageProgress * 100
 
   const routeKm = Math.min(
     stage.distanceKm,
     (stage.distanceKm * progress) / 100,
   )
 
-  const stageRemaining = Math.max(
-    stageDuration - elapsedSeconds,
-    0,
-  )
+  const stageRemaining = engine.stageRemaining
 
   const riderMarkerX = Math.min(
     Math.max(progress, 1),
     99,
   )
 
-  const currentSegmentProgress = Math.min(
-    Math.max(segmentData.elapsedInSegment / Math.max(1, currentSegment.sec), 0),
-    1,
-  )
+  const currentSegmentProgress = engine.segmentProgress
 
-  const currentSegmentIsClimb = isClimbSegment(
-    currentSegment.name,
-    currentSegment.type,
-  )
+  const currentSegmentIsClimb = isClimb(currentSegment)
 
   const gradientBlocks = useMemo(
     () =>
@@ -265,6 +182,12 @@ function RideScreen({
   const climbAverage = gradientBlocks.length
     ? gradientBlocks.reduce((sum, block) => sum + block.gradient, 0) / gradientBlocks.length
     : 0
+  const nextGradient = gradientBlocks[Math.min(activeGradientIndex + 1, gradientBlocks.length - 1)]?.gradient ?? activeGradient
+  const climbDistanceKm = Math.max(
+    0.5,
+    (nextSegment?.routeKm ?? stage.distanceKm) - currentSegment.routeKm,
+  )
+  const summitDistanceKm = climbDistanceKm * (1 - currentSegmentProgress)
 
   function speak(text: string) {
     setRadioText(text)
@@ -464,11 +387,13 @@ function RideScreen({
 
     showCurrentSegmentCard()
 
-    if (isRunning) {
-      speak(
-        `${currentSegment.name}. ${currentSegment.description}`,
-      )
-    }
+    if (!isRunning) return
+
+    const announcementTimer = window.setTimeout(() => {
+      speak(`${currentSegment.name}. ${currentSegment.description}`)
+    }, 0)
+
+    return () => window.clearTimeout(announcementTimer)
   }, [
     currentSegment.description,
     currentSegment.name,
@@ -484,17 +409,25 @@ function RideScreen({
       return
     }
 
-    accumulatedElapsedRef.current = stageDuration
-    runStartedAtRef.current = null
-    setIsRunning(false)
-    setIsFinished(true)
-    setShowSegmentCard(false)
-    void releaseWakeLock()
+    const completionTimer = window.setTimeout(() => {
+      accumulatedElapsedRef.current = stageDuration
+      runStartedAtRef.current = null
+      setIsRunning(false)
+      setIsFinished(true)
+      setShowSegmentCard(false)
+      void releaseWakeLock()
 
-    speak(
-      `Stage ${stage.number} complete, Hal. Excellent work. Team Loriot is proud of that ride.`,
-    )
-  }, [elapsedSeconds, isFinished, stageDuration])
+      speak(
+        `Stage ${stage.number} complete, Hal. Excellent work. Team Loriot is proud of that ride.`,
+      )
+      if (!didLaunchMetrics.current) {
+        didLaunchMetrics.current = true
+        window.setTimeout(onFinish, 1200)
+      }
+    }, 0)
+
+    return () => window.clearTimeout(completionTimer)
+  }, [elapsedSeconds, isFinished, onFinish, stage.number, stageDuration])
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -591,6 +524,7 @@ function RideScreen({
     runStartedAtRef.current = isRunning ? Date.now() : null
     setElapsedSeconds(newElapsed)
     setIsFinished(false)
+    didLaunchMetrics.current = false
     lastSpokenCue.current = ''
   }
 
@@ -667,6 +601,17 @@ function RideScreen({
           overflow: hidden;
         }
 
+        .master-stage-profile {
+          position: sticky;
+          top: 8px;
+          z-index: 30;
+          background: rgba(13,13,13,.96);
+          backdrop-filter: blur(16px);
+          box-shadow: 0 12px 35px rgba(0,0,0,.4);
+        }
+
+        .master-stage-profile .live-profile-wrap { height: 86px; }
+
         .live-profile-head {
           display: flex;
           align-items: flex-start;
@@ -710,9 +655,10 @@ function RideScreen({
           border-radius: 5px 5px 1px 1px;
           opacity: .52;
           transition: opacity .25s linear, transform .25s linear, filter .25s linear;
+          clip-path: polygon(0 28%, 100% 0, 100% 100%, 0 100%);
         }
 
-        .gradient-block.completed { opacity: .88; }
+        .gradient-block.completed { opacity: .72; filter: saturate(.15); }
         .gradient-block.active {
           opacity: 1;
           transform: translateY(-4px);
@@ -1095,6 +1041,22 @@ function RideScreen({
 
       {!isFinished && (
         <>
+          <div className="live-profile-card master-stage-profile" aria-label="Fixed master stage profile">
+            <div className="live-profile-head">
+              <div><p className="eyebrow">MASTER STAGE PROFILE</p><strong>{currentSegment.terrainLabel}</strong></div>
+              <div style={{ textAlign: 'right' }}><small>{Math.round(progress)}% COMPLETE</small><strong style={{ display: 'block' }}>{formatDistance(Math.max(stage.distanceKm - routeKm, 0), measurementSystem)} left</strong></div>
+            </div>
+            <div className="live-profile-wrap">
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ width: '100%', height: '100%', display: 'block', overflow: 'visible' }}>
+                <defs><clipPath id="masterCompletedClip"><rect x="0" y="0" width={riderMarkerX} height="100" /></clipPath></defs>
+                <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="rgba(255,106,0,.28)" />
+                <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="rgba(92,92,92,.9)" clipPath="url(#masterCompletedClip)" />
+                <polyline points={profilePoints.join(' ')} fill="none" stroke="#ff6a00" strokeWidth="2.4" vectorEffect="non-scaling-stroke" />
+                <line x1={riderMarkerX} x2={riderMarkerX} y1="4" y2="98" stroke="#fff" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
+              </svg>
+              <div style={{ position: 'absolute', left: `${riderMarkerX}%`, top: 0, transform: 'translateX(-50%)', transition: 'left .25s linear' }}>🚴</div>
+            </div>
+          </div>
           <div className="live-profile-card" aria-label={currentSegmentIsClimb ? "Live climb gradient profile" : "Live stage profile"}>
             {currentSegmentIsClimb ? (
               <>
@@ -1103,13 +1065,13 @@ function RideScreen({
                     <p className="eyebrow">LIVE CLIMB PROFILE</p>
                     <strong>{currentSegment.name}</strong>
                     <small style={{ display: 'block', opacity: .72 }}>
-                      {climbAverage.toFixed(1)}% average • section {activeGradientIndex + 1} of {gradientBlocks.length}
+                      {climbAverage.toFixed(1)}% average • {formatDistance(summitDistanceKm, measurementSystem)} to summit
                     </small>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <small>CURRENT RAMP</small>
+                    <small>CURRENT / NEXT</small>
                     <strong style={{ display: 'block', fontSize: '1.55rem', color: gradientColor(activeGradient) }}>
-                      {activeGradient.toFixed(1)}%
+                      {activeGradient.toFixed(1)}% / {nextGradient.toFixed(1)}%
                     </strong>
                   </div>
                 </div>
@@ -1124,7 +1086,7 @@ function RideScreen({
                         className={`gradient-block${isCompleted ? ' completed' : ''}${isActive ? ' active' : ''}`}
                         style={{
                           height: `${34 + block.gradient * 5}%`,
-                          background: gradientColor(block.gradient),
+                          background: isCompleted ? '#55514e' : '#ff6a00',
                         }}
                         title={`Section ${index + 1}: ${block.gradient}%`}
                       >
@@ -1136,7 +1098,7 @@ function RideScreen({
                 </div>
                 <div className="climb-footer">
                   <span>{Math.round(currentSegmentProgress * 100)}% of climb complete</span>
-                  <strong>{formatTime(segmentRemaining)} to summit</strong>
+                  <strong>{formatDistance(summitDistanceKm, measurementSystem)} • {formatTime(segmentRemaining)} to summit</strong>
                 </div>
               </>
             ) : (
@@ -1396,19 +1358,7 @@ function RideScreen({
         </>
       )}
 
-      {isFinished && (
-        <DirectorReport
-          stageNumber={stage.number}
-          destination="Les Angles"
-          rideTime={formatTime(stageDuration)}
-          climbingTime={formatTime(climbingTime)}
-          highIntensityTime={formatTime(
-            highIntensityTime,
-          )}
-          segmentCount={segments.length}
-          onContinue={onFinish}
-        />
-      )}
+      {isFinished && <div className="dashboard-card ride-complete-launch"><p className="eyebrow">COOLDOWN COMPLETE</p><h2>Opening Ride Metrics…</h2><p>Your stage has been saved. Preparing the post-ride data screen.</p></div>}
     </section>
   )
 }

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- Provider and its typed hook form one public state module. */
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import type { CareerState, HealthEntry, MeasurementSystem, RideMetricEntry } from '../types/career'
 

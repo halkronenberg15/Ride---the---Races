@@ -483,6 +483,29 @@ footer {
   text-align: center;
   text-transform: uppercase;
 }
+
+/* Alpha 4.0: keep cycling-computer readouts legible in both OS themes. */
+.ride-cockpit,
+.ride-cockpit h1,
+.ride-cockpit h2,
+.ride-cockpit h3,
+.ride-cockpit strong,
+.ride-complete-launch {
+  color: #f7f7f7;
+}
+
+.ride-complete-launch {
+  margin-top: 16px;
+  padding: clamp(28px, 6vw, 54px);
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  .app:has(.ride-cockpit) {
+    width: 100%;
+    padding-top: 8px;
+  }
+}
 .text-button { background: transparent !important; border: 0 !important; color: #999 !important; padding: 5px !important; font-size: .75rem; }
 
 .onboarding-screen { min-height: 100vh; padding: 28px 18px; display: grid; place-items: center; background: radial-gradient(circle at top, #2a160a 0, #101010 42%); }

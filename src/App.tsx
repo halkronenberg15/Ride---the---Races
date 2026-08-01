@@ -35,15 +35,7 @@ function RideTheRacesApp() {
   function handleFinishRide() {
     const stage = career.season.currentStage
     completeStage(stage)
-    if (stage === 21) {
-      setScreen('finale')
-      return
-    }
-    if (stage === 9 || stage === 15) {
-      setScreen('restDay')
-      return
-    }
-    setScreen('teamBus')
+    setScreen('rideData')
   }
 
   return (
@@ -103,7 +95,7 @@ function RideTheRacesApp() {
           onReviewStages={() => setScreen('teamBus')}
         />
       )}
-      <footer className="build-footer">Ride the Races • Alpha 3.8 | Living Climb Profile</footer>
+      <footer className="build-footer">Ride the Races • Alpha 4.0 | Master Stage Engine</footer>
     </main>
   )
 }

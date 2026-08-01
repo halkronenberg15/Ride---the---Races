@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useCareer } from '../state/CareerContext'
 import type { RideMetricEntry } from '../types/career'
 import { formatDistance, formatElevation, ftToM, miToKm, mToFt, kmToMi } from '../utils/units'
@@ -10,14 +10,16 @@ function RideDataScreen({ onBack }: Props) {
   const system = career.settings.measurementSystem
   const [saved, setSaved] = useState(false)
   const [form, setForm] = useState({ durationMinutes: '45', distance: system === 'imperial' ? '12.4' : '20', averagePower: '', averageHeartRate: '', averageCadence: '', elevation: '', calories: '', notes: '' })
+  const [formSystem, setFormSystem] = useState(system)
 
-  useEffect(() => {
+  if (formSystem !== system) {
+    setFormSystem(system)
     setForm((current) => ({
       ...current,
       distance: current.distance ? (system === 'imperial' ? kmToMi(Number(current.distance)).toFixed(1) : miToKm(Number(current.distance)).toFixed(1)) : '',
       elevation: current.elevation ? (system === 'imperial' ? Math.round(mToFt(Number(current.elevation))).toString() : Math.round(ftToM(Number(current.elevation))).toString()) : '',
     }))
-  }, [system])
+  }
 
   function submit(event: React.FormEvent) {
     event.preventDefault()
