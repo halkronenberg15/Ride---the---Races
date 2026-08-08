@@ -494,6 +494,7 @@ footer {
   color: #f7f7f7;
 }
 
+<<<<<<< HEAD
 .ride-countdown {
   position: fixed;
   inset: 0;
@@ -532,6 +533,8 @@ footer {
 .active-ride-actions { display: flex; gap: 6px; }
 .active-ride-actions button:last-child { border: 1px solid #555; background: transparent; color: #ddd; }
 
+=======
+>>>>>>> origin/main
 .ride-complete-launch {
   margin-top: 16px;
   padding: clamp(28px, 6vw, 54px);

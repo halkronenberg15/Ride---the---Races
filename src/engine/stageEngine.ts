@@ -12,6 +12,7 @@ export type StageSnapshot = {
   segmentProgress: number
   stageProgress: number
   stageRemaining: number
+<<<<<<< HEAD
   routePosition: number
   routeKm: number
   events: StageEvent[]
@@ -20,6 +21,10 @@ export type StageSnapshot = {
 export type StageEvent = 'sector-halfway' | 'final-30' | 'final-10' | 'summit' | 'finish'
 export const PRE_RIDE_COUNTDOWN_SECONDS = 5
 
+=======
+}
+
+>>>>>>> origin/main
 export type StageTimeline = {
   duration: number
   segmentStarts: number[]
@@ -46,7 +51,10 @@ export function createStageTimeline(segments: RideSegment[]): StageTimeline {
     segmentStarts.push(duration)
     duration += segment.sec
   })
+<<<<<<< HEAD
   const routeDistance = Math.max(...segments.map((segment) => segment.routeKm), 1)
+=======
+>>>>>>> origin/main
 
   return {
     duration,
@@ -71,6 +79,7 @@ export function createStageTimeline(segments: RideSegment[]): StageTimeline {
               ? 'ready'
               : 'racing'
 
+<<<<<<< HEAD
       const segmentProgress = Math.min(1, Math.max(0, elapsedInSegment / Math.max(1, segment.sec)))
       const stageProgress = Math.min(1, elapsed / duration)
       const routeStart = segment.routeKm
@@ -85,6 +94,8 @@ export function createStageTimeline(segments: RideSegment[]): StageTimeline {
       if (previousSegment && isClimb(previousSegment) && elapsed === segmentStarts[segmentIndex]) events.push('summit')
       if (complete) events.push('finish')
 
+=======
+>>>>>>> origin/main
       return {
         phase,
         segment,
@@ -92,16 +103,23 @@ export function createStageTimeline(segments: RideSegment[]): StageTimeline {
         nextSegment: segments[segmentIndex + 1],
         elapsedInSegment,
         segmentRemaining: Math.max(0, segment.sec - elapsedInSegment),
+<<<<<<< HEAD
         segmentProgress,
         stageProgress,
         stageRemaining: Math.max(0, duration - elapsed),
         routePosition: Math.min(1, routeKm / routeDistance),
         routeKm,
         events,
+=======
+        segmentProgress: Math.min(1, Math.max(0, elapsedInSegment / Math.max(1, segment.sec))),
+        stageProgress: Math.min(1, elapsed / duration),
+        stageRemaining: Math.max(0, duration - elapsed),
+>>>>>>> origin/main
       }
     },
   }
 }
+<<<<<<< HEAD
 
 export type ResistanceRecommendation = { min: number; max: number; midpoint: number }
 
@@ -120,3 +138,5 @@ export function parseResistanceEnvelope(value: string) {
   const match = value.replace(/[–—]/g, '-').match(/(\d+)\s*-\s*(\d+)/)
   return match ? { min: Number(match[1]), max: Number(match[2]) } : { min: 35, max: 55 }
 }
+=======
+>>>>>>> origin/main

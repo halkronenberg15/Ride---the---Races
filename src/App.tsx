@@ -42,8 +42,11 @@ function RideTheRacesApp() {
     const stage = career.season.currentStage
     addRide(ride)
     completeStage(stage)
+<<<<<<< HEAD
     setRideActive(false)
     localStorage.removeItem('ride-the-races-active-v1')
+=======
+>>>>>>> origin/main
     setScreen('rideData')
   }
 
@@ -120,7 +123,11 @@ function RideTheRacesApp() {
           onReviewStages={() => setScreen('teamBus')}
         />
       )}
+<<<<<<< HEAD
       <footer className="build-footer">Ride the Races • Alpha 4.0.1 | Synchronized Stage Engine</footer>
+=======
+      <footer className="build-footer">Ride the Races • Alpha 4.0 | Master Stage Engine</footer>
+>>>>>>> origin/main
     </main>
   )
 }

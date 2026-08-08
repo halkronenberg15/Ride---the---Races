@@ -4,9 +4,13 @@ import type { RaceStrategy } from '../types/tactics'
 import { adaptSegments } from '../engine/adaptiveRide'
 import { useCareer } from '../state/CareerContext'
 import { formatDistance, formatElevation } from '../utils/units'
+<<<<<<< HEAD
 import type { RideMetricEntry } from '../types/career'
 import { jeanGear, jeanMode, selectJeanLine } from '../services/adaptiveJean'
 import { createStageTimeline, gradientToResistance, isClimb, parseResistanceEnvelope, PRE_RIDE_COUNTDOWN_SECONDS } from '../engine/stageEngine'
+=======
+import { createStageTimeline, isClimb } from '../engine/stageEngine'
+>>>>>>> origin/main
 
 type RideScreenProps = {
   stageNumber: number
@@ -106,8 +110,13 @@ function RideScreen({
   const segments = useMemo(() => adaptSegments(stage.segments, career.rider.ftp, strategy), [stage, career.rider.ftp, strategy])
   const profilePoints = stage.profilePoints
   const timeline = useMemo(() => createStageTimeline(segments), [segments])
+<<<<<<< HEAD
   const [elapsedSeconds, setElapsedSeconds] = useState(restoredRide?.elapsedSeconds ?? 0)
   const [isRunning, setIsRunning] = useState(restoredRide?.isRunning ?? false)
+=======
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const [isRunning, setIsRunning] = useState(false)
+>>>>>>> origin/main
   const [isFinished, setIsFinished] = useState(false)
   const [countdown, setCountdown] = useState<number | null>(null)
   const [mountedAt] = useState(() => Date.now())
@@ -206,6 +215,7 @@ function RideScreen({
     (nextSegment?.routeKm ?? stage.distanceKm) - currentSegment.routeKm,
   )
   const summitDistanceKm = climbDistanceKm * (1 - currentSegmentProgress)
+<<<<<<< HEAD
   const resistanceEnvelope = parseResistanceEnvelope(currentSegment.resistance)
   const roadResistance = gradientToResistance(activeGradient, resistanceEnvelope)
   const nextRoadResistance = gradientToResistance(nextGradient, resistanceEnvelope)
@@ -218,6 +228,8 @@ function RideScreen({
       ? `Road steepens ahead • add ${Math.abs(resistanceChange)} point${Math.abs(resistanceChange) === 1 ? '' : 's'}`
       : `Gradient backs off • take ${Math.abs(resistanceChange)} point${Math.abs(resistanceChange) === 1 ? '' : 's'} out`
     : null
+=======
+>>>>>>> origin/main
 
   function speak(text: string) {
     setRadioText(text)
@@ -485,6 +497,7 @@ function RideScreen({
       )
       if (!didLaunchMetrics.current) {
         didLaunchMetrics.current = true
+<<<<<<< HEAD
         const completedRide: RideMetricEntry = {
           id: crypto.randomUUID(),
           date: new Date().toISOString(),
@@ -503,11 +516,18 @@ function RideScreen({
           notes: 'Automatically recorded by the Ride the Races stage engine.',
         }
         window.setTimeout(() => onFinish(completedRide), 1200)
+=======
+        window.setTimeout(onFinish, 1200)
+>>>>>>> origin/main
       }
     }, 0)
 
     return () => window.clearTimeout(completionTimer)
+<<<<<<< HEAD
   }, [career.health, career.rider.ftp, career.season.currentRace, elapsedSeconds, isFinished, onFinish, stage, stageDuration, strategy])
+=======
+  }, [elapsedSeconds, isFinished, onFinish, stage.number, stageDuration])
+>>>>>>> origin/main
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -755,7 +775,11 @@ function RideScreen({
           border-radius: 5px 5px 1px 1px;
           opacity: .52;
           transition: opacity .25s linear, transform .25s linear, filter .25s linear;
+<<<<<<< HEAD
           border-right: 1px solid rgba(10,10,10,.35);
+=======
+          clip-path: polygon(0 28%, 100% 0, 100% 100%, 0 100%);
+>>>>>>> origin/main
         }
 
         .gradient-block.completed { opacity: .72; filter: saturate(.15); }
@@ -1153,7 +1177,27 @@ function RideScreen({
 
       {!isFinished && (
         <>
+<<<<<<< HEAD
           <div className="live-profile-card master-stage-profile" aria-label={currentSegmentIsClimb ? "Live climb gradient profile" : "Live stage profile"}>
+=======
+          <div className="live-profile-card master-stage-profile" aria-label="Fixed master stage profile">
+            <div className="live-profile-head">
+              <div><p className="eyebrow">MASTER STAGE PROFILE</p><strong>{currentSegment.terrainLabel}</strong></div>
+              <div style={{ textAlign: 'right' }}><small>{Math.round(progress)}% COMPLETE</small><strong style={{ display: 'block' }}>{formatDistance(Math.max(stage.distanceKm - routeKm, 0), measurementSystem)} left</strong></div>
+            </div>
+            <div className="live-profile-wrap">
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ width: '100%', height: '100%', display: 'block', overflow: 'visible' }}>
+                <defs><clipPath id="masterCompletedClip"><rect x="0" y="0" width={riderMarkerX} height="100" /></clipPath></defs>
+                <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="rgba(255,106,0,.28)" />
+                <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="rgba(92,92,92,.9)" clipPath="url(#masterCompletedClip)" />
+                <polyline points={profilePoints.join(' ')} fill="none" stroke="#ff6a00" strokeWidth="2.4" vectorEffect="non-scaling-stroke" />
+                <line x1={riderMarkerX} x2={riderMarkerX} y1="4" y2="98" stroke="#fff" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
+              </svg>
+              <div style={{ position: 'absolute', left: `${riderMarkerX}%`, top: 0, transform: 'translateX(-50%)', transition: 'left .25s linear' }}>🚴</div>
+            </div>
+          </div>
+          <div className="live-profile-card" aria-label={currentSegmentIsClimb ? "Live climb gradient profile" : "Live stage profile"}>
+>>>>>>> origin/main
             {currentSegmentIsClimb ? (
               <>
                 <div className="gradient-summary">
