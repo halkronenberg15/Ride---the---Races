@@ -1,5 +1,17 @@
 export type JeanVoiceStatus = 'idle' | 'speaking' | 'unsupported'
 
+const pronunciationDictionary: Record<string, string> = {
+  Carcassonne: 'Car-ca-son', Foix: 'Fwah', Toses: 'Toe-zess', 'Les Angles': 'Lay Zong-gluh',
+  Cerdanya: 'Ser-dan-ya', Calvaire: 'Cal-vair', Quillane: 'Kee-yan', Pyrénées: 'Peer-eh-nay',
+  peloton: 'pell-uh-ton', maillot: 'my-oh', Vuelta: 'Vwell-ta', Giro: 'Jee-ro',
+}
+
+export function speechSafeText(text: string) {
+  return Object.entries(pronunciationDictionary).reduce(
+    (spoken, [display, pronunciation]) => spoken.replaceAll(display, pronunciation), text,
+  )
+}
+
 export function canUseJeanVoice(): boolean {
   return typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window
 }
@@ -24,7 +36,7 @@ export function speakAsJean(text: string, onStatusChange?: (status: JeanVoiceSta
 
   window.speechSynthesis.cancel()
 
-  const utterance = new SpeechSynthesisUtterance(text)
+  const utterance = new SpeechSynthesisUtterance(speechSafeText(text))
   utterance.rate = 0.92
   utterance.pitch = 0.86
   utterance.volume = Math.max(0, Math.min(1, volume))

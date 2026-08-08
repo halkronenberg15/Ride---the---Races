@@ -483,6 +483,67 @@ footer {
   text-align: center;
   text-transform: uppercase;
 }
+
+/* Alpha 4.0: keep cycling-computer readouts legible in both OS themes. */
+.ride-cockpit,
+.ride-cockpit h1,
+.ride-cockpit h2,
+.ride-cockpit h3,
+.ride-cockpit strong,
+.ride-complete-launch {
+  color: #f7f7f7;
+}
+
+.ride-countdown {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-content: center;
+  gap: 12px;
+  background: #080808;
+  color: #fff;
+  text-align: center;
+}
+.ride-countdown strong { color: #ff6a00; font-size: clamp(7rem, 25vw, 15rem); line-height: .8; }
+.ride-countdown small { letter-spacing: .18em; }
+.ride-support-nav { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.active-ride-bar {
+  position: fixed;
+  z-index: 1100;
+  right: 14px;
+  bottom: 14px;
+  left: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 760px;
+  margin: auto;
+  padding: 12px 14px;
+  border: 1px solid rgba(255,106,0,.65);
+  border-radius: 16px;
+  background: rgba(12,12,12,.96);
+  color: #fff;
+  box-shadow: 0 18px 50px rgba(0,0,0,.5);
+}
+.active-ride-bar small,.active-ride-bar strong { display: block; }
+.active-ride-bar button { padding: 10px 14px; background: #ff6a00; color: #111; font-weight: 900; }
+.active-ride-actions { display: flex; gap: 6px; }
+.active-ride-actions button:last-child { border: 1px solid #555; background: transparent; color: #ddd; }
+
+.ride-complete-launch {
+  margin-top: 16px;
+  padding: clamp(28px, 6vw, 54px);
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  .app:has(.ride-cockpit) {
+    width: 100%;
+    padding-top: 8px;
+  }
+}
 .text-button { background: transparent !important; border: 0 !important; color: #999 !important; padding: 5px !important; font-size: .75rem; }
 
 .onboarding-screen { min-height: 100vh; padding: 28px 18px; display: grid; place-items: center; background: radial-gradient(circle at top, #2a160a 0, #101010 42%); }
