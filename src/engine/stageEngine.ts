@@ -12,7 +12,13 @@ export type StageSnapshot = {
   segmentProgress: number
   stageProgress: number
   stageRemaining: number
+  elapsed: number
+  routeDistanceKm: number
+  riderPosition: number
+  events: StageEvent[]
 }
+
+export type StageEvent = 'stage-halfway' | 'sector-halfway' | 'final-30' | 'final-10' | 'climb-entry' | 'summit-exit' | 'finish'
 
 export type StageTimeline = {
   duration: number
@@ -31,7 +37,7 @@ export function isCooldown(segment: Pick<RideSegment, 'name' | 'type'>) {
 }
 
 /** The single source of truth for stage time, phases, and segment transitions. */
-export function createStageTimeline(segments: RideSegment[]): StageTimeline {
+export function createStageTimeline(segments: RideSegment[], routeDistanceKm?: number): StageTimeline {
   if (segments.length === 0) throw new Error('A stage requires at least one segment')
 
   const segmentStarts: number[] = []
@@ -54,6 +60,17 @@ export function createStageTimeline(segments: RideSegment[]): StageTimeline {
       const segment = segments[segmentIndex]
       const elapsedInSegment = Math.min(segment.sec, elapsed - segmentStarts[segmentIndex])
       const complete = elapsed >= duration
+      const nextRoute = segments[segmentIndex + 1]?.routeKm ?? routeDistanceKm ?? segment.routeKm
+      const distance = Math.max(0, segment.routeKm + (nextRoute - segment.routeKm) * Math.min(1, Math.max(0, elapsedInSegment / Math.max(1, segment.sec))))
+      const totalDistance = routeDistanceKm ?? Math.max(...segments.map((item) => item.routeKm), 1)
+      const events: StageEvent[] = []
+      if (Math.floor(elapsed) === Math.floor(duration / 2)) events.push('stage-halfway')
+      if (Math.floor(elapsedInSegment) === Math.floor(segment.sec / 2)) events.push('sector-halfway')
+      if (Math.ceil(segment.sec - elapsedInSegment) === 30) events.push('final-30')
+      if (Math.ceil(segment.sec - elapsedInSegment) === 10) events.push('final-10')
+      if (elapsedInSegment < 1 && isClimb(segment)) events.push('climb-entry')
+      if (elapsedInSegment < 1 && segmentIndex > 0 && isClimb(segments[segmentIndex - 1])) events.push('summit-exit')
+      if (complete) events.push('finish')
       const phase: StagePhase = complete
         ? 'complete'
         : isCooldown(segment)
@@ -74,6 +91,10 @@ export function createStageTimeline(segments: RideSegment[]): StageTimeline {
         segmentProgress: Math.min(1, Math.max(0, elapsedInSegment / Math.max(1, segment.sec))),
         stageProgress: Math.min(1, elapsed / duration),
         stageRemaining: Math.max(0, duration - elapsed),
+        elapsed,
+        routeDistanceKm: Math.min(totalDistance, distance),
+        riderPosition: Math.min(1, Math.max(0, distance / Math.max(0.001, totalDistance))),
+        events,
       }
     },
   }

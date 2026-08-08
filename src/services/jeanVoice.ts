@@ -16,6 +16,18 @@ function chooseJeanVoice(): SpeechSynthesisVoice | undefined {
   )
 }
 
+/** Visible copy stays authentic; only Jean's speech receives phonetic help. */
+export const pronunciationOverrides: Record<string, string> = {
+  'Alpe d’Huez': 'Alp doo-ez', 'Alpe d\'Huez': 'Alp doo-ez',
+  'Côte': 'Coat', 'Mont Ventoux': 'Mon Von-too', 'Tourmalet': 'Toor-ma-lay',
+  'Le Bourg-d’Oisans': 'Luh Boor dwah-zon', 'Gavarnie-Gèdre': 'Gah-var-nee Zhed-ruh',
+  'maillot jaune': 'my-oh zhohn', 'peloton': 'pell-oh-ton', 'domestique': 'doh-mess-teek',
+}
+
+export function speechText(text: string) {
+  return Object.entries(pronunciationOverrides).reduce((spoken, [label, pronunciation]) => spoken.replaceAll(label, pronunciation), text)
+}
+
 export function speakAsJean(text: string, onStatusChange?: (status: JeanVoiceStatus) => void, volume = 1): () => void {
   if (!canUseJeanVoice()) {
     onStatusChange?.('unsupported')
@@ -24,7 +36,7 @@ export function speakAsJean(text: string, onStatusChange?: (status: JeanVoiceSta
 
   window.speechSynthesis.cancel()
 
-  const utterance = new SpeechSynthesisUtterance(text)
+  const utterance = new SpeechSynthesisUtterance(speechText(text))
   utterance.rate = 0.92
   utterance.pitch = 0.86
   utterance.volume = Math.max(0, Math.min(1, volume))
