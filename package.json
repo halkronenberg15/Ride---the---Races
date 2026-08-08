@@ -1,12 +1,17 @@
 {
   "name": "ride---the---races",
   "private": true,
+<<<<<<< HEAD
+  "version": "4.0.1",
+=======
   "version": "4.0.0",
+>>>>>>> origin/main
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "test": "node --experimental-strip-types --test scripts/stage-engine.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

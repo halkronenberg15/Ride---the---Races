@@ -154,7 +154,8 @@ const buildOpeningSegments = (raw: RawStage): RawSegment[] => {
       ? 'A relaxed ceremonial procession before the Paris circuits come alive.'
       : 'Ride behind the race director’s car. Warm the legs, review the plan, and hold position. Racing has not started.',
     fixed: [
-      { at: 4, text: `Team, we have all eight riders still in the race. Today is Stage ${raw.number}, ${raw.route}. Lukas, Victor, and Jean, stay with Hal when the road climbs. Everyone else, protect position and cover the early moves.` },
+      { at: 4, text: 'Okay team, click in.' },
+      { at: 18, text: `Stage ${raw.number}, ${raw.route}. We ride the plan and stay together through the rollout.` },
       { at: 75, text: 'Use this rollout to warm the legs. Keep the effort easy and the cadence smooth.' },
       { at: 165, text: raw.note.length > 150 ? raw.note.slice(0, 147) + '...' : raw.note },
       { at: raw.number === 21 ? 330 : 240, text: 'Kilometre zero is approaching. Check your position and prepare for the flag.' },

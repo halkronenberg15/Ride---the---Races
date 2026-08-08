@@ -14,13 +14,19 @@ import OnboardingScreen from './screens/OnboardingScreen'
 import SettingsScreen from './screens/SettingsScreen'
 import { useEffect } from 'react'
 import FinaleScreen from './screens/FinaleScreen'
+import { getRaceStage } from './data/raceStages'
 
 type Screen = 'hq' | 'teamBus' | 'tactics' | 'ride' | 'restDay' | 'rideData' | 'health' | 'profile' | 'settings' | 'finale'
 
 function RideTheRacesApp() {
-  const { career, setCurrentStage, completeStage } = useCareer()
+  const { career, setCurrentStage, completeStage, addRide } = useCareer()
   const [screen, setScreen] = useState<Screen>('hq')
-  const [raceStrategy, setRaceStrategy] = useState<RaceStrategy>('Balanced')
+  const restoredRide = (() => {
+    try { return JSON.parse(localStorage.getItem('ride-the-races-active-v1') ?? 'null') as { strategy?: RaceStrategy } | null } catch { return null }
+  })()
+  const [raceStrategy, setRaceStrategy] = useState<RaceStrategy>(restoredRide?.strategy ?? 'Balanced')
+  const [rideActive, setRideActive] = useState(Boolean(restoredRide))
+  const [activeRideStatus, setActiveRideStatus] = useState({ sector: 'Preparing stage', elapsedSeconds: 0, remainingSeconds: 0 })
 
   useEffect(() => {
     const root = document.documentElement
@@ -32,9 +38,15 @@ function RideTheRacesApp() {
 
   if (!career.onboardingComplete) return <OnboardingScreen />
 
-  function handleFinishRide() {
+  function handleFinishRide(ride: import('./types/career').RideMetricEntry) {
     const stage = career.season.currentStage
+    addRide(ride)
     completeStage(stage)
+<<<<<<< HEAD
+    setRideActive(false)
+    localStorage.removeItem('ride-the-races-active-v1')
+=======
+>>>>>>> origin/main
     setScreen('rideData')
   }
 
@@ -71,18 +83,34 @@ function RideTheRacesApp() {
           onBack={() => setScreen('teamBus')}
           onStartRide={(strategy) => {
             setRaceStrategy(strategy)
+            setRideActive(true)
             setScreen('ride')
           }}
         />
       )}
 
-      {screen === 'ride' && (
-        <RideScreen
+      {rideActive && (
+        <div hidden={screen !== 'ride'}>
+          <RideScreen
           stageNumber={career.season.currentStage}
           strategy={raceStrategy}
           onBack={() => setScreen('tactics')}
           onFinish={handleFinishRide}
-        />
+          onNavigate={setScreen}
+          onStatus={setActiveRideStatus}
+          onEnd={() => { localStorage.removeItem('ride-the-races-active-v1'); setRideActive(false); setScreen('hq') }}
+          />
+        </div>
+      )}
+
+      {rideActive && screen !== 'ride' && (
+        <aside className="active-ride-bar">
+          <div><small>ACTIVE RIDE • STAGE {career.season.currentStage} • {Math.floor(activeRideStatus.elapsedSeconds / 60)}:{String(Math.floor(activeRideStatus.elapsedSeconds % 60)).padStart(2, '0')}</small><strong>{getRaceStage(career.season.currentStage).route} • {activeRideStatus.sector}</strong></div>
+          <div className="active-ride-actions">
+            <button type="button" onClick={() => setScreen('ride')}>Resume Stage</button>
+            <button type="button" onClick={() => { if (window.confirm('End this stage? Active progress will be discarded.')) { localStorage.removeItem('ride-the-races-active-v1'); setRideActive(false) } }}>End Stage</button>
+          </div>
+        </aside>
       )}
 
       {screen === 'finale' && (
@@ -95,7 +123,11 @@ function RideTheRacesApp() {
           onReviewStages={() => setScreen('teamBus')}
         />
       )}
+<<<<<<< HEAD
+      <footer className="build-footer">Ride the Races • Alpha 4.0.1 | Synchronized Stage Engine</footer>
+=======
       <footer className="build-footer">Ride the Races • Alpha 4.0 | Master Stage Engine</footer>
+>>>>>>> origin/main
     </main>
   )
 }

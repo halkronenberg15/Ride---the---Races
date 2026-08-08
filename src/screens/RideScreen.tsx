@@ -1,17 +1,25 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { getRaceStage } from '../data/raceStages'
-import { halRider } from '../game/rider'
 import type { RaceStrategy } from '../types/tactics'
 import { adaptSegments } from '../engine/adaptiveRide'
 import { useCareer } from '../state/CareerContext'
 import { formatDistance, formatElevation } from '../utils/units'
+<<<<<<< HEAD
+import type { RideMetricEntry } from '../types/career'
+import { jeanGear, jeanMode, selectJeanLine } from '../services/adaptiveJean'
+import { createStageTimeline, gradientToResistance, isClimb, parseResistanceEnvelope, PRE_RIDE_COUNTDOWN_SECONDS } from '../engine/stageEngine'
+=======
 import { createStageTimeline, isClimb } from '../engine/stageEngine'
+>>>>>>> origin/main
 
 type RideScreenProps = {
   stageNumber: number
   strategy: RaceStrategy
   onBack: () => void
-  onFinish: () => void
+  onFinish: (ride: RideMetricEntry) => void
+  onNavigate: (screen: 'hq' | 'teamBus' | 'rideData' | 'health' | 'profile' | 'settings') => void
+  onStatus: (status: { sector: string; elapsedSeconds: number; remainingSeconds: number }) => void
+  onEnd: () => void
 }
 
 function formatTime(totalSeconds: number) {
@@ -76,21 +84,42 @@ type WakeLockSentinelLike = {
   ) => void
 }
 
+type PersistedRide = { stageNumber: number; strategy: RaceStrategy; elapsedSeconds: number; isRunning: boolean; savedAt: number }
+
+function restoreRide(stageNumber: number, strategy: RaceStrategy): PersistedRide | null {
+  try {
+    const saved = JSON.parse(localStorage.getItem('ride-the-races-active-v1') ?? 'null') as PersistedRide | null
+    if (!saved || saved.stageNumber !== stageNumber || saved.strategy !== strategy) return null
+    return { ...saved, elapsedSeconds: saved.elapsedSeconds + (saved.isRunning ? (Date.now() - saved.savedAt) / 1000 : 0) }
+  } catch { return null }
+}
+
 function RideScreen({
   stageNumber,
   strategy,
   onBack,
   onFinish,
+  onNavigate,
+  onStatus,
+  onEnd,
 }: RideScreenProps) {
   const { career } = useCareer()
   const measurementSystem = career.settings.measurementSystem
+  const restoredRide = useMemo(() => restoreRide(stageNumber, strategy), [stageNumber, strategy])
   const stage = useMemo(() => getRaceStage(stageNumber), [stageNumber])
   const segments = useMemo(() => adaptSegments(stage.segments, career.rider.ftp, strategy), [stage, career.rider.ftp, strategy])
   const profilePoints = stage.profilePoints
   const timeline = useMemo(() => createStageTimeline(segments), [segments])
+<<<<<<< HEAD
+  const [elapsedSeconds, setElapsedSeconds] = useState(restoredRide?.elapsedSeconds ?? 0)
+  const [isRunning, setIsRunning] = useState(restoredRide?.isRunning ?? false)
+=======
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [isRunning, setIsRunning] = useState(false)
+>>>>>>> origin/main
   const [isFinished, setIsFinished] = useState(false)
+  const [countdown, setCountdown] = useState<number | null>(null)
+  const [mountedAt] = useState(() => Date.now())
   const [radioText, setRadioText] = useState(
     'Radio connected. Press Start Ride when you are ready.',
   )
@@ -101,12 +130,13 @@ function RideScreen({
   >('inactive')
 
   const lastSpokenCue = useRef('')
+  const recentJeanLines = useRef<string[]>([])
   const lastRandomCueTime = useRef(-999)
   const nextRandomCueTime = useRef(50)
   const previousSegmentIndex = useRef(0)
   const segmentCardTimer = useRef<number | null>(null)
-  const accumulatedElapsedRef = useRef(0)
-  const runStartedAtRef = useRef<number | null>(null)
+  const accumulatedElapsedRef = useRef(restoredRide?.elapsedSeconds ?? 0)
+  const runStartedAtRef = useRef<number | null>(restoredRide?.isRunning ? mountedAt : null)
   const wakeLockRef = useRef<WakeLockSentinelLike | null>(
     null,
   )
@@ -132,15 +162,12 @@ function RideScreen({
 
   const progress = engine.stageProgress * 100
 
-  const routeKm = Math.min(
-    stage.distanceKm,
-    (stage.distanceKm * progress) / 100,
-  )
+  const routeKm = engine.routeKm
 
   const stageRemaining = engine.stageRemaining
 
   const riderMarkerX = Math.min(
-    Math.max(progress, 1),
+    Math.max(engine.routePosition * 100, 1),
     99,
   )
 
@@ -188,6 +215,21 @@ function RideScreen({
     (nextSegment?.routeKm ?? stage.distanceKm) - currentSegment.routeKm,
   )
   const summitDistanceKm = climbDistanceKm * (1 - currentSegmentProgress)
+<<<<<<< HEAD
+  const resistanceEnvelope = parseResistanceEnvelope(currentSegment.resistance)
+  const roadResistance = gradientToResistance(activeGradient, resistanceEnvelope)
+  const nextRoadResistance = gradientToResistance(nextGradient, resistanceEnvelope)
+  const resistanceChange = nextRoadResistance.midpoint - roadResistance.midpoint
+  const sectionProgress = gradientBlocks.length
+    ? (currentSegmentProgress * gradientBlocks.length) % 1
+    : 0
+  const resistanceWarning = sectionProgress > 0.8 && resistanceChange !== 0
+    ? resistanceChange > 0
+      ? `Road steepens ahead • add ${Math.abs(resistanceChange)} point${Math.abs(resistanceChange) === 1 ? '' : 's'}`
+      : `Gradient backs off • take ${Math.abs(resistanceChange)} point${Math.abs(resistanceChange) === 1 ? '' : 's'} out`
+    : null
+=======
+>>>>>>> origin/main
 
   function speak(text: string) {
     setRadioText(text)
@@ -293,6 +335,13 @@ function RideScreen({
   }, [isRunning])
 
   useEffect(() => {
+    if (isFinished || elapsedSeconds <= 0) return
+    localStorage.setItem('ride-the-races-active-v1', JSON.stringify({
+      stageNumber, strategy, elapsedSeconds, isRunning, savedAt: Date.now(),
+    } satisfies PersistedRide))
+  }, [elapsedSeconds, isFinished, isRunning, stageNumber, strategy])
+
+  useEffect(() => {
     if (!isRunning || isFinished) {
       return
     }
@@ -309,6 +358,8 @@ function RideScreen({
       setElapsedSeconds(
         Math.min(stageDuration, liveElapsed),
       )
+      const liveSnapshot = timeline.snapshot(liveElapsed)
+      onStatus({ sector: liveSnapshot.segment.name, elapsedSeconds: liveElapsed, remainingSeconds: liveSnapshot.stageRemaining })
     }
 
     updateClock()
@@ -317,7 +368,7 @@ function RideScreen({
     return () => {
       window.clearInterval(timer)
     }
-  }, [isRunning, isFinished, stageDuration])
+  }, [isRunning, isFinished, onStatus, stageDuration, timeline])
 
   useEffect(() => {
     if (!isRunning || isFinished) {
@@ -327,6 +378,28 @@ function RideScreen({
     const secondInSegment = Math.floor(
       segmentData.elapsedInSegment,
     )
+
+    const mode = jeanMode(currentSegment, engine)
+    const gear = jeanGear(mode, engine)
+    const engineEvent = engine.events.includes('final-10')
+      ? 'final-10'
+      : engine.events.includes('final-30')
+        ? 'final-30'
+        : engine.events.includes('sector-halfway')
+          ? 'halfway'
+          : null
+
+    if (engineEvent) {
+      const cueKey = `${segmentData.index}-${engineEvent}`
+      if (lastSpokenCue.current !== cueKey) {
+        const line = selectJeanLine(mode, gear, stage.number + segmentData.index + secondInSegment, recentJeanLines.current)
+        lastSpokenCue.current = cueKey
+        recentJeanLines.current = [...recentJeanLines.current.slice(-3), line]
+        lastRandomCueTime.current = secondInSegment
+        speak(line)
+      }
+      return
+    }
 
     const fixedCue = currentSegment.fixed?.find(
       (cue) => cue.at === secondInSegment,
@@ -366,10 +439,12 @@ function RideScreen({
     }
   }, [
     currentSegment,
+    engine,
     isFinished,
     isRunning,
     segmentData.elapsedInSegment,
     segmentData.index,
+    stage.number,
   ])
 
   useEffect(() => {
@@ -422,12 +497,37 @@ function RideScreen({
       )
       if (!didLaunchMetrics.current) {
         didLaunchMetrics.current = true
+<<<<<<< HEAD
+        const completedRide: RideMetricEntry = {
+          id: crypto.randomUUID(),
+          date: new Date().toISOString(),
+          source: 'Manual',
+          durationMinutes: Number((elapsedSeconds / 60).toFixed(1)),
+          actualDurationSeconds: Math.round(elapsedSeconds),
+          plannedDurationMinutes: Math.round(stageDuration / 60),
+          distanceKm: stage.distanceKm,
+          elevationM: stage.elevationM,
+          race: career.season.currentRace,
+          stageNumber: stage.number,
+          stageName: stage.route,
+          tactic: strategy,
+          ftp: career.rider.ftp,
+          recovery: career.health,
+          notes: 'Automatically recorded by the Ride the Races stage engine.',
+        }
+        window.setTimeout(() => onFinish(completedRide), 1200)
+=======
         window.setTimeout(onFinish, 1200)
+>>>>>>> origin/main
       }
     }, 0)
 
     return () => window.clearTimeout(completionTimer)
+<<<<<<< HEAD
+  }, [career.health, career.rider.ftp, career.season.currentRace, elapsedSeconds, isFinished, onFinish, stage, stageDuration, strategy])
+=======
   }, [elapsedSeconds, isFinished, onFinish, stage.number, stageDuration])
+>>>>>>> origin/main
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -466,7 +566,25 @@ function RideScreen({
     }
   }, [])
 
-  function handleStart() {
+  useEffect(() => {
+    if (countdown === null) return
+    if (countdown === 0) {
+      const startTimer = window.setTimeout(() => {
+        setCountdown(null)
+        accumulatedElapsedRef.current = 0
+        runStartedAtRef.current = Date.now()
+        setIsRunning(true)
+        void requestWakeLock()
+        showCurrentSegmentCard()
+        setRadioText('Stage clock running. Jean will join the neutral rollout shortly.')
+      }, 250)
+      return () => window.clearTimeout(startTimer)
+    }
+    const countdownTimer = window.setTimeout(() => setCountdown((value) => value === null ? null : value - 1), 1000)
+    return () => window.clearTimeout(countdownTimer)
+  }, [countdown])
+
+  function beginRide() {
     if (isFinished) {
       return
     }
@@ -476,16 +594,18 @@ function RideScreen({
     setIsRunning(true)
     void requestWakeLock()
 
+    speak(
+      `Radio reconnected. ${currentSegment.name}. ${currentSegment.description}`,
+    )
+  }
+
+  function handleStart() {
     if (elapsedSeconds === 0) {
-      showCurrentSegmentCard()
-      speak(
-        `Radio check. Rider fifteen, ${halRider.name}, Team Loriot. Stage ${stage.number}, ${stage.route}, begins now.`,
-      )
-    } else {
-      speak(
-        `Radio reconnected. ${currentSegment.name}. ${currentSegment.description}`,
-      )
+      setCountdown(PRE_RIDE_COUNTDOWN_SECONDS)
+      setRadioText('Get your trackers ready. Stage clock starts at zero.')
+      return
     }
+    beginRide()
   }
 
   function handlePause() {
@@ -642,7 +762,7 @@ function RideScreen({
         .gradient-blocks {
           display: flex;
           align-items: flex-end;
-          gap: 3px;
+          gap: 0;
           height: 112px;
           padding: 8px 2px 0;
           border-bottom: 3px solid rgba(255,255,255,0.5);
@@ -655,7 +775,11 @@ function RideScreen({
           border-radius: 5px 5px 1px 1px;
           opacity: .52;
           transition: opacity .25s linear, transform .25s linear, filter .25s linear;
+<<<<<<< HEAD
+          border-right: 1px solid rgba(10,10,10,.35);
+=======
           clip-path: polygon(0 28%, 100% 0, 100% 100%, 0 100%);
+>>>>>>> origin/main
         }
 
         .gradient-block.completed { opacity: .72; filter: saturate(.15); }
@@ -669,7 +793,7 @@ function RideScreen({
 
         .gradient-rider {
           position: absolute;
-          left: 50%;
+          left: 0;
           top: -30px;
           transform: translateX(-50%);
           font-size: 1.35rem;
@@ -1008,11 +1132,23 @@ function RideScreen({
         </div>
       )}
 
+      {countdown !== null && (
+        <div className="ride-countdown" role="timer" aria-live="polite">
+          <small>START YOUR TRACKERS</small>
+          <strong>{countdown}</strong>
+          <span>Stage clock begins at zero</span>
+        </div>
+      )}
+
       <div className="ride-topbar">
         <button type="button" onClick={handleBack}>
           ← Tactics
         </button>
-
+        <nav className="ride-support-nav" aria-label="Ride support screens">
+          <button type="button" onClick={() => onNavigate('hq')}>HQ</button>
+          <button type="button" onClick={() => onNavigate('health')}>Recovery</button>
+          <button type="button" onClick={() => onNavigate('settings')}>Settings</button>
+        </nav>
       </div>
 
       <header
@@ -1041,6 +1177,9 @@ function RideScreen({
 
       {!isFinished && (
         <>
+<<<<<<< HEAD
+          <div className="live-profile-card master-stage-profile" aria-label={currentSegmentIsClimb ? "Live climb gradient profile" : "Live stage profile"}>
+=======
           <div className="live-profile-card master-stage-profile" aria-label="Fixed master stage profile">
             <div className="live-profile-head">
               <div><p className="eyebrow">MASTER STAGE PROFILE</p><strong>{currentSegment.terrainLabel}</strong></div>
@@ -1058,6 +1197,7 @@ function RideScreen({
             </div>
           </div>
           <div className="live-profile-card" aria-label={currentSegmentIsClimb ? "Live climb gradient profile" : "Live stage profile"}>
+>>>>>>> origin/main
             {currentSegmentIsClimb ? (
               <>
                 <div className="gradient-summary">
@@ -1100,6 +1240,7 @@ function RideScreen({
                   <span>{Math.round(currentSegmentProgress * 100)}% of climb complete</span>
                   <strong>{formatDistance(summitDistanceKm, measurementSystem)} • {formatTime(segmentRemaining)} to summit</strong>
                 </div>
+                {resistanceWarning && <div className="radio-strip"><strong>{resistanceWarning}</strong></div>}
               </>
             ) : (
               <>
@@ -1196,9 +1337,9 @@ function RideScreen({
               </div>
 
               <div className="target-tile">
-                <small>RESISTANCE</small>
+                <small>{currentSegmentIsClimb ? 'ROAD FEEL' : 'RESISTANCE'}</small>
                 <strong>
-                  {currentSegment.resistance}
+                  {currentSegmentIsClimb ? `${roadResistance.min}–${roadResistance.max}%` : currentSegment.resistance}
                 </strong>
               </div>
             </div>
@@ -1352,6 +1493,15 @@ function RideScreen({
                 style={{ width: '100%', marginTop: '10px' }}
               >
                 Restart Stage
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm('End this stage? Your active ride progress will be discarded.')) onEnd()
+                }}
+                style={{ width: '100%', marginTop: '10px' }}
+              >
+                End Stage
               </button>
             </div>
           )}
