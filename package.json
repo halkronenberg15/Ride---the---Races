@@ -1,11 +1,12 @@
 {
   "name": "ride---the---races",
   "private": true,
-  "version": "4.0.0",
+  "version": "4.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "test": "node --experimental-strip-types --test src/**/*.test.ts",
     "lint": "eslint .",
     "preview": "vite preview"
   },

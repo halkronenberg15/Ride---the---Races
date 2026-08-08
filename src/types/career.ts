@@ -25,6 +25,14 @@ export type RideMetricEntry = {
   elevationM?: number
   calories?: number
   notes?: string
+  race?: string
+  stageNumber?: number
+  stageName?: string
+  plannedDurationSeconds?: number
+  actualEngineDurationSeconds?: number
+  tactic?: string
+  ftp?: number
+  recovery?: HealthEntry
 }
 
 export type HealthEntry = {
