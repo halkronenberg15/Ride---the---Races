@@ -485,6 +485,8 @@ footer {
 }
 
 /* Alpha 4.0: keep cycling-computer readouts legible in both OS themes. */
+.active-ride-bar { position: sticky; top: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 9px 16px; background: #f46a00; color: #111; box-shadow: 0 8px 24px #0008; }
+.active-ride-bar button { padding: 7px 12px; background: #161616; color: white; }
 .ride-cockpit,
 .ride-cockpit h1,
 .ride-cockpit h2,

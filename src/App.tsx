@@ -14,13 +14,18 @@ import OnboardingScreen from './screens/OnboardingScreen'
 import SettingsScreen from './screens/SettingsScreen'
 import { useEffect } from 'react'
 import FinaleScreen from './screens/FinaleScreen'
+import { ActiveRideProvider, useActiveRide } from './state/ActiveRideContext'
+import { getRaceStage } from './data/raceStages'
+import { adaptSegments } from './engine/adaptiveRide'
+import { createStageTimeline } from './engine/stageEngine'
 
 type Screen = 'hq' | 'teamBus' | 'tactics' | 'ride' | 'restDay' | 'rideData' | 'health' | 'profile' | 'settings' | 'finale'
 
 function RideTheRacesApp() {
-  const { career, setCurrentStage, completeStage } = useCareer()
+  const { career, setCurrentStage, completeStage, addRide } = useCareer()
   const [screen, setScreen] = useState<Screen>('hq')
   const [raceStrategy, setRaceStrategy] = useState<RaceStrategy>('Balanced')
+  const { ride, elapsed, end } = useActiveRide()
 
   useEffect(() => {
     const root = document.documentElement
@@ -33,7 +38,13 @@ function RideTheRacesApp() {
   if (!career.onboardingComplete) return <OnboardingScreen />
 
   function handleFinishRide() {
-    const stage = career.season.currentStage
+    const stage = ride?.stageNumber ?? career.season.currentStage
+    if (ride) {
+      const stageData = getRaceStage(ride.stageNumber)
+      const plannedDurationSeconds = createStageTimeline(adaptSegments(stageData.segments, career.rider.ftp, ride.strategy), stageData.distanceKm).duration
+      addRide({ id: crypto.randomUUID(), date: new Date().toISOString(), source: 'Manual', durationMinutes: Math.round(elapsed / 60), distanceKm: stageData.distanceKm, race: career.season.currentRace, stageNumber: ride.stageNumber, stageName: stageData.title, plannedDurationSeconds, actualEngineDurationSeconds: Math.round(elapsed), tactic: ride.strategy, ftp: career.rider.ftp, recovery: career.health })
+    }
+    end()
     completeStage(stage)
     setScreen('rideData')
   }
@@ -76,10 +87,13 @@ function RideTheRacesApp() {
         />
       )}
 
+      {ride && screen !== 'ride' && (
+        <aside className="active-ride-bar"><strong>● ACTIVE RIDE · Stage {ride.stageNumber} · {Math.floor(elapsed / 60)}:{String(Math.floor(elapsed % 60)).padStart(2, '0')}</strong><button type="button" onClick={() => setScreen('ride')}>Resume Stage</button><button type="button" onClick={() => { if (window.confirm('End this active stage? This cannot be undone.')) end() }}>End Stage</button></aside>
+      )}
       {screen === 'ride' && (
         <RideScreen
-          stageNumber={career.season.currentStage}
-          strategy={raceStrategy}
+          stageNumber={ride?.stageNumber ?? career.season.currentStage}
+          strategy={ride?.strategy ?? raceStrategy}
           onBack={() => setScreen('tactics')}
           onFinish={handleFinishRide}
         />
@@ -95,13 +109,13 @@ function RideTheRacesApp() {
           onReviewStages={() => setScreen('teamBus')}
         />
       )}
-      <footer className="build-footer">Ride the Races • Alpha 4.0 | Master Stage Engine</footer>
+      <footer className="build-footer">Ride the Races • Alpha 4.0.1 | Synchronized Stage Engine</footer>
     </main>
   )
 }
 
 function App() {
-  return <CareerProvider><RideTheRacesApp /></CareerProvider>
+  return <CareerProvider><ActiveRideProvider><RideTheRacesApp /></ActiveRideProvider></CareerProvider>
 }
 
 export default App
