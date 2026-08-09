@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import packageMetadata from '../package.json'
 import './App.css'
 import TeamHQScreen from './screens/TeamHQScreen'
 import TeamBusScreen from './screens/TeamBusScreen'
@@ -109,7 +110,7 @@ function RideTheRacesApp() {
           onReviewStages={() => setScreen('teamBus')}
         />
       )}
-      <footer className="build-footer">Ride the Races • Alpha 4.0.1 | Synchronized Stage Engine</footer>
+      <footer className="build-footer">Ride the Races • Alpha {packageMetadata.version} | Synchronized Stage Engine</footer>
     </main>
   )
 }
