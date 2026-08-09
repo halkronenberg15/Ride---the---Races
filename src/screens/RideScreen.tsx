@@ -1,11 +1,16 @@
+/* eslint-disable react-hooks/exhaustive-deps -- radio and wake-lock callbacks intentionally read the live cockpit closure without restarting timed effects. */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { getRaceStage } from '../data/raceStages'
-import { halRider } from '../game/rider'
 import type { RaceStrategy } from '../types/tactics'
 import { adaptSegments } from '../engine/adaptiveRide'
 import { useCareer } from '../state/CareerContext'
 import { formatDistance, formatElevation } from '../utils/units'
 import { createStageTimeline, isClimb } from '../engine/stageEngine'
+import { useActiveRide } from '../state/ActiveRideContext'
+
+import { jeanCue, jeanEventMessage, jeanMode, selectJeanMessage, type JeanMessage } from '../engine/jeanDirector'
+import { speakAsJean } from '../services/jeanVoice'
+import { CLICK_IN_CUE, PRE_RIDE_COUNTDOWN } from '../engine/preRide'
 
 type RideScreenProps = {
   stageNumber: number
@@ -25,48 +30,6 @@ function formatTime(totalSeconds: number) {
 }
 
 
-type GradientBlock = {
-  gradient: number
-  label: string
-}
-
-function buildGradientBlocks(
-  stageNumber: number,
-  segmentIndex: number,
-  segmentName: string,
-  segmentType: string,
-  zone: string,
-  durationSeconds: number,
-): GradientBlock[] {
-  const seedText = `${stageNumber}-${segmentIndex}-${segmentName}-${segmentType}`
-  let seed = 0
-  for (let index = 0; index < seedText.length; index += 1) {
-    seed = (seed * 31 + seedText.charCodeAt(index)) >>> 0
-  }
-
-  const blockCount = Math.max(5, Math.min(10, Math.round(durationSeconds / 90)))
-  const zoneNumber = Number(zone.match(/Z(\d)/i)?.[1] ?? 3)
-  const base = zoneNumber >= 5 ? 8.6 : zoneNumber === 4 ? 7.4 : zoneNumber === 3 ? 6.2 : 5.2
-
-  return Array.from({ length: blockCount }, (_, index) => {
-    seed = (seed * 1664525 + 1013904223) >>> 0
-    const random = seed / 4294967296
-    const wave = Math.sin((index / Math.max(1, blockCount - 1)) * Math.PI * 2) * 1.15
-    const finishKick = index >= blockCount - 2 ? 0.9 : 0
-    const gradient = Math.max(2.8, Math.min(13.5, base + (random - 0.5) * 3.2 + wave + finishKick))
-    return { gradient: Number(gradient.toFixed(1)), label: `${index + 1}` }
-  })
-}
-
-function gradientColor(gradient: number) {
-  if (gradient < 4) return '#55b96f'
-  if (gradient < 6) return '#d8d34a'
-  if (gradient < 8) return '#f0a13a'
-  if (gradient < 10) return '#ef5b3f'
-  return '#c9233d'
-}
-
-
 type WakeLockSentinelLike = {
   released: boolean
   release: () => Promise<void>
@@ -74,6 +37,13 @@ type WakeLockSentinelLike = {
     type: 'release',
     listener: () => void,
   ) => void
+}
+
+function gradientColor(gradient: number) {
+  if (gradient < 3) return '#34a853'
+  if (gradient < 6) return '#2684d8'
+  if (gradient < 9) return '#d93636'
+  return '#111111'
 }
 
 function RideScreen({
@@ -87,9 +57,11 @@ function RideScreen({
   const stage = useMemo(() => getRaceStage(stageNumber), [stageNumber])
   const segments = useMemo(() => adaptSegments(stage.segments, career.rider.ftp, strategy), [stage, career.rider.ftp, strategy])
   const profilePoints = stage.profilePoints
-  const timeline = useMemo(() => createStageTimeline(segments), [segments])
-  const [elapsedSeconds, setElapsedSeconds] = useState(0)
-  const [isRunning, setIsRunning] = useState(false)
+  const activeRide = useActiveRide()
+  const timeline = useMemo(() => createStageTimeline(segments, stage.distanceKm), [segments, stage.distanceKm])
+  const elapsedSeconds = activeRide.ride?.stageNumber === stageNumber ? activeRide.elapsed : 0
+  const isRunning = activeRide.ride?.stageNumber === stageNumber && activeRide.ride.runningSince !== null
+  const [countdown, setCountdown] = useState<number | null>(null)
   const [isFinished, setIsFinished] = useState(false)
   const [radioText, setRadioText] = useState(
     'Radio connected. Press Start Ride when you are ready.',
@@ -105,13 +77,16 @@ function RideScreen({
   const nextRandomCueTime = useRef(50)
   const previousSegmentIndex = useRef(0)
   const segmentCardTimer = useRef<number | null>(null)
-  const accumulatedElapsedRef = useRef(0)
-  const runStartedAtRef = useRef<number | null>(null)
   const wakeLockRef = useRef<WakeLockSentinelLike | null>(
     null,
   )
   const isRunningRef = useRef(false)
   const didLaunchMetrics = useRef(false)
+  const currentJeanMessage = useRef<JeanMessage | null>(null)
+  const spokenJeanEvents = useRef(new Set<string>())
+  const pauseHoldTimer = useRef<number | null>(null)
+  const activeSectorRef = useRef(0)
+  const [pauseHolding, setPauseHolding] = useState(false)
 
   const stageDuration = timeline.duration
 
@@ -132,90 +107,31 @@ function RideScreen({
 
   const progress = engine.stageProgress * 100
 
-  const routeKm = Math.min(
-    stage.distanceKm,
-    (stage.distanceKm * progress) / 100,
-  )
+  const routeKm = engine.routeDistanceKm
 
   const stageRemaining = engine.stageRemaining
 
-  const riderMarkerX = Math.min(
-    Math.max(progress, 1),
-    99,
-  )
-
-  const currentSegmentProgress = engine.segmentProgress
+  const riderMarkerX = Math.min(Math.max(engine.riderPosition * 100, 1), 99)
 
   const currentSegmentIsClimb = isClimb(currentSegment)
 
-  const gradientBlocks = useMemo(
-    () =>
-      currentSegmentIsClimb
-        ? buildGradientBlocks(
-            stage.number,
-            segmentData.index,
-            currentSegment.name,
-            currentSegment.type,
-            currentSegment.zone,
-            currentSegment.sec,
-          )
-        : [],
-    [
-      currentSegment.name,
-      currentSegment.sec,
-      currentSegment.type,
-      currentSegment.zone,
-      currentSegmentIsClimb,
-      segmentData.index,
-      stage.number,
-    ],
-  )
-
-  const activeGradientIndex = gradientBlocks.length
-    ? Math.min(
-        gradientBlocks.length - 1,
-        Math.floor(currentSegmentProgress * gradientBlocks.length),
-      )
-    : 0
-
-  const activeGradient = gradientBlocks[activeGradientIndex]?.gradient ?? 0
+  const gradientBlocks = engine.gradientSections
+  const activeGradientIndex = engine.activeGradientIndex
+  const activeGradient = engine.currentGradient ?? 0
+  const nextGradient = engine.nextGradient ?? activeGradient
   const climbAverage = gradientBlocks.length
     ? gradientBlocks.reduce((sum, block) => sum + block.gradient, 0) / gradientBlocks.length
     : 0
-  const nextGradient = gradientBlocks[Math.min(activeGradientIndex + 1, gradientBlocks.length - 1)]?.gradient ?? activeGradient
-  const climbDistanceKm = Math.max(
-    0.5,
-    (nextSegment?.routeKm ?? stage.distanceKm) - currentSegment.routeKm,
-  )
-  const summitDistanceKm = climbDistanceKm * (1 - currentSegmentProgress)
+  const climbDistanceKm = Math.max(0.5, (nextSegment?.routeKm ?? stage.distanceKm) - currentSegment.routeKm)
+  const summitDistanceKm = climbDistanceKm * (1 - engine.climbProgress)
+  const totalGradient = gradientBlocks.reduce((sum, section) => sum + section.gradient, 0) || 1
+  const completedGradient = gradientBlocks.slice(0, activeGradientIndex).reduce((sum, section) => sum + section.gradient, 0)
+  const climbRiderBottom = 12 + 62 * ((completedGradient + activeGradient * engine.activeGradientProgress) / totalGradient)
+  const mode = jeanMode(currentSegment, isFinished)
 
   function speak(text: string) {
     setRadioText(text)
-
-    if (!('speechSynthesis' in window)) {
-      return
-    }
-
-    window.speechSynthesis.cancel()
-
-    const utterance = new SpeechSynthesisUtterance(text)
-    const voices = window.speechSynthesis.getVoices()
-
-    utterance.voice =
-      voices.find(
-        (voice) =>
-          /en-GB/i.test(voice.lang) &&
-          /daniel|arthur|male/i.test(voice.name),
-      ) ??
-      voices.find((voice) => /en-GB/i.test(voice.lang)) ??
-      voices.find((voice) => /en-US/i.test(voice.lang)) ??
-      null
-
-    utterance.rate = 0.95
-    utterance.pitch = 0.92
-    utterance.volume = 1
-
-    window.speechSynthesis.speak(utterance)
+    speakAsJean(text, undefined, career.settings.jeanVoiceVolume)
   }
 
   function showCurrentSegmentCard() {
@@ -293,113 +209,38 @@ function RideScreen({
   }, [isRunning])
 
   useEffect(() => {
-    if (!isRunning || isFinished) {
+    if (!isRunning || isFinished) return
+    if (previousSegmentIndex.current !== engine.segmentIndex) {
+      previousSegmentIndex.current = engine.segmentIndex
+      currentJeanMessage.current = null
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel()
+      showCurrentSegmentCard()
+    }
+    activeSectorRef.current = engine.segmentIndex
+    let selected: JeanMessage | null = null
+    const candidates: JeanMessage[] = []
+    for (const event of engine.events) {
+      const incoming = jeanEventMessage(mode, event, engine.segmentIndex, engine.currentGradient, engine.nextGradient)
+      if (!incoming || spokenJeanEvents.current.has(incoming.id)) continue
+      candidates.push(incoming)
+      selected = selectJeanMessage(selected, incoming, engine.segmentIndex)
+    }
+    if (selected) {
+      currentJeanMessage.current = selected
+      candidates.forEach((message) => spokenJeanEvents.current.add(message.id))
+      const sector = selected.sectorIndex
+      window.setTimeout(() => { if (activeSectorRef.current === sector) speak(selected.text) }, 0)
       return
     }
-
-    const updateClock = () => {
-      if (runStartedAtRef.current === null) {
-        return
-      }
-
-      const liveElapsed =
-        accumulatedElapsedRef.current +
-        (Date.now() - runStartedAtRef.current) / 1000
-
-      setElapsedSeconds(
-        Math.min(stageDuration, liveElapsed),
-      )
+    const second = Math.floor(engine.elapsedInSegment)
+    if (second >= nextRandomCueTime.current && engine.segmentRemaining > 45) {
+      const line = jeanCue(mode, undefined, [radioText], second)
+      const sector = engine.segmentIndex
+      window.setTimeout(() => { if (activeSectorRef.current === sector) speak(line) }, 0)
+      lastRandomCueTime.current = second
+      nextRandomCueTime.current = second + 70 + (second % 31)
     }
-
-    updateClock()
-    const timer = window.setInterval(updateClock, 250)
-
-    return () => {
-      window.clearInterval(timer)
-    }
-  }, [isRunning, isFinished, stageDuration])
-
-  useEffect(() => {
-    if (!isRunning || isFinished) {
-      return
-    }
-
-    const secondInSegment = Math.floor(
-      segmentData.elapsedInSegment,
-    )
-
-    const fixedCue = currentSegment.fixed?.find(
-      (cue) => cue.at === secondInSegment,
-    )
-
-    if (fixedCue) {
-      const cueKey = `${segmentData.index}-${fixedCue.at}`
-
-      if (lastSpokenCue.current !== cueKey) {
-        lastSpokenCue.current = cueKey
-        lastRandomCueTime.current = secondInSegment
-        speak(fixedCue.text)
-      }
-
-      return
-    }
-
-    const randomCues = currentSegment.random ?? []
-
-    if (
-      randomCues.length > 0 &&
-      secondInSegment >= nextRandomCueTime.current &&
-      secondInSegment - lastRandomCueTime.current > 35 &&
-      currentSegment.sec - secondInSegment > 35
-    ) {
-      const randomCue =
-        randomCues[
-          Math.floor(Math.random() * randomCues.length)
-        ]
-
-      speak(randomCue)
-      lastRandomCueTime.current = secondInSegment
-      nextRandomCueTime.current =
-        secondInSegment +
-        45 +
-        Math.floor(Math.random() * 55)
-    }
-  }, [
-    currentSegment,
-    isFinished,
-    isRunning,
-    segmentData.elapsedInSegment,
-    segmentData.index,
-  ])
-
-  useEffect(() => {
-    if (
-      previousSegmentIndex.current === segmentData.index
-    ) {
-      return
-    }
-
-    previousSegmentIndex.current = segmentData.index
-    lastSpokenCue.current = ''
-    lastRandomCueTime.current = -999
-    nextRandomCueTime.current =
-      45 + Math.floor(Math.random() * 45)
-
-    showCurrentSegmentCard()
-
-    if (!isRunning) return
-
-    const announcementTimer = window.setTimeout(() => {
-      speak(`${currentSegment.name}. ${currentSegment.description}`)
-    }, 0)
-
-    return () => window.clearTimeout(announcementTimer)
-  }, [
-    currentSegment.description,
-    currentSegment.name,
-    isRunning,
-    segmentData.index,
-  ])
+  }, [engine, isFinished, isRunning, mode, radioText])
 
   useEffect(() => {
     if (
@@ -410,9 +251,7 @@ function RideScreen({
     }
 
     const completionTimer = window.setTimeout(() => {
-      accumulatedElapsedRef.current = stageDuration
-      runStartedAtRef.current = null
-      setIsRunning(false)
+      activeRide.pause()
       setIsFinished(true)
       setShowSegmentCard(false)
       void releaseWakeLock()
@@ -467,93 +306,72 @@ function RideScreen({
   }, [])
 
   function handleStart() {
-    if (isFinished) {
+    if (isFinished || countdown !== null) return
+    if (activeRide.ride) {
+      activeRide.resume()
+      speak(`Radio reconnected. ${currentSegment.name}. ${currentSegment.description}`)
+      void requestWakeLock()
       return
     }
-
-    accumulatedElapsedRef.current = elapsedSeconds
-    runStartedAtRef.current = Date.now()
-    setIsRunning(true)
-    void requestWakeLock()
-
-    if (elapsedSeconds === 0) {
-      showCurrentSegmentCard()
-      speak(
-        `Radio check. Rider fifteen, ${halRider.name}, Team Loriot. Stage ${stage.number}, ${stage.route}, begins now.`,
-      )
-    } else {
-      speak(
-        `Radio reconnected. ${currentSegment.name}. ${currentSegment.description}`,
-      )
-    }
+    activeRide.begin(stageNumber, strategy)
+    speak(CLICK_IN_CUE)
+    setCountdown(PRE_RIDE_COUNTDOWN[0])
+    let value: number = PRE_RIDE_COUNTDOWN[0]
+    const timer = window.setInterval(() => {
+      value -= 1
+      if (value === 0) {
+        window.clearInterval(timer)
+        setCountdown(null)
+        activeRide.resume()
+        showCurrentSegmentCard()
+        window.setTimeout(() => speak(`Stage ${stage.number}, ${stage.title}, ${stage.route}. We ride ${strategy.toLowerCase()} today. Team objective: ${stage.objective} Your mission is to execute the plan and finish strong.`), 1200)
+      } else setCountdown(value)
+    }, 1000)
   }
 
   function handlePause() {
-    if (runStartedAtRef.current !== null) {
-      const pausedAt = Math.min(
-        stageDuration,
-        accumulatedElapsedRef.current +
-          (Date.now() - runStartedAtRef.current) / 1000,
-      )
-
-      accumulatedElapsedRef.current = pausedAt
-      setElapsedSeconds(pausedAt)
-    }
-
-    runStartedAtRef.current = null
-    setIsRunning(false)
+    activeRide.pause()
     void releaseWakeLock()
     speak('Stage paused. Keep the legs moving gently.')
   }
 
-  function jumpToSegment(newIndex: number) {
-    const safeIndex = Math.max(
-      0,
-      Math.min(segments.length - 1, newIndex),
-    )
-
-    const newElapsed = segments
-      .slice(0, safeIndex)
-      .reduce(
-        (total, segment) => total + segment.sec,
-        0,
-      )
-
-    previousSegmentIndex.current = safeIndex - 1
-    accumulatedElapsedRef.current = newElapsed
-    runStartedAtRef.current = isRunning ? Date.now() : null
-    setElapsedSeconds(newElapsed)
-    setIsFinished(false)
-    didLaunchMetrics.current = false
-    lastSpokenCue.current = ''
+  function beginPauseHold() {
+    if (!isRunning || pauseHoldTimer.current !== null) return
+    setPauseHolding(true)
+    pauseHoldTimer.current = window.setTimeout(() => {
+      pauseHoldTimer.current = null
+      setPauseHolding(false)
+      handlePause()
+    }, 2000)
   }
 
+  function cancelPauseHold() {
+    if (pauseHoldTimer.current !== null) window.clearTimeout(pauseHoldTimer.current)
+    pauseHoldTimer.current = null
+    setPauseHolding(false)
+  }
+
+  function restartSection() {
+    if (window.confirm(`Restart ${currentSegment.name}?`)) activeRide.restartAt(timeline.segmentStarts[engine.segmentIndex])
+  }
+
+  function endStage() {
+    if (window.confirm('End this active stage? Progress from this ride will be discarded.')) {
+      activeRide.end()
+      onBack()
+    }
+  }
+
+
   function handleRestart() {
-    accumulatedElapsedRef.current = 0
-    runStartedAtRef.current = null
-    setElapsedSeconds(0)
-    setIsRunning(false)
+    activeRide.end()
     setIsFinished(false)
     setShowSegmentCard(false)
     setShowDetails(false)
-    setRadioText(
-      'Radio connected. Press Start Ride when you are ready.',
-    )
-
+    setRadioText('Radio connected. Press Start Ride when you are ready.')
     previousSegmentIndex.current = 0
     lastSpokenCue.current = ''
-    lastRandomCueTime.current = -999
-    nextRandomCueTime.current = 50
-
-    if (segmentCardTimer.current !== null) {
-      window.clearTimeout(segmentCardTimer.current)
-      segmentCardTimer.current = null
-    }
-
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel()
-    }
-
+    didLaunchMetrics.current = false
     void releaseWakeLock()
   }
 
@@ -640,37 +458,42 @@ function RideScreen({
         }
 
         .gradient-blocks {
+          position: relative;
           display: flex;
           align-items: flex-end;
-          gap: 3px;
+          gap: 0;
           height: 112px;
-          padding: 8px 2px 0;
-          border-bottom: 3px solid rgba(255,255,255,0.5);
+          padding: 18px 2px 0;
+          overflow: visible;
         }
 
         .gradient-block {
           position: relative;
           flex: 1 1 0;
           min-width: 0;
-          border-radius: 5px 5px 1px 1px;
-          opacity: .52;
+          margin-left: -1px;
+          border-radius: 0;
+          opacity: 1;
           transition: opacity .25s linear, transform .25s linear, filter .25s linear;
-          clip-path: polygon(0 28%, 100% 0, 100% 100%, 0 100%);
+          clip-path: polygon(0 25%, 100% 0, 100% 100%, 0 100%);
+          border-bottom: 3px solid rgba(255,255,255,.45);
         }
 
-        .gradient-block.completed { opacity: .72; filter: saturate(.15); }
+        .gradient-block.completed { opacity: .5; filter: saturate(.7); }
         .gradient-block.active {
           opacity: 1;
-          transform: translateY(-4px);
-          filter: drop-shadow(0 0 8px rgba(255,255,255,.35));
-          outline: 2px solid rgba(255,255,255,.9);
-          outline-offset: 1px;
+          z-index: 2;
+          filter: drop-shadow(0 0 9px #f46a00);
+          outline: 3px solid #f46a00;
+          outline-offset: -3px;
+          animation: loriotPulse 2.2s ease-in-out infinite;
         }
+
+        @keyframes loriotPulse { 50% { filter: drop-shadow(0 0 14px rgba(244,106,0,.7)); } }
 
         .gradient-rider {
           position: absolute;
-          left: 50%;
-          top: -30px;
+          z-index: 5;
           transform: translateX(-50%);
           font-size: 1.35rem;
           filter: drop-shadow(0 3px 5px rgba(0,0,0,.75));
@@ -688,15 +511,18 @@ function RideScreen({
         .gradient-value {
           position: absolute;
           left: 50%;
-          bottom: 6px;
-          transform: translateX(-50%) rotate(-90deg);
-          transform-origin: center;
+          bottom: 8px;
+          transform: translateX(-50%);
           color: #fff;
           font-weight: 900;
-          font-size: .68rem;
+          font-size: clamp(.62rem, 2.2vw, .82rem);
           white-space: nowrap;
           text-shadow: 0 1px 3px rgba(0,0,0,.8);
         }
+
+        .ride-countdown { position: fixed; inset: 0; z-index: 3000; display: grid; place-content: center; gap: 18px; text-align: center; background: rgba(7,8,10,.94); }
+        .ride-countdown strong { font-size: min(42vw, 15rem); line-height: .8; color: #f46a00; font-variant-numeric: tabular-nums; }
+        .ride-countdown span { font-weight: 900; letter-spacing: .16em; }
 
         .cockpit-card {
           margin-top: 8px;
@@ -951,6 +777,8 @@ function RideScreen({
         }
       `}</style>
 
+      {countdown !== null && <div className="ride-countdown" aria-live="polite"><strong>{countdown}</strong><span>START DEVICES · COUNTDOWN SILENT</span></div>}
+
       {showSegmentCard && !isFinished && (
         <div
           style={{
@@ -1010,7 +838,7 @@ function RideScreen({
 
       <div className="ride-topbar">
         <button type="button" onClick={handleBack}>
-          ← Tactics
+          ← Leave cockpit
         </button>
 
       </div>
@@ -1041,23 +869,7 @@ function RideScreen({
 
       {!isFinished && (
         <>
-          <div className="live-profile-card master-stage-profile" aria-label="Fixed master stage profile">
-            <div className="live-profile-head">
-              <div><p className="eyebrow">MASTER STAGE PROFILE</p><strong>{currentSegment.terrainLabel}</strong></div>
-              <div style={{ textAlign: 'right' }}><small>{Math.round(progress)}% COMPLETE</small><strong style={{ display: 'block' }}>{formatDistance(Math.max(stage.distanceKm - routeKm, 0), measurementSystem)} left</strong></div>
-            </div>
-            <div className="live-profile-wrap">
-              <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ width: '100%', height: '100%', display: 'block', overflow: 'visible' }}>
-                <defs><clipPath id="masterCompletedClip"><rect x="0" y="0" width={riderMarkerX} height="100" /></clipPath></defs>
-                <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="rgba(255,106,0,.28)" />
-                <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="rgba(92,92,92,.9)" clipPath="url(#masterCompletedClip)" />
-                <polyline points={profilePoints.join(' ')} fill="none" stroke="#ff6a00" strokeWidth="2.4" vectorEffect="non-scaling-stroke" />
-                <line x1={riderMarkerX} x2={riderMarkerX} y1="4" y2="98" stroke="#fff" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
-              </svg>
-              <div style={{ position: 'absolute', left: `${riderMarkerX}%`, top: 0, transform: 'translateX(-50%)', transition: 'left .25s linear' }}>🚴</div>
-            </div>
-          </div>
-          <div className="live-profile-card" aria-label={currentSegmentIsClimb ? "Live climb gradient profile" : "Live stage profile"}>
+          <div className="live-profile-card ride-lock-profile" aria-label={currentSegmentIsClimb ? "Live climb gradient profile" : "Live stage profile"}>
             {currentSegmentIsClimb ? (
               <>
                 <div className="gradient-summary">
@@ -1086,19 +898,19 @@ function RideScreen({
                         className={`gradient-block${isCompleted ? ' completed' : ''}${isActive ? ' active' : ''}`}
                         style={{
                           height: `${34 + block.gradient * 5}%`,
-                          background: isCompleted ? '#55514e' : '#ff6a00',
+                          background: gradientColor(block.gradient),
                         }}
                         title={`Section ${index + 1}: ${block.gradient}%`}
                       >
-                        {isActive && <span className="gradient-rider">🚴</span>}
                         <span className="gradient-value">{block.gradient}%</span>
                       </div>
                     )
                   })}
+                  <span className="gradient-rider" style={{ left: `${engine.climbProgress * 100}%`, bottom: `${climbRiderBottom}%` }} aria-label={`${Math.round(engine.climbProgress * 100)} percent up climb`}>🚴</span>
                 </div>
                 <div className="climb-footer">
-                  <span>{Math.round(currentSegmentProgress * 100)}% of climb complete</span>
-                  <strong>{formatDistance(summitDistanceKm, measurementSystem)} • {formatTime(segmentRemaining)} to summit</strong>
+                  <span>{Math.round(engine.climbProgress * 100)}% of climb complete</span>
+                  <strong>{formatDistance(summitDistanceKm, measurementSystem)} • {formatTime(engine.climbRemaining)} to summit</strong>
                 </div>
               </>
             ) : (
@@ -1127,8 +939,8 @@ function RideScreen({
                         <rect x="0" y="0" width={riderMarkerX} height="100" />
                       </clipPath>
                     </defs>
-                    <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="rgba(255,255,255,0.04)" />
-                    <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="url(#liveMountainFill)" clipPath="url(#completedStageClip)" />
+                    <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="rgba(244,106,0,0.42)" />
+                    <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="rgba(92,92,92,.88)" clipPath="url(#completedStageClip)" />
                     <polyline points={profilePoints.join(' ')} fill="none" stroke="rgba(255,174,96,0.98)" strokeWidth="2.4" vectorEffect="non-scaling-stroke" />
                     <line x1={riderMarkerX} x2={riderMarkerX} y1="2" y2="98" stroke="rgba(255,255,255,0.68)" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
                   </svg>
@@ -1198,7 +1010,7 @@ function RideScreen({
               <div className="target-tile">
                 <small>RESISTANCE</small>
                 <strong>
-                  {currentSegment.resistance}
+                  {engine.resistanceRecommendation}
                 </strong>
               </div>
             </div>
@@ -1237,12 +1049,20 @@ function RideScreen({
           ) : (
             <button
               type="button"
-              className="ride-primary-control"
-              onClick={handlePause}
+              className={`ride-primary-control hold-control${pauseHolding ? ' holding' : ''}`}
+              onPointerDown={beginPauseHold}
+              onPointerUp={cancelPauseHold}
+              onPointerCancel={cancelPauseHold}
+              onPointerLeave={cancelPauseHold}
             >
-              ⏸ Pause Ride
+              {pauseHolding ? 'Keep holding…' : '⏸ Hold 2 seconds to Pause'}
             </button>
           )}
+
+          <div className="ride-safe-controls">
+            <button type="button" onClick={restartSection}>↺ Restart Section</button>
+            <button type="button" onClick={endStage}>End Stage</button>
+          </div>
 
           <button
             type="button"
@@ -1321,30 +1141,7 @@ function RideScreen({
                 </p>
               </div>
 
-              <div className="segment-nav">
-                <button
-                  type="button"
-                  onClick={() =>
-                    jumpToSegment(segmentData.index - 1)
-                  }
-                  disabled={segmentData.index === 0}
-                >
-                  ← Previous
-                </button>
 
-                <button
-                  type="button"
-                  onClick={() =>
-                    jumpToSegment(segmentData.index + 1)
-                  }
-                  disabled={
-                    segmentData.index ===
-                    segments.length - 1
-                  }
-                >
-                  Next →
-                </button>
-              </div>
 
               <button
                 type="button"

@@ -5,7 +5,18 @@
   background: #0b0b0b;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+  --color-primary: #fffaf4;
+  --color-secondary: #c3c6ca;
+  --color-active: #f46a00;
+  --color-info: #58a6ff;
+  --color-surface: #141414;
 }
+
+[data-theme="dark"] { color-scheme: dark; --text: var(--color-secondary); --text-h: var(--color-primary); --bg: #0b0b0b; }
+[data-theme="dark"] body, [data-theme="dark"] .app { color: var(--color-primary); }
+[data-theme="dark"] :where(h1,h2,h3,h4,h5,h6,strong,label,legend) { color: var(--color-primary); }
+[data-theme="dark"] :where(p,small,span,li) { border-color: inherit; }
+[data-theme="dark"] :where(.dashboard-card,.briefing-board,.metric-form,.history-list article) { color: var(--color-primary); }
 
 * {
   box-sizing: border-box;
@@ -485,6 +496,32 @@ footer {
 }
 
 /* Alpha 4.0: keep cycling-computer readouts legible in both OS themes. */
+.active-ride-bar { position: sticky; top: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 9px 16px; background: #f46a00; color: #111; box-shadow: 0 8px 24px #0008; }
+.active-ride-bar button { padding: 7px 12px; background: #161616; color: white; }
+.briefing-actions { display: grid; grid-template-columns: 1fr 1.4fr; gap: 12px; margin-top: 14px; }
+.recon-button { min-height: 58px; border: 1px solid #58a6ff; border-radius: 14px; background: #11243a; color: #e9f4ff; font-weight: 900; }
+.course-recon { position: fixed; inset: 0; z-index: 4000; display: grid; place-items: center; padding: 14px; background: #050607ed; backdrop-filter: blur(12px); }
+.course-recon > article { width: min(720px,100%); max-height: 94svh; overflow: auto; padding: 22px; border: 1px solid #3c4652; border-radius: 22px; background: #15181d; color: var(--color-primary); text-align: left; }
+.course-recon h1 { margin: 14px 0 6px; font-size: clamp(1.8rem,6vw,3rem); }
+.recon-position { color: var(--color-info); font-weight: 800; }
+.recon-targets { margin: 18px 0; }
+.recon-note,.recon-climb { margin: 12px 0; padding: 14px; border-radius: 14px; background: #0c0e11; }
+.recon-gradients { display: flex; margin: 12px 0; overflow: hidden; border-radius: 10px; }
+.recon-gradients span { flex: 1; min-width: 62px; padding: 12px 4px; color: white; font-weight: 900; text-align: center; text-shadow: 0 1px 3px #000; }
+.recon-gradients small { display: block; font-size: .62rem; }
+.recon-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+.ride-safe-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.ride-safe-controls button { min-height: 48px; }
+.hold-control { touch-action: none; user-select: none; -webkit-user-select: none; }
+.hold-control.holding { background: linear-gradient(90deg,#f46a00 0 100%); }
+.ride-lock-profile { position: sticky; top: 6px; z-index: 40; background: #101114f2; backdrop-filter: blur(12px); }
+@media (max-width: 700px) {
+  .app { width: 100%; padding: 8px 8px 20px; }
+  .briefing-actions { grid-template-columns: 1fr; }
+  .ride-cockpit { min-height: 100svh; overscroll-behavior: none; }
+  .ride-cockpit:not(:has(.ride-details)) { overflow: hidden; }
+  .active-ride-bar { flex-wrap: wrap; font-size: .78rem; }
+}
 .ride-cockpit,
 .ride-cockpit h1,
 .ride-cockpit h2,
