@@ -2,6 +2,20 @@ import type { RideSegment } from '../data/raceStages'
 
 export type GradientSection = { gradient: number; start: number; end: number }
 
+export function gradientSectionIndex(sections: GradientSection[], progress: number) {
+  if (!sections.length) return 0
+  const normalized = Math.min(1, Math.max(0, progress))
+  const index = sections.findIndex((section) => normalized >= section.start && normalized < section.end)
+  return index < 0 ? sections.length - 1 : index
+}
+
+export function gradientDifficultyColor(gradient: number) {
+  if (gradient < 3) return '#29a35a'
+  if (gradient < 6) return '#2374d8'
+  if (gradient < 9) return '#d73535'
+  return '#111111'
+}
+
 export function buildGradientSections(seedText: string, durationSeconds: number, zone: string): GradientSection[] {
   let seed = [...seedText].reduce((value, character) => (value * 31 + character.charCodeAt(0)) >>> 0, 0)
   const count = Math.max(5, Math.min(10, Math.round(durationSeconds / 90)))

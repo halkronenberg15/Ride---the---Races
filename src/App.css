@@ -11,6 +11,29 @@
   box-sizing: border-box;
 }
 
+/* Alpha 4.0.2 dark-surface contract: cards inherit readable text unless a
+   bright action deliberately supplies its own dark foreground. */
+.dashboard-card,
+.settings-card,
+.stage-card,
+.briefing-card,
+.ride-cockpit,
+.team-bus-screen,
+.ride-data-screen {
+  color: #f4f4f5;
+}
+
+.dashboard-card h1, .dashboard-card h2, .dashboard-card h3,
+.settings-card h1, .settings-card h2, .settings-card h3,
+.stage-card h1, .stage-card h2, .stage-card h3,
+.briefing-card h1, .briefing-card h2, .briefing-card h3 {
+  color: #fafafa;
+}
+
+.dashboard-card small, .settings-card small, .stage-card small, .briefing-card small {
+  color: #b5b5bb;
+}
+
 body {
   margin: 0;
   min-width: 320px;

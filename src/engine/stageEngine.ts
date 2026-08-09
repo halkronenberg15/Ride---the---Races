@@ -15,6 +15,8 @@ export type StageSnapshot = {
   elapsed: number
   routeDistanceKm: number
   riderPosition: number
+  segmentStartProgress: number
+  segmentEndProgress: number
   events: StageEvent[]
 }
 
@@ -93,9 +95,49 @@ export function createStageTimeline(segments: RideSegment[], routeDistanceKm?: n
         stageRemaining: Math.max(0, duration - elapsed),
         elapsed,
         routeDistanceKm: Math.min(totalDistance, distance),
-        riderPosition: Math.min(1, Math.max(0, distance / Math.max(0.001, totalDistance))),
+        // The profile, sector selection and coaching all travel on stage time. Route
+        // kilometres remain display data because indoor adaptations are not ridden
+        // at a constant real-world speed.
+        riderPosition: Math.min(1, elapsed / duration),
+        segmentStartProgress: segmentStarts[segmentIndex] / duration,
+        segmentEndProgress: (segmentStarts[segmentIndex] + segment.sec) / duration,
         events,
       }
     },
   }
+}
+
+export type JeanTimelineEvent = {
+  key: string
+  at: number
+  type: 'sector-entry' | 'climb-approach' | 'climb-entry' | 'summit-minute' | 'summit' | 'descent' | 'recovery' | 'finish-approach' | 'finish'
+  segmentIndex: number
+}
+
+/** Deterministic coaching schedule generated from the same segment boundaries as snapshots. */
+export function buildJeanTimeline(segments: RideSegment[]): JeanTimelineEvent[] {
+  const timeline = createStageTimeline(segments)
+  const events: JeanTimelineEvent[] = []
+  segments.forEach((segment, index) => {
+    const start = timeline.segmentStarts[index]
+    const end = start + segment.sec
+    const prior = segments[index - 1]
+    events.push({ key: `sector-${index}`, at: start, type: 'sector-entry', segmentIndex: index })
+    if (isClimb(segment)) {
+      if (start >= 60) events.push({ key: `climb-approach-${index}`, at: start - 60, type: 'climb-approach', segmentIndex: index })
+      events.push({ key: `climb-entry-${index}`, at: start, type: 'climb-entry', segmentIndex: index })
+      if (segment.sec >= 75) events.push({ key: `summit-minute-${index}`, at: end - 60, type: 'summit-minute', segmentIndex: index })
+    }
+    if (prior && isClimb(prior)) events.push({ key: `summit-${index - 1}`, at: start, type: 'summit', segmentIndex: index })
+    if (/descent/i.test(`${segment.name} ${segment.type}`)) events.push({ key: `descent-${index}`, at: start, type: 'descent', segmentIndex: index })
+    else if (/recovery|cooldown|cool down/i.test(`${segment.name} ${segment.type}`)) events.push({ key: `recovery-${index}`, at: start, type: 'recovery', segmentIndex: index })
+  })
+  if (timeline.duration >= 60) events.push({ key: 'finish-approach', at: timeline.duration - 60, type: 'finish-approach', segmentIndex: segments.length - 1 })
+  events.push({ key: 'finish', at: timeline.duration, type: 'finish', segmentIndex: segments.length - 1 })
+  return events.sort((a, b) => a.at - b.at)
+}
+
+export function jeanEventsCrossed(events: JeanTimelineEvent[], from: number, to: number) {
+  if (to <= from) return []
+  return events.filter((event) => event.at > from && event.at <= to)
 }

@@ -5,9 +5,9 @@ import type { RaceStrategy } from '../types/tactics'
 import { adaptSegments } from '../engine/adaptiveRide'
 import { useCareer } from '../state/CareerContext'
 import { formatDistance, formatElevation } from '../utils/units'
-import { createStageTimeline, isClimb } from '../engine/stageEngine'
+import { buildJeanTimeline, createStageTimeline, isClimb, jeanEventsCrossed, type JeanTimelineEvent } from '../engine/stageEngine'
 import { useActiveRide } from '../state/ActiveRideContext'
-import { buildGradientSections, gradientResistance } from '../engine/gradientRoad'
+import { buildGradientSections, gradientDifficultyColor, gradientResistance, gradientSectionIndex } from '../engine/gradientRoad'
 import { jeanCue, jeanMode } from '../engine/jeanDirector'
 import { speakAsJean } from '../services/jeanVoice'
 import { CLICK_IN_CUE, PRE_RIDE_COUNTDOWN } from '../engine/preRide'
@@ -39,14 +39,6 @@ type WakeLockSentinelLike = {
   ) => void
 }
 
-function gradientColor(gradient: number) {
-  if (gradient < 4) return '#55b96f'
-  if (gradient < 6) return '#d8d34a'
-  if (gradient < 8) return '#f0a13a'
-  if (gradient < 10) return '#ef5b3f'
-  return '#c9233d'
-}
-
 function RideScreen({
   stageNumber,
   strategy,
@@ -69,6 +61,7 @@ function RideScreen({
   )
   const [showSegmentCard, setShowSegmentCard] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null)
   const [wakeLockStatus, setWakeLockStatus] = useState<
     'inactive' | 'active' | 'unsupported' | 'blocked'
   >('inactive')
@@ -77,6 +70,8 @@ function RideScreen({
   const lastRandomCueTime = useRef(-999)
   const nextRandomCueTime = useRef(50)
   const previousSegmentIndex = useRef(0)
+  const previousCoachingElapsed = useRef(elapsedSeconds)
+  const spokenTimelineEvents = useRef(new Set<string>())
   const segmentCardTimer = useRef<number | null>(null)
   const wakeLockRef = useRef<WakeLockSentinelLike | null>(
     null,
@@ -87,6 +82,7 @@ function RideScreen({
   const stageDuration = timeline.duration
 
   const engine = useMemo(() => timeline.snapshot(elapsedSeconds), [elapsedSeconds, timeline])
+  const coachingTimeline = useMemo(() => buildJeanTimeline(segments), [segments])
   const segmentData = { index: engine.segmentIndex, segment: engine.segment, elapsedInSegment: engine.elapsedInSegment }
 
   const currentSegment = segmentData.segment
@@ -129,12 +125,7 @@ function RideScreen({
     ],
   )
 
-  const activeGradientIndex = gradientBlocks.length
-    ? Math.min(
-        gradientBlocks.length - 1,
-        Math.floor(currentSegmentProgress * gradientBlocks.length),
-      )
-    : 0
+  const activeGradientIndex = gradientSectionIndex(gradientBlocks, currentSegmentProgress)
 
   const activeGradient = gradientBlocks[activeGradientIndex]?.gradient ?? 0
   const climbAverage = gradientBlocks.length
@@ -147,6 +138,20 @@ function RideScreen({
   )
   const summitDistanceKm = climbDistanceKm * (1 - currentSegmentProgress)
   const mode = jeanMode(currentSegment, isFinished)
+  const previewSegment = previewIndex === null ? null : segments[previewIndex]
+
+  function timelineMessage(event: JeanTimelineEvent) {
+    const eventSegment = segments[event.segmentIndex]
+    if (event.type === 'climb-approach') return `${eventSegment.name} in one minute. Settle your breathing and prepare the gear.`
+    if (event.type === 'climb-entry') return `${eventSegment.name} begins now. Ride the gradient, calm and controlled.`
+    if (event.type === 'summit-minute') return 'Approximately one minute to the summit. Hold your rhythm over the crest.'
+    if (event.type === 'summit') return 'Summit. Good work. Ride through the crest before you recover.'
+    if (event.type === 'descent') return 'Descent now. Release the pressure, stay smooth, and drink.'
+    if (event.type === 'recovery') return 'Recovery sector. Breathe, drink, and reset for the next instruction.'
+    if (event.type === 'finish-approach') return 'One minute to the stage finish. Stay composed and finish the plan.'
+    if (event.type === 'finish') return 'Across the line. Stage complete.'
+    return `${eventSegment.name}. ${eventSegment.description}`
+  }
 
   function speak(text: string) {
     setRadioText(text)
@@ -290,6 +295,18 @@ function RideScreen({
   }, [engine.events, engine.segmentIndex, isRunning, mode])
 
   useEffect(() => {
+    const previous = previousCoachingElapsed.current
+    previousCoachingElapsed.current = elapsedSeconds
+    if (!isRunning || elapsedSeconds <= previous) return
+    const crossed = jeanEventsCrossed(coachingTimeline, previous, elapsedSeconds)
+      .filter((event) => event.type !== 'sector-entry' && !spokenTimelineEvents.current.has(event.key))
+    const event = crossed.at(-1)
+    if (!event) return
+    crossed.forEach((item) => spokenTimelineEvents.current.add(item.key))
+    speak(timelineMessage(event))
+  }, [coachingTimeline, elapsedSeconds, isRunning])
+
+  useEffect(() => {
     if (
       previousSegmentIndex.current === segmentData.index
     ) {
@@ -305,6 +322,7 @@ function RideScreen({
     showCurrentSegmentCard()
 
     if (!isRunning) return
+    if (coachingTimeline.some((event) => event.at === timeline.segmentStarts[segmentData.index] && event.type !== 'sector-entry')) return
 
     const announcementTimer = window.setTimeout(() => {
       speak(`${currentSegment.name}. ${currentSegment.description}`)
@@ -316,6 +334,8 @@ function RideScreen({
     currentSegment.name,
     isRunning,
     segmentData.index,
+    coachingTimeline,
+    timeline.segmentStarts,
   ])
 
   useEffect(() => {
@@ -420,6 +440,8 @@ function RideScreen({
     setRadioText('Radio connected. Press Start Ride when you are ready.')
     previousSegmentIndex.current = 0
     lastSpokenCue.current = ''
+    spokenTimelineEvents.current.clear()
+    previousCoachingElapsed.current = 0
     didLaunchMetrics.current = false
     void releaseWakeLock()
   }
@@ -529,8 +551,8 @@ function RideScreen({
         .gradient-block.active {
           opacity: 1;
           transform: translateY(-4px);
-          filter: drop-shadow(0 0 8px rgba(255,255,255,.35));
-          outline: 2px solid rgba(255,255,255,.9);
+          filter: drop-shadow(0 0 9px rgba(255,255,255,.48));
+          outline: 3px solid #fff;
           outline-offset: 1px;
         }
 
@@ -556,11 +578,11 @@ function RideScreen({
           position: absolute;
           left: 50%;
           bottom: 6px;
-          transform: translateX(-50%) rotate(-90deg);
+          transform: translateX(-50%);
           transform-origin: center;
           color: #fff;
           font-weight: 900;
-          font-size: .68rem;
+          font-size: clamp(.62rem, 2.5vw, .82rem);
           white-space: nowrap;
           text-shadow: 0 1px 3px rgba(0,0,0,.8);
         }
@@ -709,6 +731,16 @@ function RideScreen({
           gap: 8px;
           margin-top: 10px;
         }
+
+        .section-preview-list { display: flex; gap: 7px; overflow-x: auto; padding: 4px 1px 10px; scroll-snap-type: x proximity; }
+        .section-preview-button { flex: 0 0 auto; max-width: 180px; padding: 10px 12px; scroll-snap-align: start; text-align: left; }
+        .section-preview-button.current { border-color: #f46a00; box-shadow: inset 0 0 0 1px #f46a00; }
+        .section-preview-button.previewing { outline: 2px solid #fff; }
+        .preview-card { color: #f4f4f5; background: rgba(20,20,22,.96); }
+        .preview-card h2, .preview-card strong { color: #fff; }
+        .preview-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(125px,1fr)); gap: 8px; margin-top: 12px; }
+        .preview-stat { padding: 10px; border-radius: 10px; background: rgba(255,255,255,.06); }
+        .preview-stat small, .preview-card .muted { color: #b5b5bb; }
 
         @media (max-width: 700px) {
           .ride-cockpit {
@@ -914,6 +946,22 @@ function RideScreen({
 
       {!isFinished && (
         <>
+          {currentSegmentIsClimb && (
+            <div className="live-profile-card master-stage-profile" aria-label="Live stage profile">
+              <div className="live-profile-head"><div><p className="eyebrow">LIVE STAGE TRACKER</p><strong>{Math.round(progress)}% COMPLETE</strong></div><strong>{formatDistance(Math.max(stage.distanceKm - routeKm, 0), measurementSystem)} left</strong></div>
+              <div className="live-profile-wrap">
+                <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ width: '100%', height: '100%', display: 'block', overflow: 'visible' }}>
+                  <defs><clipPath id="climbStageClip"><rect x="0" y="0" width={riderMarkerX} height="100" /></clipPath></defs>
+                  <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="rgba(244,106,0,.34)" />
+                  <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="rgba(105,105,105,.9)" clipPath="url(#climbStageClip)" />
+                  <polyline points={profilePoints.join(' ')} fill="none" stroke="#ffae60" strokeWidth="2.4" vectorEffect="non-scaling-stroke" />
+                  {timeline.segmentStarts.slice(1).map((start) => <line key={start} x1={start / timeline.duration * 100} x2={start / timeline.duration * 100} y1="88" y2="100" stroke="rgba(255,255,255,.5)" vectorEffect="non-scaling-stroke" />)}
+                  <line x1={riderMarkerX} x2={riderMarkerX} y1="2" y2="98" stroke="#fff" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
+                </svg>
+                <div style={{ position: 'absolute', left: `${riderMarkerX}%`, top: 0, transform: 'translateX(-50%)', fontSize: '1.35rem', transition: 'left .25s linear' }}>🚴</div>
+              </div>
+            </div>
+          )}
           <div className="live-profile-card" aria-label={currentSegmentIsClimb ? "Live climb gradient profile" : "Live stage profile"}>
             {currentSegmentIsClimb ? (
               <>
@@ -927,7 +975,7 @@ function RideScreen({
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <small>CURRENT / NEXT</small>
-                    <strong style={{ display: 'block', fontSize: '1.55rem', color: gradientColor(activeGradient) }}>
+                    <strong style={{ display: 'block', fontSize: '1.55rem', color: '#fff' }}>
                       {activeGradient.toFixed(1)}% / {nextGradient.toFixed(1)}%
                     </strong>
                   </div>
@@ -943,7 +991,7 @@ function RideScreen({
                         className={`gradient-block${isCompleted ? ' completed' : ''}${isActive ? ' active' : ''}`}
                         style={{
                           height: `${34 + block.gradient * 5}%`,
-                          background: isCompleted ? '#55514e' : '#ff6a00',
+                          background: gradientDifficultyColor(block.gradient),
                         }}
                         title={`Section ${index + 1}: ${block.gradient}%`}
                       >
@@ -987,6 +1035,7 @@ function RideScreen({
                     <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="rgba(244,106,0,0.42)" />
                     <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="rgba(92,92,92,.88)" clipPath="url(#completedStageClip)" />
                     <polyline points={profilePoints.join(' ')} fill="none" stroke="rgba(255,174,96,0.98)" strokeWidth="2.4" vectorEffect="non-scaling-stroke" />
+                    {timeline.segmentStarts.slice(1).map((start) => <line key={start} x1={start / timeline.duration * 100} x2={start / timeline.duration * 100} y1="88" y2="100" stroke="rgba(255,255,255,.5)" vectorEffect="non-scaling-stroke" />)}
                     <line x1={riderMarkerX} x2={riderMarkerX} y1="2" y2="98" stroke="rgba(255,255,255,0.68)" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
                   </svg>
                   <div style={{ position: 'absolute', left: `${riderMarkerX}%`, top: '0px', transform: 'translateX(-50%)', fontSize: '1.35rem', transition: 'left .25s linear' }}>🚴</div>
@@ -1110,6 +1159,35 @@ function RideScreen({
               ? '▲ Hide Ride Details'
               : '▼ View Ride Details'}
           </button>
+
+          <div className="dashboard-card preview-card">
+            <p className="eyebrow">SECTION PREVIEW · DOES NOT CHANGE RIDE PROGRESS</p>
+            <div className="section-preview-list" aria-label="Preview every stage section">
+              {segments.map((segment, index) => {
+                const status = index === engine.segmentIndex ? 'CURRENT' : index === engine.segmentIndex + 1 ? 'UP NEXT' : 'PREVIEW'
+                return <button key={`${segment.name}-${index}`} type="button" className={`section-preview-button${index === engine.segmentIndex ? ' current' : ''}${index === previewIndex ? ' previewing' : ''}`} onClick={() => setPreviewIndex(index)} aria-pressed={index === previewIndex}>
+                  <small>{status} · {index + 1}/{segments.length}</small><strong style={{ display: 'block' }}>{segment.icon} {segment.name}</strong>
+                </button>
+              })}
+            </div>
+            {previewSegment && previewIndex !== null && (
+              <div aria-live="polite">
+                <p className="eyebrow">{previewIndex === engine.segmentIndex ? 'CURRENT' : previewIndex === engine.segmentIndex + 1 ? 'UP NEXT' : 'PREVIEW'}</p>
+                <h2>{previewSegment.name}</h2>
+                <p className="muted">{previewSegment.type} · {previewSegment.description}</p>
+                <div className="preview-grid">
+                  <div className="preview-stat"><small>DURATION</small><strong>{formatTime(previewSegment.sec)}</strong></div>
+                  <div className="preview-stat"><small>DISTANCE MARKER</small><strong>{formatDistance(previewSegment.routeKm, measurementSystem)}</strong></div>
+                  <div className="preview-stat"><small>ZONE</small><strong>{previewSegment.zone}</strong></div>
+                  <div className="preview-stat"><small>POWER</small><strong>{previewSegment.power}</strong></div>
+                  <div className="preview-stat"><small>CADENCE</small><strong>{previewSegment.cadence}</strong></div>
+                  <div className="preview-stat"><small>RESISTANCE</small><strong>{previewSegment.resistance}</strong></div>
+                </div>
+                <p style={{ marginTop: 12 }}><strong>Jean / team objective:</strong> {previewSegment.objective}. {previewSegment.secondaryObjective}</p>
+                {isClimb(previewSegment) && <p><strong>Climb:</strong> {buildGradientSections(`${stage.number}-${previewIndex}-${previewSegment.name}-${previewSegment.type}`, previewSegment.sec, previewSegment.zone).map((item) => `${item.gradient}%`).join(' · ')}</p>}
+              </div>
+            )}
+          </div>
 
           {showDetails && (
             <div className="ride-details">

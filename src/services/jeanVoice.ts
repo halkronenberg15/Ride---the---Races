@@ -8,10 +8,9 @@ function chooseJeanVoice(): SpeechSynthesisVoice | undefined {
   const voices = window.speechSynthesis.getVoices()
 
   return (
-    voices.find((voice) => voice.lang.toLowerCase().startsWith('fr') && /male|thomas|daniel|henri/i.test(voice.name)) ??
-    voices.find((voice) => voice.lang.toLowerCase().startsWith('fr')) ??
     voices.find((voice) => voice.lang.toLowerCase().startsWith('en') && /male|daniel|alex|arthur/i.test(voice.name)) ??
     voices.find((voice) => voice.lang.toLowerCase().startsWith('en')) ??
+    voices.find((voice) => voice.lang.toLowerCase().startsWith('fr')) ??
     voices[0]
   )
 }
@@ -37,8 +36,9 @@ export function speakAsJean(text: string, onStatusChange?: (status: JeanVoiceSta
   window.speechSynthesis.cancel()
 
   const utterance = new SpeechSynthesisUtterance(speechText(text))
-  utterance.rate = 0.92
-  utterance.pitch = 0.86
+  utterance.lang = 'en-GB'
+  utterance.rate = 0.96
+  utterance.pitch = 0.94
   utterance.volume = Math.max(0, Math.min(1, volume))
 
   const assignVoice = () => {
