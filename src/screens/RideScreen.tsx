@@ -5,9 +5,10 @@ import type { RaceStrategy } from '../types/tactics'
 import { adaptSegments } from '../engine/adaptiveRide'
 import { useCareer } from '../state/CareerContext'
 import { formatDistance, formatElevation } from '../utils/units'
-import { buildJeanTimeline, createStageTimeline, isClimb, jeanEventsCrossed, type JeanTimelineEvent } from '../engine/stageEngine'
+import { buildJeanTimeline, isClimb, jeanEventsCrossed, type JeanTimelineEvent } from '../engine/stageEngine'
 import { useActiveRide } from '../state/ActiveRideContext'
-import { buildGradientSections, gradientDifficultyColor, gradientResistance, gradientSectionIndex } from '../engine/gradientRoad'
+import { buildGradientSections, gradientDifficultyColor } from '../engine/gradientRoad'
+import { createRoadModel } from '../engine/roadModel'
 import { jeanCue, jeanMode } from '../engine/jeanDirector'
 import { speakAsJean } from '../services/jeanVoice'
 import { CLICK_IN_CUE, PRE_RIDE_COUNTDOWN } from '../engine/preRide'
@@ -49,9 +50,9 @@ function RideScreen({
   const measurementSystem = career.settings.measurementSystem
   const stage = useMemo(() => getRaceStage(stageNumber), [stageNumber])
   const segments = useMemo(() => adaptSegments(stage.segments, career.rider.ftp, strategy), [stage, career.rider.ftp, strategy])
-  const profilePoints = stage.profilePoints
   const activeRide = useActiveRide()
-  const timeline = useMemo(() => createStageTimeline(segments, stage.distanceKm), [segments, stage.distanceKm])
+  const timeline = useMemo(() => createRoadModel(stage.number, segments, stage.distanceKm), [segments, stage.distanceKm, stage.number])
+  const profilePoints = timeline.profilePoints
   const elapsedSeconds = activeRide.ride?.stageNumber === stageNumber ? activeRide.elapsed : 0
   const isRunning = activeRide.ride?.stageNumber === stageNumber && activeRide.ride.runningSince !== null
   const [countdown, setCountdown] = useState<number | null>(null)
@@ -81,7 +82,7 @@ function RideScreen({
 
   const stageDuration = timeline.duration
 
-  const engine = useMemo(() => timeline.snapshot(elapsedSeconds), [elapsedSeconds, timeline])
+  const engine = useMemo(() => timeline.roadSnapshot(elapsedSeconds), [elapsedSeconds, timeline])
   const coachingTimeline = useMemo(() => buildJeanTimeline(segments), [segments])
   const segmentData = { index: engine.segmentIndex, segment: engine.segment, elapsedInSegment: engine.elapsedInSegment }
 
@@ -103,35 +104,20 @@ function RideScreen({
 
   const stageRemaining = engine.stageRemaining
 
-  const riderMarkerX = Math.min(Math.max(engine.riderPosition * 100, 1), 99)
+  const riderMarkerX = engine.roadPosition * 100
+  const riderMarkerY = engine.profileY
 
   const currentSegmentProgress = engine.segmentProgress
 
   const currentSegmentIsClimb = isClimb(currentSegment)
 
-  const gradientBlocks = useMemo(
-    () =>
-      currentSegmentIsClimb
-        ? buildGradientSections(`${stage.number}-${segmentData.index}-${currentSegment.name}-${currentSegment.type}`, currentSegment.sec, currentSegment.zone)
-        : [],
-    [
-      currentSegment.name,
-      currentSegment.sec,
-      currentSegment.type,
-      currentSegment.zone,
-      currentSegmentIsClimb,
-      segmentData.index,
-      stage.number,
-    ],
-  )
-
-  const activeGradientIndex = gradientSectionIndex(gradientBlocks, currentSegmentProgress)
-
-  const activeGradient = gradientBlocks[activeGradientIndex]?.gradient ?? 0
+  const gradientBlocks = engine.gradientSections
+  const activeGradientIndex = engine.gradientIndex
+  const activeGradient = engine.gradient
   const climbAverage = gradientBlocks.length
     ? gradientBlocks.reduce((sum, block) => sum + block.gradient, 0) / gradientBlocks.length
     : 0
-  const nextGradient = gradientBlocks[Math.min(activeGradientIndex + 1, gradientBlocks.length - 1)]?.gradient ?? activeGradient
+  const nextGradient = engine.nextGradient
   const climbDistanceKm = Math.max(
     0.5,
     (nextSegment?.routeKm ?? stage.distanceKm) - currentSegment.routeKm,
@@ -143,6 +129,10 @@ function RideScreen({
   function timelineMessage(event: JeanTimelineEvent) {
     const eventSegment = segments[event.segmentIndex]
     if (event.type === 'climb-approach') return `${eventSegment.name} in one minute. Settle your breathing and prepare the gear.`
+    if (event.type === 'kilometre-zero-warning') return 'Thirty seconds to Kilometre Zero. Move up and prepare for the flag.'
+    if (event.type === 'kilometre-zero') return 'Kilometre Zero. Flag down—racing begins now.'
+    if (event.type === 'sprint-approach') return 'Intermediate sprint in one minute. Protect the wheel and choose your move.'
+    if (event.type === 'sprint') return 'Intermediate sprint now. Commit through the line.'
     if (event.type === 'climb-entry') return `${eventSegment.name} begins now. Ride the gradient, calm and controlled.`
     if (event.type === 'summit-minute') return 'Approximately one minute to the summit. Hold your rhythm over the crest.'
     if (event.type === 'summit') return 'Summit. Good work. Ride through the crest before you recover.'
@@ -155,6 +145,8 @@ function RideScreen({
 
   function speak(text: string) {
     setRadioText(text)
+    // A road crossing supersedes queued advice about the road behind us.
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel()
     speakAsJean(text, undefined, career.settings.jeanVoiceVolume)
   }
 
@@ -501,6 +493,16 @@ function RideScreen({
 
         .master-stage-profile .live-profile-wrap { height: 86px; }
 
+        .race-marker { position:absolute; top:2px; transform:translateX(-50%); z-index:3; color:#fff; font-size:.55rem; font-weight:900; letter-spacing:.03em; text-align:center; text-shadow:0 1px 3px #000; }
+        .race-marker i { display:block; width:3px; height:60px; margin:2px auto 0; background:#fff; box-shadow:0 0 4px #000; }
+        .race-marker.kilometre-zero { color:#ffae60; }
+        .race-marker.kilometre-zero i { background:#f46a00; }
+        .race-marker.sprint { color:#7dd3fc; }
+        .race-marker.sprint i { background:#38bdf8; }
+        .race-marker.kom { color:#fca5a5; }
+        .race-marker.kom i { background:#ef4444; }
+        .race-marker.finish i { background:repeating-linear-gradient(#fff 0 4px,#111 4px 8px); width:5px; }
+
         .live-profile-head {
           display: flex;
           align-items: flex-start;
@@ -733,9 +735,10 @@ function RideScreen({
         }
 
         .section-preview-list { display: flex; gap: 7px; overflow-x: auto; padding: 4px 1px 10px; scroll-snap-type: x proximity; }
-        .section-preview-button { flex: 0 0 auto; max-width: 180px; padding: 10px 12px; scroll-snap-align: start; text-align: left; }
-        .section-preview-button.current { border-color: #f46a00; box-shadow: inset 0 0 0 1px #f46a00; }
-        .section-preview-button.previewing { outline: 2px solid #fff; }
+        .section-preview-button { flex: 0 0 auto; max-width: 180px; padding: 10px 12px; scroll-snap-align: start; text-align: left; color:#dedee3; background:#242428; border-color:#45454d; }
+        .section-preview-button strong { color:#fff; }
+        .section-preview-button.current { color:#ffd0ad; background:#2b1b11; border-color: #f46a00; box-shadow: inset 3px 0 #f46a00; }
+        .section-preview-button.previewing { outline: 2px solid #fff; background:#34343a; }
         .preview-card { color: #f4f4f5; background: rgba(20,20,22,.96); }
         .preview-card h2, .preview-card strong { color: #fff; }
         .preview-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(125px,1fr)); gap: 8px; margin-top: 12px; }
@@ -958,7 +961,8 @@ function RideScreen({
                   {timeline.segmentStarts.slice(1).map((start) => <line key={start} x1={start / timeline.duration * 100} x2={start / timeline.duration * 100} y1="88" y2="100" stroke="rgba(255,255,255,.5)" vectorEffect="non-scaling-stroke" />)}
                   <line x1={riderMarkerX} x2={riderMarkerX} y1="2" y2="98" stroke="#fff" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
                 </svg>
-                <div style={{ position: 'absolute', left: `${riderMarkerX}%`, top: 0, transform: 'translateX(-50%)', fontSize: '1.35rem', transition: 'left .25s linear' }}>🚴</div>
+                {timeline.markers.map((marker) => <span key={marker.key} className={`race-marker ${marker.type}`} style={{ left: `${marker.position * 100}%` }} title={marker.label}>{marker.label}<i /></span>)}
+                <div style={{ position: 'absolute', left: `${riderMarkerX}%`, top: `${riderMarkerY}%`, transform: 'translate(-50%, -80%)', zIndex: 5, fontSize: '1.35rem', transition: 'left .25s linear, top .25s linear' }}>🚴</div>
               </div>
             </div>
           )}
@@ -1038,7 +1042,8 @@ function RideScreen({
                     {timeline.segmentStarts.slice(1).map((start) => <line key={start} x1={start / timeline.duration * 100} x2={start / timeline.duration * 100} y1="88" y2="100" stroke="rgba(255,255,255,.5)" vectorEffect="non-scaling-stroke" />)}
                     <line x1={riderMarkerX} x2={riderMarkerX} y1="2" y2="98" stroke="rgba(255,255,255,0.68)" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
                   </svg>
-                  <div style={{ position: 'absolute', left: `${riderMarkerX}%`, top: '0px', transform: 'translateX(-50%)', fontSize: '1.35rem', transition: 'left .25s linear' }}>🚴</div>
+                  {timeline.markers.map((marker) => <span key={marker.key} className={`race-marker ${marker.type}`} style={{ left: `${marker.position * 100}%` }} title={marker.label}>{marker.label}<i /></span>)}
+                  <div style={{ position: 'absolute', left: `${riderMarkerX}%`, top: `${riderMarkerY}%`, transform: 'translate(-50%, -80%)', zIndex: 5, fontSize: '1.35rem', transition: 'left .25s linear, top .25s linear' }}>🚴</div>
                 </div>
               </>
             )}
@@ -1104,7 +1109,7 @@ function RideScreen({
               <div className="target-tile">
                 <small>RESISTANCE</small>
                 <strong>
-                  {currentSegmentIsClimb ? gradientResistance(currentSegment, gradientBlocks, activeGradientIndex) : currentSegment.resistance}
+                  {engine.resistance}
                 </strong>
               </div>
             </div>

@@ -691,6 +691,7 @@ footer {
 @keyframes radioPulse { 50% { box-shadow: 0 0 0 10px rgba(255,106,0,0); } }
 
 .today-plan-card { padding: 28px; border-radius: 28px; }
+.today-plan-card, .dashboard-card, .jean-command-card { color: #ededf0; }
 .today-plan-card h2 { margin: 22px 0 4px; font-size: 2.4rem; }
 .today-plan-card > p:not(.eyebrow) { color: #aaa; line-height: 1.5; }
 .stage-chip { display: inline-block; padding: 7px 10px; border-radius: 999px; background: rgba(255,106,0,.13); color: #ff8b3d; font-size: .76rem; font-weight: 800; }
