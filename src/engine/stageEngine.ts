@@ -110,7 +110,7 @@ export function createStageTimeline(segments: RideSegment[], routeDistanceKm?: n
 export type JeanTimelineEvent = {
   key: string
   at: number
-  type: 'sector-entry' | 'climb-approach' | 'climb-entry' | 'summit-minute' | 'summit' | 'descent' | 'recovery' | 'finish-approach' | 'finish'
+  type: 'sector-entry' | 'kilometre-zero-warning' | 'kilometre-zero' | 'sprint-approach' | 'sprint' | 'climb-approach' | 'climb-entry' | 'summit-minute' | 'summit' | 'descent' | 'recovery' | 'finish-approach' | 'finish'
   segmentIndex: number
 }
 
@@ -123,6 +123,14 @@ export function buildJeanTimeline(segments: RideSegment[]): JeanTimelineEvent[] 
     const end = start + segment.sec
     const prior = segments[index - 1]
     events.push({ key: `sector-${index}`, at: start, type: 'sector-entry', segmentIndex: index })
+    if (/kilometre zero|race start/i.test(`${segment.name} ${segment.type}`)) {
+      if (start >= 30) events.push({ key: `kilometre-zero-warning-${index}`, at: start - 30, type: 'kilometre-zero-warning', segmentIndex: index })
+      events.push({ key: `kilometre-zero-${index}`, at: start, type: 'kilometre-zero', segmentIndex: index })
+    }
+    if (/sprint/i.test(`${segment.name} ${segment.type}`) && !/finish/i.test(`${segment.name} ${segment.type}`)) {
+      if (start >= 60) events.push({ key: `sprint-approach-${index}`, at: start - 60, type: 'sprint-approach', segmentIndex: index })
+      events.push({ key: `sprint-${index}`, at: start, type: 'sprint', segmentIndex: index })
+    }
     if (isClimb(segment)) {
       if (start >= 60) events.push({ key: `climb-approach-${index}`, at: start - 60, type: 'climb-approach', segmentIndex: index })
       events.push({ key: `climb-entry-${index}`, at: start, type: 'climb-entry', segmentIndex: index })
