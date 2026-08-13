@@ -1,6 +1,7 @@
 import type { RideSegment } from '../data/raceStages.ts'
 import { buildGradientSections, gradientResistance, gradientSectionIndex, type GradientSection } from './gradientRoad.ts'
 import { createStageTimeline, isClimb, type StageSnapshot, type StageTimeline } from './stageEngine.ts'
+import { buildSprintPhases, sprintSnapshot, type SprintPhase, type SprintSnapshot } from './sprintPhases.ts'
 
 export type RaceMarkerType = 'kilometre-zero' | 'sprint' | 'kom' | 'finish'
 export type RaceMarker = { key: string; type: RaceMarkerType; label: string; position: number; at: number }
@@ -15,6 +16,8 @@ export type RoadSnapshot = StageSnapshot & {
   nextGradient: number
   climbProgress: number
   resistance: string
+  sprintPhases: SprintPhase[]
+  sprintPhase: SprintSnapshot | null
 }
 
 export type RoadModel = StageTimeline & {
@@ -33,6 +36,7 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
   const sectionGradients = segments.map((segment, index) => isClimb(segment)
     ? buildGradientSections(`${stageNumber}-${index}-${segment.name}-${segment.type}`, segment.sec, segment.zone)
     : [])
+  const sectionSprints = segments.map(buildSprintPhases)
   const raw: RoadPoint[] = [{ position: 0, elevation: 0 }]
   let elevation = 0
   segments.forEach((segment, index) => {
@@ -68,7 +72,10 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
     const start = timeline.segmentStarts[index]
     const position = start / timeline.duration
     if (/kilometre zero|race start/i.test(text(segment))) markers.push({ key: `km0-${index}`, type: 'kilometre-zero', label: 'KM 0', position, at: start })
-    if (/sprint/i.test(text(segment)) && !/finish/i.test(text(segment))) markers.push({ key: `sprint-${index}`, type: 'sprint', label: 'SPR', position, at: start })
+    if (/sprint/i.test(text(segment)) && !/finish/i.test(text(segment))) {
+      const at = start + segment.sec
+      markers.push({ key: `sprint-${index}`, type: 'sprint', label: 'SPR', position: at / timeline.duration, at })
+    }
     if (isClimb(segment)) {
       const at = start + segment.sec
       markers.push({ key: `kom-${index}`, type: 'kom', label: 'KOM', position: at / timeline.duration, at })
@@ -85,6 +92,8 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
     roadSnapshot(elapsedSeconds) {
       const base = timeline.snapshot(elapsedSeconds)
       const gradientSections = sectionGradients[base.segmentIndex]
+      const sprintPhases = sectionSprints[base.segmentIndex]
+      const sprintPhase = sprintSnapshot(sprintPhases, base.elapsedInSegment)
       const gradientIndex = gradientSectionIndex(gradientSections, base.segmentProgress)
       const gradient = gradientSections[gradientIndex]?.gradient ?? (/descent/i.test(text(base.segment)) ? -3.2 : 0)
       return {
@@ -93,11 +102,13 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
         elevation: elevationAt(base.riderPosition),
         profileY: elevationAt(base.riderPosition),
         gradientSections,
+        sprintPhases,
+        sprintPhase,
         gradientIndex,
         gradient,
         nextGradient: gradientSections[Math.min(gradientIndex + 1, gradientSections.length - 1)]?.gradient ?? gradient,
         climbProgress: isClimb(base.segment) ? base.segmentProgress : 0,
-        resistance: gradientSections.length ? gradientResistance(base.segment, gradientSections, gradientIndex) : base.segment.resistance,
+        resistance: sprintPhase?.resistance ?? (gradientSections.length ? gradientResistance(base.segment, gradientSections, gradientIndex) : base.segment.resistance),
       }
     },
   }

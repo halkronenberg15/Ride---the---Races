@@ -67,6 +67,11 @@ export type CareerState = {
     currentStage: number
     completedStages: number[]
   }
+  races: {
+    tour: { currentStage: number; completedStages: number[] }
+    vuelta: { currentStage: number; completedStages: number[] }
+  }
+  trainingHistory: string[]
   health: HealthEntry
   rideHistory: RideMetricEntry[]
   settings: {

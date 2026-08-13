@@ -3,6 +3,7 @@ import { raceStages } from '../data/raceStages'
 import { teamLoriot } from '../game/team'
 import { useCareer } from '../state/CareerContext'
 import { formatDistance, formatElevation, kmToMi, mToFt } from '../utils/units'
+import { raceLibraries, trainingRides, vuelta2026 } from '../data/raceLibrary'
 
 type TeamBusScreenProps = {
   selectedStageNumber: number
@@ -30,6 +31,7 @@ function TeamBusScreen({
   const { career } = useCareer()
   const [expandedStage, setExpandedStage] = useState(selectedStageNumber)
   const [showRoster, setShowRoster] = useState(false)
+  const [library, setLibrary] = useState<'tour-2026' | 'vuelta-2026' | 'training'>('tour-2026')
   const selectedStage = raceStages.find((stage) => stage.number === selectedStageNumber) ?? raceStages[0]
 
   function selectStage(stageNumber: number) {
@@ -44,8 +46,12 @@ function TeamBusScreen({
       <header className="compact-page-header">
         <p className="eyebrow">{teamLoriot.name.toUpperCase()}</p>
         <h1>Team Bus</h1>
-        <p>Tour Roadbook • 21 stages • Two rest days</p>
+        <p>Race and training library • One unified ride engine</p>
       </header>
+
+      <nav className="race-library-selector" aria-label="Team Bus libraries">
+        {raceLibraries.map((item) => <button key={item.id} type="button" className={library === item.id ? 'selected' : ''} onClick={() => setLibrary(item.id as typeof library)}><strong>{item.name.toUpperCase()}</strong><small>{item.id === 'tour-2026' ? '21-stage race roadbook' : item.id === 'vuelta-2026' ? '2026 official calendar shell' : 'Recovery and rest-day sessions'}</small></button>)}
+      </nav>
 
       <div className="bus-toolbar">
         <button type="button" onClick={() => setShowRoster((value) => !value)}>
@@ -74,7 +80,7 @@ function TeamBusScreen({
         </section>
       )}
 
-      <section className="dashboard-card roadbook-calendar">
+      {library === 'tour-2026' && <section className="dashboard-card roadbook-calendar">
         <div className="section-title-row">
           <div><p className="eyebrow">TOUR CALENDAR</p><h2>Stage Roadbook</h2></div>
           <small>Tap a stage to expand</small>
@@ -120,9 +126,20 @@ function TeamBusScreen({
             )
           })}
         </div>
-      </section>
+      </section>}
 
-      <section className="dashboard-card compact-start-list">
+      {library === 'vuelta-2026' && <section className="dashboard-card roadbook-calendar">
+        <div className="section-title-row"><div><p className="eyebrow">LA VUELTA 2026</p><h2>Official Calendar Shell</h2></div><small>21 stages • Two rest days</small></div>
+        <p className="muted">Calendar metadata is ready for incremental sections, climbs, sprint/KOM markers, and Jean objectives. Detailed rides will use the existing synchronized stage engine.</p>
+        <div className="calendar-stage-list">{vuelta2026.stages.map((stage) => <div className="calendar-stage" key={stage.number}><div className="calendar-stage-row"><span className="calendar-day">{String(stage.number).padStart(2,'0')}</span><span className="calendar-route"><strong>{stage.start} → {stage.finish}</strong><small>{stage.type} • {stage.distanceKm} km</small></span><span className="calendar-state">PLANNED</span></div>{vuelta2026.restDays.find(day => day.afterStage === stage.number) && <div className="rest-day-row">🛌 {vuelta2026.restDays.find(day => day.afterStage === stage.number)?.label}</div>}</div>)}</div>
+      </section>}
+
+      {library === 'training' && <section className="dashboard-card roadbook-calendar">
+        <div className="section-title-row"><div><p className="eyebrow">TEAM LORIOT TRAINING</p><h2>Recovery & Leg Openers</h2></div><small>Does not advance race progress</small></div>
+        <div className="training-library-grid">{trainingRides.map((ride) => <article className="training-ride-card" key={ride.id}><p className="eyebrow">{ride.difficulty} • {ride.zones}</p><h3>{ride.name}</h3><strong>{ride.durationMinutes} MINUTES</strong><p>{ride.purpose}</p><blockquote>Jean: “{ride.jeanDescription}”</blockquote><button type="button" disabled title="Ride profiles arrive incrementally">Profile coming soon</button></article>)}</div>
+      </section>}
+
+      {library === 'tour-2026' && <section className="dashboard-card compact-start-list">
         <div className="section-title-row">
           <div><p className="eyebrow">STAGE {selectedStage.number}</p><h2>Start List</h2></div>
           <small>All eight riders active</small>
@@ -132,9 +149,9 @@ function TeamBusScreen({
           <strong>{selectedStage.route}</strong>
           <span>{formatDistance(selectedStage.distanceKm, career.settings.measurementSystem)} • {formatElevation(selectedStage.elevationM, career.settings.measurementSystem)} D+</span>
         </div>
-      </section>
+      </section>}
 
-      <button type="button" className="primary-cta team-bus-continue" onClick={onContinue}>Open Stage {selectedStage.number} Race Briefing</button>
+      {library === 'tour-2026' && <button type="button" className="primary-cta team-bus-continue" onClick={onContinue}>Open Stage {selectedStage.number} Race Briefing</button>}
     </section>
   )
 }
