@@ -24,6 +24,11 @@ export const initialCareer: CareerState = {
     currentStage: 1,
     completedStages: [1, 2],
   },
+  races: {
+    tour: { currentStage: 1, completedStages: [1, 2] },
+    vuelta: { currentStage: 1, completedStages: [] },
+  },
+  trainingHistory: [],
   health: {
     date: new Date().toISOString().slice(0, 10),
     sleepHours: 7.5,
@@ -44,13 +49,16 @@ export const initialCareer: CareerState = {
   },
 }
 
-function migrateCareer(saved: Partial<CareerState>): CareerState {
+export function migrateCareer(saved: Partial<CareerState>): CareerState {
+  const legacyTour = { currentStage: saved.season?.currentStage ?? initialCareer.races.tour.currentStage, completedStages: saved.season?.completedStages ?? initialCareer.races.tour.completedStages }
   return {
     ...initialCareer,
     ...saved,
     onboardingComplete: saved.onboardingComplete ?? true,
     rider: { ...initialCareer.rider, ...saved.rider },
     season: { ...initialCareer.season, ...saved.season },
+    races: { tour: { ...legacyTour, ...saved.races?.tour }, vuelta: { ...initialCareer.races.vuelta, ...saved.races?.vuelta } },
+    trainingHistory: saved.trainingHistory ?? [],
     health: { ...initialCareer.health, ...saved.health },
     rideHistory: saved.rideHistory ?? [],
     settings: { ...initialCareer.settings, ...saved.settings },
@@ -90,7 +98,7 @@ export function CareerProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<CareerContextValue>(() => ({
     career,
     setCurrentStage(stage) {
-      setCareer((current) => ({ ...current, season: { ...current.season, currentStage: stage } }))
+      setCareer((current) => ({ ...current, season: { ...current.season, currentStage: stage }, races: { ...current.races, tour: { ...current.races.tour, currentStage: stage } } }))
     },
     completeStage(stage) {
       setCareer((current) => ({
@@ -100,6 +108,7 @@ export function CareerProvider({ children }: { children: React.ReactNode }) {
           currentStage: Math.min(21, stage + 1),
           completedStages: Array.from(new Set([...current.season.completedStages, stage])).sort((a, b) => a - b),
         },
+        races: { ...current.races, tour: { currentStage: Math.min(21, stage + 1), completedStages: Array.from(new Set([...current.races.tour.completedStages, stage])).sort((a,b)=>a-b) } },
       }))
     },
     addRide(ride) {

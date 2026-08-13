@@ -74,6 +74,7 @@ function RideScreen({
   const previousCoachingElapsed = useRef(elapsedSeconds)
   const spokenTimelineEvents = useRef(new Set<string>())
   const segmentCardTimer = useRef<number | null>(null)
+  const previousSprintPhase = useRef<string | null>(null)
   const wakeLockRef = useRef<WakeLockSentinelLike | null>(
     null,
   )
@@ -97,6 +98,13 @@ function RideScreen({
         : null
 
   const segmentRemaining = engine.segmentRemaining
+  const sprintPhase = engine.sprintPhase
+  const displayPower = sprintPhase?.power ?? currentSegment.power
+  const displayCadence = sprintPhase?.cadence ?? currentSegment.cadence
+  const displayResistance = sprintPhase?.resistance ?? engine.resistance
+  const displayZone = sprintPhase?.zone ?? currentSegment.zone
+  const kmZeroAt = timeline.markers.find((marker) => marker.type === 'kilometre-zero')?.at ?? 0
+  const afterKmZero = elapsedSeconds > kmZeroAt
 
   const progress = engine.stageProgress * 100
 
@@ -257,7 +265,7 @@ function RideScreen({
       secondInSegment - lastRandomCueTime.current > 35 &&
       currentSegment.sec - secondInSegment > 35
     ) {
-      const randomCue = jeanCue(mode, undefined, [radioText], secondInSegment)
+      const randomCue = jeanCue(mode, undefined, [radioText], secondInSegment, { afterKmZero, running: isRunning, sprintPhase: sprintPhase?.name })
 
       speak(randomCue)
       lastRandomCueTime.current = secondInSegment
@@ -274,7 +282,16 @@ function RideScreen({
     segmentData.index,
     mode,
     radioText,
+    afterKmZero,
+    sprintPhase?.name,
   ])
+
+  useEffect(() => {
+    const name = sprintPhase?.name ?? null
+    if (!isRunning || !name || previousSprintPhase.current === name) return
+    previousSprintPhase.current = name
+    speak(jeanCue('sprint', undefined, [radioText], engine.segmentIndex + sprintPhase!.index, { afterKmZero, running: true, sprintPhase: name, critical: name === 'SPRINT' }))
+  }, [sprintPhase?.name, isRunning])
 
   useEffect(() => {
     if (!isRunning) return
@@ -292,7 +309,8 @@ function RideScreen({
     if (!isRunning || elapsedSeconds <= previous) return
     const crossed = jeanEventsCrossed(coachingTimeline, previous, elapsedSeconds)
       .filter((event) => event.type !== 'sector-entry' && !spokenTimelineEvents.current.has(event.key))
-    const event = crossed.at(-1)
+    // Navigation/resume can cross historical cues. Only a fresh road event is eligible.
+    const event = crossed.filter((item) => elapsedSeconds - item.at <= 5).at(-1)
     if (!event) return
     crossed.forEach((item) => spokenTimelineEvents.current.add(item.key))
     speak(timelineMessage(event))
@@ -501,6 +519,7 @@ function RideScreen({
         .race-marker.sprint i { background:#38bdf8; }
         .race-marker.kom { color:#fca5a5; }
         .race-marker.kom i { background:#ef4444; }
+        .race-marker.kom i, .race-marker.finish i { height:72px; }
         .race-marker.finish i { background:repeating-linear-gradient(#fff 0 4px,#111 4px 8px); width:5px; }
 
         .live-profile-head {
@@ -622,7 +641,7 @@ function RideScreen({
 
         .segment-clock strong {
           display: block;
-          font-size: clamp(4.4rem, 16vw, 8rem);
+          font-size: clamp(3.6rem, 13vw, 6.5rem);
           line-height: .88;
           letter-spacing: -.06em;
           font-variant-numeric: tabular-nums;
@@ -658,6 +677,15 @@ function RideScreen({
           word-break: normal;
           overflow-wrap: anywhere;
         }
+
+        .cockpit-sections { display:grid; grid-template-columns:1.15fr .85fr; gap:8px; margin-top:9px; }
+        .cockpit-section { padding:9px 11px; border-radius:12px; background:rgba(255,255,255,.045); border:1px solid rgba(255,255,255,.1); min-width:0; }
+        .cockpit-section.current { border-color:#f46a00; box-shadow:inset 3px 0 #f46a00; background:rgba(244,106,0,.1); }
+        .cockpit-section small,.cockpit-section strong { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .cockpit-section small { opacity:.65; font-size:.65rem; letter-spacing:.08em; }.cockpit-section strong{margin-top:3px;font-size:.9rem}
+        .overlay-targets { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:18px; }
+        .overlay-targets div { padding:12px 5px; border-radius:12px; background:rgba(255,255,255,.07); }
+        .overlay-targets small,.overlay-targets strong{display:block}.overlay-targets strong{margin-top:5px;font-size:clamp(.9rem,3vw,1.25rem)}
 
         .radio-strip {
           margin-top: 12px;
@@ -907,11 +935,9 @@ function RideScreen({
               {currentSegment.type}
             </p>
 
-            <strong>
-              {currentSegment.zone} •{' '}
-              {formatTime(currentSegment.sec)} •{' '}
-              {currentSegment.power}
-            </strong>
+            <strong>{displayZone} • {formatTime(currentSegment.sec)}</strong>
+            <div className="overlay-targets"><div><small>POWER</small><strong>{displayPower}</strong></div><div><small>CADENCE</small><strong>{displayCadence}</strong></div><div><small>RESISTANCE</small><strong>{displayResistance}</strong></div></div>
+            <p style={{marginBottom:0,opacity:.8}}>Jean: “{currentSegment.description}”</p>
           </div>
         </div>
       )}
@@ -1085,34 +1111,36 @@ function RideScreen({
                   whiteSpace: 'nowrap',
                 }}
               >
-                {currentSegment.zone}
+                {displayZone}
               </strong>
               </div>
             </div>
 
             <div className="segment-clock">
-              <strong>{formatTime(segmentRemaining)}</strong>
-              <small>SEGMENT REMAINING</small>
+              <strong>{formatTime(sprintPhase?.remaining ?? segmentRemaining)}</strong>
+              <small>{sprintPhase ? `${sprintPhase.name} PHASE REMAINING` : 'SEGMENT REMAINING'}</small>
             </div>
 
             <div className="target-grid">
               <div className="target-tile">
                 <small>POWER</small>
-                <strong>{currentSegment.power}</strong>
+                <strong>{displayPower}</strong>
               </div>
 
               <div className="target-tile">
                 <small>CADENCE</small>
-                <strong>{currentSegment.cadence}</strong>
+                <strong>{displayCadence}</strong>
               </div>
 
               <div className="target-tile">
                 <small>RESISTANCE</small>
                 <strong>
-                  {engine.resistance}
+                  {displayResistance}
                 </strong>
               </div>
             </div>
+
+            <div className="cockpit-sections" aria-label="Current and next section"><div className="cockpit-section current"><small>CURRENT · {segmentData.index + 1}/{segments.length}</small><strong>{sprintPhase ? `⚡ ${sprintPhase.name} · ${currentSegment.name}` : `${currentSegment.icon} ${currentSegment.name}`}</strong></div><div className="cockpit-section"><small>UP NEXT</small><strong>{nextSegment ? `${nextSegment.icon} ${nextSegment.name}` : 'Stage finish'}</strong></div></div>
 
             <div className="radio-strip">
               <small>📻 JEAN MOREAU</small>

@@ -887,3 +887,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .team-plan-card,.workout-impact-card { padding:11px; }
   .team-plan-card ul { font-size:.82rem; line-height:1.42; }
 }
+.race-library-selector { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:14px 0; }
+.race-library-selector button { min-height:76px; text-align:left; display:flex; flex-direction:column; justify-content:center; gap:5px; }
+.race-library-selector button.selected { border-color:#f46a00; background:rgba(244,106,0,.16); box-shadow:inset 4px 0 #f46a00; }
+.race-library-selector small { opacity:.7; }
+.training-library-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px; }
+.training-ride-card { padding:16px; border:1px solid rgba(255,255,255,.12); border-radius:14px; background:rgba(255,255,255,.035); }
+.training-ride-card h3 { margin:4px 0; }.training-ride-card blockquote { margin:10px 0; opacity:.8; }
+@media(max-width:650px){.race-library-selector{grid-template-columns:1fr}.race-library-selector button{min-height:62px}}
