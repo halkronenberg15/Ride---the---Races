@@ -4,9 +4,10 @@ import { teamLoriot } from '../game/team'
 import { useCareer } from '../state/CareerContext'
 import { formatDistance, formatElevation, kmToMi, mToFt } from '../utils/units'
 import { trainingRides, vuelta2026 } from '../data/raceLibrary'
+import { seasons } from '../data/seasonCalendar'
 
 type RaceLibraryScreenProps = {
-  library: 'tour-2026' | 'vuelta-2026' | 'training'
+  library: string
   selectedStageNumber: number
   onSelectStage: (stageNumber: number) => void
   onBack: () => void
@@ -33,6 +34,7 @@ function RaceLibraryScreen({
   const { career } = useCareer()
   const [expandedStage, setExpandedStage] = useState(selectedStageNumber)
   const [showRoster, setShowRoster] = useState(false)
+  const raceMetadata = seasons.flatMap((season) => season.races).find((race) => race.raceLibraryId === library)
   const selectedStage = raceStages.find((stage) => stage.number === selectedStageNumber) ?? raceStages[0]
 
   function selectStage(stageNumber: number) {
@@ -42,11 +44,11 @@ function RaceLibraryScreen({
 
   return (
     <section className="team-bus-screen alpha38-team-bus">
-      <button type="button" onClick={onBack}>← Back Home</button>
+      <button type="button" onClick={onBack}>← Back</button>
 
       <header className="compact-page-header">
         <p className="eyebrow">{teamLoriot.name.toUpperCase()}</p>
-        <h1>{library === 'tour-2026' ? 'Tour de France' : library === 'vuelta-2026' ? 'La Vuelta' : 'Training Rides'}</h1>
+        <h1>{library === 'training' ? 'Training Rides' : raceMetadata?.name ?? 'Race Roadbook'}</h1>
         <p>Dedicated roadbook • One unified ride engine</p>
       </header>
 
@@ -76,6 +78,8 @@ function RaceLibraryScreen({
           </div>
         </section>
       )}
+
+      {library !== 'tour-2026' && library !== 'vuelta-2026' && library !== 'training' && <section className="dashboard-card roadbook-calendar race-shell"><p className="eyebrow">{raceMetadata?.raceType ?? 'RACE'}</p><h2>Roadbook in preparation</h2><p>{raceMetadata?.stageCount ?? 1} stage{raceMetadata?.stageCount === 1 ? '' : 's'} scheduled. Team Loriot route details will arrive here without changing the season navigation.</p></section>}
 
       {library === 'tour-2026' && <section className="dashboard-card roadbook-calendar">
         <div className="section-title-row">

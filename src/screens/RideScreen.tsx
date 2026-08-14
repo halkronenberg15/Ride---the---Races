@@ -745,6 +745,10 @@ function RideScreen({
           margin-top: 10px;
         }
 
+        .ride-detail-stat { padding: 12px !important; min-height: 0 !important; }
+        .ride-detail-objectives { padding: 14px !important; }
+        .ride-detail-objectives p { margin-bottom: 7px; }
+
         .detail-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -1202,7 +1206,7 @@ function RideScreen({
 
               <div className="detail-grid">
                 <div
-                  className="dashboard-card"
+                  className="dashboard-card ride-detail-stat"
                   style={{ textAlign: 'center' }}
                 >
                   <small>STAGE TIME</small>
@@ -1218,7 +1222,7 @@ function RideScreen({
                 </div>
 
                 <div
-                  className="dashboard-card"
+                  className="dashboard-card ride-detail-stat"
                   style={{ textAlign: 'center' }}
                 >
                   <small>STAGE REMAINING</small>
@@ -1235,7 +1239,7 @@ function RideScreen({
               </div>
 
               <div
-                className="dashboard-card"
+                className="dashboard-card ride-detail-objectives"
                 style={{ borderLeft: '4px solid #f46a00' }}
               >
                 <p className="eyebrow">OBJECTIVES</p>
@@ -1252,16 +1256,8 @@ function RideScreen({
 
               <div className="dashboard-card">
                 <p className="eyebrow">UP NEXT</p>
-                <h2>
-                  {nextSegment
-                    ? `${nextSegment.icon} ${nextSegment.name}`
-                    : 'Team Bus'}
-                </h2>
-                <p>
-                  {nextSegment
-                    ? `${formatTime(nextSegment.sec)} • ${nextSegment.zone} • ${nextSegment.power}`
-                    : 'Stage debrief'}
-                </p>
+                <h2>{actions.next ? `${actions.next.type === 'sprint' ? '⚡ ' : ''}${actions.next.name}` : 'FINISH'}</h2>
+                <p>{actions.next ? `in ${formatTime(actions.timeUntilNext ?? 0)} • ${actions.next.zone} • ${actions.next.power} • ${actions.next.cadence} • ${actions.next.resistance}` : 'No upcoming target'}</p>
               </div>
 
 

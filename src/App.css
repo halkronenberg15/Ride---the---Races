@@ -913,3 +913,31 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .preview-stat strong { display:block; margin-top:3px; }
 @media(max-width:650px){.team-bus-destinations{grid-template-columns:1fr}.team-bus-destinations button{min-height:76px}.stage-section-preview{padding:11px}.cockpit-sections{grid-template-columns:1fr 1.25fr!important}}
 @media(max-width:360px){.cockpit-sections{grid-template-columns:1fr!important}}
+
+/* Alpha 4.0.6 season headquarters */
+.home-command-grid { grid-template-columns: 1fr; }
+.home-dashboard { grid-template-columns: minmax(0, 540px); }
+.enter-team-bus { width: 100%; margin-top: 22px; min-height: 64px; font-size: 1.05rem; }
+.destination-heading { grid-column: 1 / -1; margin-top: 12px; }
+.season-calendar-screen { width: min(760px, 100%); margin: 0 auto; }
+.season-months { display: grid; gap: 32px; margin-top: 28px; }
+.month-calendar { scroll-margin-top: 12px; padding: clamp(12px, 3vw, 22px); overflow: hidden; border: 1px solid #303033; border-radius: 22px; background: rgba(20,20,22,.96); box-shadow: 0 18px 45px rgba(0,0,0,.25); }
+.month-calendar > header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; }
+.month-calendar h2 { margin: 0; text-transform: uppercase; letter-spacing: .04em; }
+.month-calendar > header strong { color: #ff7a1a; }
+.calendar-weekdays, .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.calendar-weekdays span { padding-bottom: 9px; color: #aaaab0; font-size: clamp(.58rem, 2vw, .72rem); font-weight: 800; text-align: center; text-transform: uppercase; }
+.calendar-date, .calendar-blank { min-width: 0; min-height: clamp(52px, 12vw, 78px); padding: 5px 3px; border-top: 1px solid #303033; border-right: 1px solid #27272a; color: #d4d4d8; font-size: .75rem; }
+.calendar-date:nth-child(7n), .calendar-blank:nth-child(7n) { border-right: 0; }
+.calendar-date > span { display: block; padding-left: 3px; }
+.calendar-date button { display: block; width: 100%; min-width: 0; margin-top: 4px; padding: 4px 2px; overflow-wrap: anywhere; border: 1px solid var(--race-color); border-left-width: 4px; border-radius: 6px; background: color-mix(in srgb, var(--race-color) 20%, #171717); color: #fff; font-size: clamp(.52rem, 1.7vw, .68rem); font-weight: 800; line-height: 1.15; }
+.calendar-date button:hover, .calendar-date button:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+.calendar-date button.current-race { box-shadow: 0 0 0 2px #ff6a00; }
+.race-shell { margin-top: 20px; }
+@media (max-width: 520px) {
+  .app { width: min(100% - 20px, 1100px); padding-top: max(20px, env(safe-area-inset-top)); }
+  .hq-topbar { flex-direction: column; }
+  .rider-badge { width: 100%; text-align: left; }
+  .month-calendar { border-radius: 16px; }
+  .calendar-date, .calendar-blank { min-height: 58px; padding-inline: 1px; }
+}
