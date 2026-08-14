@@ -3,6 +3,8 @@ import packageMetadata from '../package.json'
 import './App.css'
 import TeamHQScreen from './screens/TeamHQScreen'
 import TeamBusScreen from './screens/TeamBusScreen'
+import RaceLibraryScreen from './screens/RaceLibraryScreen'
+import TeamRosterScreen from './screens/TeamRosterScreen'
 import TacticsScreen from './screens/TacticsScreen'
 import type { RaceStrategy } from './types/tactics'
 import RideScreen from './screens/RideScreen'
@@ -20,7 +22,7 @@ import { getRaceStage } from './data/raceStages'
 import { adaptSegments } from './engine/adaptiveRide'
 import { createStageTimeline } from './engine/stageEngine'
 
-type Screen = 'hq' | 'teamBus' | 'tactics' | 'ride' | 'restDay' | 'rideData' | 'health' | 'profile' | 'settings' | 'finale'
+type Screen = 'hq' | 'teamBus' | 'tour' | 'vuelta' | 'training' | 'roster' | 'tactics' | 'ride' | 'restDay' | 'rideData' | 'health' | 'profile' | 'settings' | 'finale'
 
 function RideTheRacesApp() {
   const { career, setCurrentStage, completeStage, addRide } = useCareer()
@@ -69,18 +71,21 @@ function RideTheRacesApp() {
 
       {screen === 'teamBus' && (
         <TeamBusScreen
-          selectedStageNumber={career.season.currentStage}
-          onSelectStage={setCurrentStage}
           onBack={() => setScreen('hq')}
-          onContinue={() => setScreen('tactics')}
-          onOpenRestDay={() => setScreen('restDay')}
+          onOpenTour={() => setScreen('tour')}
+          onOpenVuelta={() => setScreen('vuelta')}
+          onOpenTraining={() => setScreen('training')}
+          onOpenRoster={() => setScreen('roster')}
         />
       )}
+
+      {(screen === 'tour' || screen === 'vuelta' || screen === 'training') && <RaceLibraryScreen library={screen === 'tour' ? 'tour-2026' : screen === 'vuelta' ? 'vuelta-2026' : 'training'} selectedStageNumber={career.season.currentStage} onSelectStage={setCurrentStage} onBack={() => setScreen('teamBus')} onContinue={() => setScreen('tactics')} onOpenRestDay={() => setScreen('restDay')} />}
+      {screen === 'roster' && <TeamRosterScreen onBack={() => setScreen('teamBus')} />}
 
       {screen === 'tactics' && (
         <TacticsScreen
           stageNumber={career.season.currentStage}
-          onBack={() => setScreen('teamBus')}
+          onBack={() => setScreen('tour')}
           onStartRide={(strategy) => {
             setRaceStrategy(strategy)
             setScreen('ride')
