@@ -849,10 +849,10 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .selected-stage-summary span { color:#8a8a8a; text-align:right; }
 .team-bus-continue { width:100%; margin-top:12px; min-height:58px; }
 
-.briefing-board { display:grid; gap:12px; padding:14px; border:1px solid rgba(255,255,255,.1); border-radius:22px; background:rgba(16,16,16,.92); }
+.briefing-board { display:grid; grid-template-columns:minmax(0,1fr); gap:12px; padding:14px; border:1px solid rgba(255,255,255,.1); border-radius:22px; background:rgba(16,16,16,.92); }
 .briefing-mission { padding:13px 15px; border-left:4px solid #ff6a00; border-radius:0 12px 12px 0; background:rgba(255,106,0,.08); }
 .briefing-mission h2 { margin:4px 0 0; font-size:clamp(1.1rem,4vw,1.45rem); line-height:1.35; }
-.strategy-selector { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.strategy-selector { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; } 
 .strategy-selector button { min-height:82px; padding:10px 7px; display:grid; place-items:center; gap:2px; background:rgba(255,255,255,.04); }
 .strategy-selector button.selected { border-color:#ff7a21; box-shadow:0 0 0 2px rgba(255,106,0,.32) inset; }
 .strategy-selector button span,.strategy-selector button strong,.strategy-selector button small { display:block; }
