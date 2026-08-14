@@ -4,6 +4,7 @@ import { adaptSegment, strategyProfiles } from '../engine/adaptiveRide'
 import { useCareer } from '../state/CareerContext'
 import type { RaceStrategy } from '../types/tactics'
 import { kmToMi } from '../utils/units'
+import StageSectionPreview from '../components/StageSectionPreview'
 
 type TacticsScreenProps = {
   stageNumber: number
@@ -35,6 +36,8 @@ function TacticsScreen({ stageNumber, onBack, onStartRide }: TacticsScreenProps)
           <p className="eyebrow">TODAY'S MISSION</p>
           <h2>{stage.objective}</h2>
         </div>
+
+        <StageSectionPreview stageNumber={stage.number} segments={adaptedSegments} measurementSystem={career.settings.measurementSystem} />
 
         <div className="strategy-selector" aria-label="Race strategy">
           {(['Conservative', 'Balanced', 'Aggressive'] as RaceStrategy[]).map((option) => (

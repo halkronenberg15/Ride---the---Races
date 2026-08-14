@@ -895,3 +895,21 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .training-ride-card { padding:16px; border:1px solid rgba(255,255,255,.12); border-radius:14px; background:rgba(255,255,255,.035); }
 .training-ride-card h3 { margin:4px 0; }.training-ride-card blockquote { margin:10px 0; opacity:.8; }
 @media(max-width:650px){.race-library-selector{grid-template-columns:1fr}.race-library-selector button{min-height:62px}}
+
+/* Alpha 4.0.5: clean library destinations and briefing roadbook */
+.team-bus-destinations { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:18px 0; }
+.team-bus-destinations button { min-height:100px; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:6px; padding:18px; text-align:left; }
+.team-bus-destinations strong { color:#fff; font-size:1.05rem; }
+.team-bus-destinations small { color:#b8b8be; }
+.stage-section-preview { margin:0; color:#f4f4f5; background:rgba(20,20,22,.96); }
+.stage-section-preview h2,.stage-section-preview h3,.stage-section-preview strong { color:#fff; }
+.section-preview-list { display:flex; gap:7px; overflow-x:auto; padding:5px 1px 11px; scroll-snap-type:x proximity; }
+.section-preview-button { flex:0 0 min(180px,72vw); padding:10px 12px; scroll-snap-align:start; text-align:left; color:#dedee3; background:#242428; border-color:#45454d; }
+.section-preview-button strong { display:block; margin-top:3px; }
+.section-preview-button.previewing { outline:2px solid #f46a00; background:#342218; }
+.preview-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(125px,1fr)); gap:8px; margin:12px 0; }
+.preview-stat { display:block; padding:10px; border-radius:10px; background:rgba(255,255,255,.06); }
+.preview-stat small,.preview-card .muted { color:#b5b5bb; display:block; }
+.preview-stat strong { display:block; margin-top:3px; }
+@media(max-width:650px){.team-bus-destinations{grid-template-columns:1fr}.team-bus-destinations button{min-height:76px}.stage-section-preview{padding:11px}.cockpit-sections{grid-template-columns:1fr 1.25fr!important}}
+@media(max-width:360px){.cockpit-sections{grid-template-columns:1fr!important}}
