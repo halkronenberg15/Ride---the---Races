@@ -45,7 +45,7 @@ const seeds: TourSeed[] = [
  ['2026-07-26','Thoiry','Paris Champs-Élysées','Flat',88.7,[145,125,160,115,95,75,55,92,48,108,50,112,46,60]],
 ]
 
-const routeMap = (alt:string):RouteMap => ({type:'simplified-route',alt,verified:false,source:SOURCE,points:[{x:8,y:72},{x:27,y:52},{x:46,y:66},{x:65,y:35},{x:84,y:52},{x:94,y:24}]})
+const routeMap = (alt:string):RouteMap => ({type:'simplified-route',alt,verified:false,source:SOURCE,points:[{x:8,y:51},{x:24,y:46},{x:39,y:53},{x:57,y:48},{x:74,y:55},{x:94,y:47}]})
 
 const stageFromSeed = (seed:TourSeed,index:number):ProfessionalStage => {
  const [date,start,finish,classification,distanceKm,elevations]=seed
@@ -67,7 +67,7 @@ const stageFromSeed = (seed:TourSeed,index:number):ProfessionalStage => {
 export const tour2026:ProfessionalRace = {
  id:'tour-2026',season:2026,name:'Tour de France',shortName:'Le Tour',startDate:'2026-07-04',endDate:'2026-07-26',
  identity:{shortName:'Le Tour',raceAccentColor:'#f2d13d',leaderJerseyColor:'#f2d13d',sprintMarkerColor:'#38a852',komMarkerColor:'#ef3340',finishMarkerColor:'#ffffff',kmZeroMarkerColor:'#ffd400',timeCheckMarkerColor:'#55dff7'},
- routeMap:{...routeMap('Simplified overview of the 2026 Tour de France route from Barcelona to Paris'),points:[{x:12,y:80,label:'Barcelona'},{x:34,y:65},{x:48,y:35},{x:70,y:48},{x:92,y:16,label:'Paris'}]},
+ routeMap:{...routeMap('Simplified overview of the 2026 Tour de France route from Barcelona to Paris'),points:[{x:8,y:54,label:'Barcelona'},{x:25,y:45},{x:43,y:51},{x:62,y:43},{x:78,y:54},{x:94,y:47,label:'Paris'}]},
  restDays:[{afterStage:9,date:'2026-07-13',label:'Rest Day 1 · Cantal'},{afterStage:15,date:'2026-07-20',label:'Rest Day 2 · Haute-Savoie'}],
  stages:seeds.map(stageFromSeed),
 }
