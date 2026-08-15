@@ -8,8 +8,11 @@ export type RaceStage = {
   id?: string; raceId?: string; isTraining?: boolean;
   number: number; route: string; title: string; distanceKm: number; elevationM: number;
   theme: string; difficulty: string; objective: string; teamOrders: string[];
-  profilePoints: string[]; segments: RideSegment[];
+  /** Official distance/elevation samples are the sole terrain source for researched courses. */
+  profilePoints: Array<string | { distanceKm: number; elevationM: number }>; segments: RideSegment[];
   profileVerified?: boolean; profileSource?: string; profileReference?: string; profileUpdatedAt?: string;
+  verification?: { profile:boolean; distance:boolean; ascent:boolean; markers:boolean; map:boolean; source:string; reference:string; updatedAt:string }
+  workoutReady?: boolean
   courseMarkers?: Array<{ type: 'time-check'; routeKm: number; label?: string }>
 }
 

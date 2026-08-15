@@ -54,7 +54,7 @@ export function markerLabelOffset(position:number, nearbyPositions:number[]=[]){
   const collisionIndex=nearbyPositions.filter(value=>value<position&&position-value<.055).length
   return { translateX:edgeOffset, translateY:collisionIndex%2?-11:0 }
 }
-export function createRoadModel(stageNumber: number, segments: RideSegment[], distanceKm: number, identity?:RaceIdentity, explicitProfile?:string[], courseMarkers?:Array<{type:'time-check';routeKm:number;label?:string}>): RoadModel {
+export function createRoadModel(stageNumber: number, segments: RideSegment[], distanceKm: number, identity?:RaceIdentity, explicitProfile?:Array<string|{distanceKm:number;elevationM:number}>, courseMarkers?:Array<{type:'time-check';routeKm:number;label?:string}>): RoadModel {
   const timeline = createStageTimeline(segments, distanceKm)
   const sectionGradients = segments.map((segment, index) => isClimb(segment)
     ? buildGradientSections(`${stageNumber}-${index}-${segment.name}-${segment.type}`, segment.sec, segment.zone)
@@ -77,11 +77,13 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
       raw.push({ position: end, elevation })
     }
   })
-  const explicitPoints=(explicitProfile??[]).map(value=>{const [x,y]=value.split(',').map(Number);return {position:x/100,elevation:y}}).filter(point=>Number.isFinite(point.position)&&Number.isFinite(point.elevation)).sort((a,b)=>a.position-b.position)
+  const officialProfile=explicitProfile?.some(value=>typeof value!=='string')
+  const explicitPoints=(explicitProfile??[]).map(value=>{if(typeof value!=='string')return {position:value.distanceKm/distanceKm,elevation:value.elevationM};const [x,y]=value.split(',').map(Number);return {position:x/100,elevation:y}}).filter(point=>Number.isFinite(point.position)&&Number.isFinite(point.elevation)).sort((a,b)=>a.position-b.position)
   const min = Math.min(...raw.map((point) => point.elevation))
   const max = Math.max(...raw.map((point) => point.elevation))
   const span = Math.max(1, max - min)
   const points = explicitPoints.length>=2 ? explicitPoints : raw.map((point) => ({ ...point, elevation: 82 - ((point.elevation - min) / span) * 62 }))
+  const pointMin=Math.min(...points.map(point=>point.elevation)); const pointMax=Math.max(...points.map(point=>point.elevation)); const pointSpan=Math.max(1,pointMax-pointMin)
   const elevationAt = (position: number) => {
     const p = Math.min(1, Math.max(0, position))
     const rightIndex = points.findIndex((point) => point.position >= p)
@@ -91,30 +93,31 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
     const local = (p - left.position) / Math.max(Number.EPSILON, right.position - left.position)
     return left.elevation + (right.elevation - left.elevation) * local
   }
+  const profileYAt=(position:number)=>officialProfile?92-((elevationAt(position)-pointMin)/pointSpan)*80:elevationAt(position)
   const markers: RaceMarker[] = []
   segments.forEach((segment, index) => {
     const start = timeline.segmentStarts[index]
     const position = start / timeline.duration
-    if (/kilometre zero|race start/i.test(text(segment))) markers.push({ key: `km0-${index}`, type: 'kilometre-zero', label: 'KM 0', position, at: start, ...markerGeometry(elevationAt(position)), color:'#ffd400' })
+    if (/kilometre zero|race start|official time trial start/i.test(text(segment))) markers.push({ key: `km0-${index}`, type: 'kilometre-zero', label: 'KM 0', position, at: start, ...markerGeometry(profileYAt(position)), color:'#ffd400' })
     if (/sprint/i.test(text(segment)) && !/finish/i.test(text(segment))) {
       const at = start + segment.sec
-      const position=at/timeline.duration; markers.push({ key: `sprint-${index}`, type: 'sprint', label: 'SPRINT', position, at, ...markerGeometry(elevationAt(position)), color:identity?.pointsColor??'#38a852' })
+      const position=at/timeline.duration; markers.push({ key: `sprint-${index}`, type: 'sprint', label: 'SPR', position, at, ...markerGeometry(profileYAt(position)), color:identity?.pointsColor??'#38a852' })
     }
     if (isClimb(segment)) {
       const at = start + segment.sec
-      const position=at/timeline.duration; markers.push({ key: `kom-${index}`, type: 'kom', label: 'KOM', position, at, ...markerGeometry(elevationAt(position)), color:identity?.komColor??'#ef3340' })
+      const position=at/timeline.duration; markers.push({ key: `kom-${index}`, type: 'kom', label: 'KOM', position, at, ...markerGeometry(profileYAt(position)), color:identity?.komColor??'#ef3340' })
     }
   })
   courseMarkers?.forEach((marker,index)=>{
     const position=Math.min(1,Math.max(0,marker.routeKm/distanceKm)); const at=position*timeline.duration
-    markers.push({key:`time-check-${index}`,type:'time-check',label:marker.label??'TT CHECK',position,at,...markerGeometry(elevationAt(position)),color:identity?.timeCheckColor??'#55dff7'})
+    markers.push({key:`time-check-${index}`,type:'time-check',label:marker.label??'TT',position,at,...markerGeometry(profileYAt(position)),color:identity?.timeCheckColor??'#55dff7'})
   })
-  markers.push({ key: 'finish', type: 'finish', label: 'FINISH', position: 1, at: timeline.duration, ...markerGeometry(elevationAt(1)), color:identity?.finishColor??'#ffffff' })
+  markers.push({ key: 'finish', type: 'finish', label: 'FIN', position: 1, at: timeline.duration, ...markerGeometry(profileYAt(1)), color:identity?.finishColor??'#ffffff' })
 
   return {
     ...timeline,
     points,
-    profilePoints: points.map((point) => `${(point.position * 100).toFixed(3)},${point.elevation.toFixed(3)}`),
+    profilePoints: points.map((point) => `${(point.position * 100).toFixed(3)},${profileYAt(point.position).toFixed(3)}`),
     markers,
     elevationAt,
     actionTargets(elapsedSeconds) {
@@ -177,7 +180,7 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
         ...base,
         roadPosition: base.riderPosition,
         elevation: elevationAt(base.riderPosition),
-        profileY: elevationAt(base.riderPosition),
+        profileY: profileYAt(base.riderPosition),
         gradientSections,
         sprintPhases,
         sprintPhase,
