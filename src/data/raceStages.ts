@@ -5,6 +5,7 @@ export type RideSegment = {
   secondaryObjective: string; terrainLabel: string; fixed?: StageCue[]; random?: string[]
 }
 export type RaceStage = {
+  id?: string; raceId?: string; isTraining?: boolean;
   number: number; route: string; title: string; distanceKm: number; elevationM: number;
   theme: string; difficulty: string; objective: string; teamOrders: string[];
   profilePoints: string[]; segments: RideSegment[]

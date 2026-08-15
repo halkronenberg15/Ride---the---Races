@@ -853,7 +853,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .briefing-mission { padding:13px 15px; border-left:4px solid #ff6a00; border-radius:0 12px 12px 0; background:rgba(255,106,0,.08); }
 .briefing-mission h2 { margin:4px 0 0; font-size:clamp(1.1rem,4vw,1.45rem); line-height:1.35; }
 .strategy-selector { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; } 
-.strategy-selector button { min-height:82px; padding:10px 7px; display:grid; place-items:center; gap:2px; background:rgba(255,255,255,.04); }
+.strategy-selector button { box-sizing:border-box; width:100%; min-width:0; min-height:88px; padding:12px 8px; display:grid; place-items:center; align-content:center; gap:3px; color:#f4f4f5; background:#202024; border:2px solid #414149; overflow-wrap:anywhere; }
 .strategy-selector button.selected { border-color:#ff7a21; box-shadow:0 0 0 2px rgba(255,106,0,.32) inset; }
 .strategy-selector button span,.strategy-selector button strong,.strategy-selector button small { display:block; }
 .strategy-selector button small { color:#888; font-size:.65rem; }
@@ -898,13 +898,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 /* Alpha 4.0.5: clean library destinations and briefing roadbook */
 .team-bus-destinations { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:18px 0; }
-.team-bus-destinations button { min-height:100px; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:6px; padding:18px; text-align:left; }
+.team-bus-destinations button { min-height:100px; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:6px; padding:18px; text-align:left; color:#fff; background:#202024; border:1px solid #414149; }
+.team-bus-destinations button:hover,.team-bus-destinations button:focus-visible { background:#29292e; border-color:#f46a00; }
 .team-bus-destinations strong { color:#fff; font-size:1.05rem; }
 .team-bus-destinations small { color:#b8b8be; }
 .stage-section-preview { margin:0; color:#f4f4f5; background:rgba(20,20,22,.96); }
 .stage-section-preview h2,.stage-section-preview h3,.stage-section-preview strong { color:#fff; }
 .section-preview-list { display:flex; gap:7px; overflow-x:auto; padding:5px 1px 11px; scroll-snap-type:x proximity; }
-.section-preview-button { flex:0 0 min(180px,72vw); padding:10px 12px; scroll-snap-align:start; text-align:left; color:#dedee3; background:#242428; border-color:#45454d; }
+.section-preview-button { flex:0 0 min(164px,68vw); min-height:58px; padding:7px 10px; scroll-snap-align:start; text-align:left; color:#dedee3; background:#242428; border-color:#45454d; }
 .section-preview-button strong { display:block; margin-top:3px; }
 .section-preview-button.previewing { outline:2px solid #f46a00; background:#342218; }
 .preview-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(125px,1fr)); gap:8px; margin:12px 0; }
@@ -923,7 +924,12 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .season-months { display: grid; gap: 32px; margin-top: 28px; }
 .month-calendar { scroll-margin-top: 12px; padding: clamp(12px, 3vw, 22px); overflow: hidden; border: 1px solid #303033; border-radius: 22px; background: rgba(20,20,22,.96); box-shadow: 0 18px 45px rgba(0,0,0,.25); }
 .month-calendar > header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; }
-.month-calendar h2 { margin: 0; text-transform: uppercase; letter-spacing: .04em; }
+.month-calendar h2 { margin: 0; color:#fff; text-transform: uppercase; letter-spacing: .04em; }
+.month-calendar,.calendar-date { color:#ececef; }
+.calendar-weekdays { color:#a8a8af; }
+.training-ride-card { color:#ececef; background:#202024; border:1px solid #3d3d43; }
+.training-ride-card h3,.training-ride-card strong { color:#fff; }
+.team-bus-jean { margin:18px 0 24px; color:#f4f4f5; background:#18181b; }
 .month-calendar > header strong { color: #ff7a1a; }
 .calendar-weekdays, .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
 .calendar-weekdays span { padding-bottom: 9px; color: #aaaab0; font-size: clamp(.58rem, 2vw, .72rem); font-weight: 800; text-align: center; text-transform: uppercase; }

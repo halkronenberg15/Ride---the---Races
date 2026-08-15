@@ -2,9 +2,11 @@ import type { RideSegment } from '../data/raceStages.ts'
 import { buildGradientSections, gradientResistance, gradientSectionIndex, type GradientSection } from './gradientRoad.ts'
 import { createStageTimeline, isClimb, type StageSnapshot, type StageTimeline } from './stageEngine.ts'
 import { buildSprintPhases, sprintSnapshot, type SprintPhase, type SprintSnapshot } from './sprintPhases.ts'
+import type { RaceIdentity } from '../data/raceLibrary.ts'
 
 export type RaceMarkerType = 'kilometre-zero' | 'sprint' | 'kom' | 'finish'
-export type RaceMarker = { key: string; type: RaceMarkerType; label: string; position: number; at: number }
+export const COURSE_MARKER_HEIGHT = 28
+export type RaceMarker = { key: string; type: RaceMarkerType; label: string; position: number; at: number; localY:number; topY:number; color:string }
 export type RoadPoint = { position: number; elevation: number }
 export type RoadSnapshot = StageSnapshot & {
   roadPosition: number
@@ -46,7 +48,8 @@ export type RoadModel = StageTimeline & {
 const text = (segment: Pick<RideSegment, 'name' | 'type'>) => `${segment.name} ${segment.type}`
 
 /** One road coordinate and geography shared by the tracker, gradients, resistance and coaching. */
-export function createRoadModel(stageNumber: number, segments: RideSegment[], distanceKm: number): RoadModel {
+export function markerGeometry(localY:number){return {localY,topY:localY-COURSE_MARKER_HEIGHT,height:COURSE_MARKER_HEIGHT}}
+export function createRoadModel(stageNumber: number, segments: RideSegment[], distanceKm: number, identity?:RaceIdentity): RoadModel {
   const timeline = createStageTimeline(segments, distanceKm)
   const sectionGradients = segments.map((segment, index) => isClimb(segment)
     ? buildGradientSections(`${stageNumber}-${index}-${segment.name}-${segment.type}`, segment.sec, segment.zone)
@@ -86,17 +89,17 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
   segments.forEach((segment, index) => {
     const start = timeline.segmentStarts[index]
     const position = start / timeline.duration
-    if (/kilometre zero|race start/i.test(text(segment))) markers.push({ key: `km0-${index}`, type: 'kilometre-zero', label: 'KM 0', position, at: start })
+    if (/kilometre zero|race start/i.test(text(segment))) markers.push({ key: `km0-${index}`, type: 'kilometre-zero', label: 'KM 0', position, at: start, ...markerGeometry(elevationAt(position)), color:'#ffd400' })
     if (/sprint/i.test(text(segment)) && !/finish/i.test(text(segment))) {
       const at = start + segment.sec
-      markers.push({ key: `sprint-${index}`, type: 'sprint', label: 'SPR', position: at / timeline.duration, at })
+      const position=at/timeline.duration; markers.push({ key: `sprint-${index}`, type: 'sprint', label: 'SPRINT', position, at, ...markerGeometry(elevationAt(position)), color:identity?.pointsColor??'#38a852' })
     }
     if (isClimb(segment)) {
       const at = start + segment.sec
-      markers.push({ key: `kom-${index}`, type: 'kom', label: 'KOM', position: at / timeline.duration, at })
+      const position=at/timeline.duration; markers.push({ key: `kom-${index}`, type: 'kom', label: 'KOM', position, at, ...markerGeometry(elevationAt(position)), color:identity?.komColor??'#ef3340' })
     }
   })
-  markers.push({ key: 'finish', type: 'finish', label: 'FIN', position: 1, at: timeline.duration })
+  markers.push({ key: 'finish', type: 'finish', label: 'FINISH', position: 1, at: timeline.duration, ...markerGeometry(elevationAt(1)), color:identity?.finishColor??'#ffffff' })
 
   return {
     ...timeline,

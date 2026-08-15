@@ -15,7 +15,6 @@ export default function StageSectionPreview({ stageNumber, segments, measurement
   const gradients = isClimb(segment) ? buildGradientSections(`${stageNumber}-${selected}-${segment.name}-${segment.type}`, segment.sec, segment.zone) : []
   const sprintPhases = buildSprintPhases(segment)
   return <section className="dashboard-card preview-card stage-section-preview" aria-label="Full stage section preview">
-    <div className="section-title-row"><div><p className="eyebrow">STAGE SECTION PREVIEW</p><h2>The whole road ahead</h2></div><small>Inspection only · does not change ride progress</small></div>
     <div className="section-preview-list">
       {segments.map((item, index) => <button key={`${item.name}-${index}`} type="button" className={`section-preview-button${selected === index ? ' previewing' : ''}`} onClick={() => setSelected(index)} aria-pressed={selected === index}>
         <small>{index + 1}/{segments.length} · {item.type}</small><strong>{item.icon} {item.name}</strong>

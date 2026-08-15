@@ -23,14 +23,16 @@ import SeasonCalendarScreen from './screens/SeasonCalendarScreen'
 import { getSeason, seasons } from './data/seasonCalendar'
 import { adaptSegments } from './engine/adaptiveRide'
 import { createStageTimeline } from './engine/stageEngine'
+import { getLibraryStage, trainingRides } from './data/raceLibrary'
 
 type Screen = 'hq' | 'teamBus' | 'season' | 'race' | 'training' | 'roster' | 'tactics' | 'ride' | 'restDay' | 'rideData' | 'health' | 'profile' | 'settings' | 'finale'
 
 function RideTheRacesApp() {
-  const { career, setCurrentStage, completeStage, addRide } = useCareer()
+  const { career, selectRaceStage, completeRaceStage, completeTraining, addRide } = useCareer()
   const [screen, setScreen] = useState<Screen>('hq')
   const [selectedSeason, setSelectedSeason] = useState(2026)
   const [selectedRace, setSelectedRace] = useState('tour-2026')
+  const [selectedWorkout, setSelectedWorkout] = useState('recovery-30')
   const [raceStrategy, setRaceStrategy] = useState<RaceStrategy>('Balanced')
   const { ride, elapsed, end } = useActiveRide()
 
@@ -47,12 +49,13 @@ function RideTheRacesApp() {
   function handleFinishRide() {
     const stage = ride?.stageNumber ?? career.season.currentStage
     if (ride) {
-      const stageData = getRaceStage(ride.stageNumber)
+      const stageData = getLibraryStage(ride.library,ride.stageNumber,ride.workoutId) ?? getRaceStage(ride.stageNumber)
       const plannedDurationSeconds = createStageTimeline(adaptSegments(stageData.segments, career.rider.ftp, ride.strategy), stageData.distanceKm).duration
       addRide({ id: crypto.randomUUID(), date: new Date().toISOString(), source: 'Manual', durationMinutes: Math.round(elapsed / 60), distanceKm: stageData.distanceKm, race: career.season.currentRace, stageNumber: ride.stageNumber, stageName: stageData.title, plannedDurationSeconds, actualEngineDurationSeconds: Math.round(elapsed), tactic: ride.strategy, ftp: career.rider.ftp, recovery: career.health })
     }
     end()
-    completeStage(stage)
+    if(ride?.library==='training') completeTraining(ride.workoutId??'training',Math.round(elapsed/60))
+    else completeRaceStage(ride?.library==='vuelta-2026'?'vuelta':'tour',stage)
     setScreen('rideData')
   }
 
@@ -77,19 +80,20 @@ function RideTheRacesApp() {
           onBack={() => setScreen('hq')}
           seasons={seasons}
           onOpenSeason={(year) => { setSelectedSeason(year); setScreen('season') }}
-          onOpenTraining={() => setScreen('training')}
+          onOpenTraining={() => { setSelectedRace('training'); setScreen('training') }}
           onOpenRoster={() => setScreen('roster')}
         />
       )}
 
       {screen === 'season' && getSeason(selectedSeason) && <SeasonCalendarScreen season={getSeason(selectedSeason)!} currentRace={career.season.currentRace} onBack={() => setScreen('teamBus')} onOpenRace={(raceId) => { setSelectedRace(raceId); setScreen('race') }} />}
-      {(screen === 'race' || screen === 'training') && <RaceLibraryScreen library={screen === 'training' ? 'training' : selectedRace} selectedStageNumber={career.season.currentStage} onSelectStage={setCurrentStage} onBack={() => setScreen(screen === 'training' ? 'teamBus' : 'season')} onContinue={() => setScreen('tactics')} onOpenRestDay={() => setScreen('restDay')} />}
+      {(screen === 'race' || screen === 'training') && <RaceLibraryScreen library={screen === 'training' ? 'training' : selectedRace} selectedStageNumber={selectedRace==='vuelta-2026'?career.races.vuelta.currentStage:career.races.tour.currentStage} onSelectStage={(stage)=>selectRaceStage(selectedRace==='vuelta-2026'?'vuelta':'tour',stage)} onSelectWorkout={setSelectedWorkout} onBack={() => setScreen(screen === 'training' ? 'teamBus' : 'season')} onContinue={() => setScreen('tactics')} onOpenRestDay={() => setScreen('restDay')} />}
       {screen === 'roster' && <TeamRosterScreen onBack={() => setScreen('teamBus')} />}
 
       {screen === 'tactics' && (
         <TacticsScreen
-          stageNumber={career.season.currentStage}
-          onBack={() => setScreen('race')}
+          stageNumber={screen==='tactics'&&selectedRace==='vuelta-2026'?career.races.vuelta.currentStage:career.races.tour.currentStage}
+          stageData={selectedRace==='vuelta-2026'?getLibraryStage('vuelta-2026',career.races.vuelta.currentStage):selectedRace==='training'?getLibraryStage('training',trainingRides.find(r=>r.id===selectedWorkout)?.stage.number??30,selectedWorkout):undefined}
+          onBack={() => setScreen(selectedRace==='training'?'training':'race')}
           onStartRide={(strategy) => {
             setRaceStrategy(strategy)
             setScreen('ride')
@@ -102,7 +106,10 @@ function RideTheRacesApp() {
       )}
       {screen === 'ride' && (
         <RideScreen
-          stageNumber={ride?.stageNumber ?? career.season.currentStage}
+          stageNumber={ride?.stageNumber ?? (selectedRace==='vuelta-2026'?career.races.vuelta.currentStage:career.races.tour.currentStage)}
+          stageData={ride?getLibraryStage(ride.library,ride.stageNumber,ride.workoutId):getLibraryStage(selectedRace,selectedRace==='vuelta-2026'?career.races.vuelta.currentStage:trainingRides.find(r=>r.id===selectedWorkout)?.stage.number??career.races.tour.currentStage,selectedWorkout)}
+          library={ride?.library??selectedRace}
+          workoutId={ride?.workoutId??(selectedRace==='training'?selectedWorkout:undefined)}
           strategy={ride?.strategy ?? raceStrategy}
           onBack={() => setScreen('tactics')}
           onFinish={handleFinishRide}
