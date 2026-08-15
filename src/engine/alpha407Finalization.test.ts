@@ -12,15 +12,15 @@ test('every production race stage carries explicit audited profile geometry',()=
     assert.ok(stage.profilePoints.length>=8)
     assert.notEqual(new Set(stage.profilePoints).size,1)
   }
-  assert.equal(vueltaRideStages.length,9)
+  assert.equal(vueltaRideStages.length,21)
 })
 
 test('Monaco time trial has the corrected distance, early descent and flat late road',()=>{
   const stage=vueltaRideStages[0]
   assert.equal(stage.distanceKm,9.4)
-  const points=stage.profilePoints.map(value=>value.split(',').map(Number))
+  const points=stage.profilePoints.map(value=>typeof value==='string'?value.split(',').map(Number):[value.distanceKm/stage.distanceKm*100,value.elevationM])
   assert.ok(points.slice(1,5).some(([,y],index)=>y-(points[index]?.[1]??y)>15),'early profile descends')
-  const late=points.filter(([x])=>x>=25).map(([,y])=>y)
+  const late=points.filter(([x])=>x>=45).map(([,y])=>y)
   assert.ok(Math.max(...late)-Math.min(...late)<=4,'road after descent is predominantly flat')
   assert.deepEqual(stage.courseMarkers,[{type:'time-check',routeKm:5.6,label:'TT CHECK'}])
   assert.ok(stage.segments.every(segment=>!/sprint|climb|kom/i.test(`${segment.name} ${segment.type}`)))

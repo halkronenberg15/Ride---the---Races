@@ -25,8 +25,10 @@ import { adaptSegments } from './engine/adaptiveRide'
 import { createStageTimeline } from './engine/stageEngine'
 import { getLibraryStage, trainingRides } from './data/raceLibrary'
 import { actionableStage } from './utils/navigation'
+import RaceOverviewScreen from './screens/RaceOverviewScreen'
+import StageDetailScreen from './screens/StageDetailScreen'
 
-type Screen = 'hq' | 'teamBus' | 'season' | 'race' | 'training' | 'roster' | 'tactics' | 'ride' | 'restDay' | 'rideData' | 'health' | 'profile' | 'settings' | 'finale'
+type Screen = 'hq' | 'teamBus' | 'season' | 'race' | 'stageDetail' | 'training' | 'roster' | 'tactics' | 'ride' | 'restDay' | 'rideData' | 'health' | 'profile' | 'settings' | 'finale'
 
 function RideTheRacesApp() {
   const { career, selectRaceStage, completeRaceStage, completeTraining, addRide } = useCareer()
@@ -34,6 +36,7 @@ function RideTheRacesApp() {
   const [selectedSeason, setSelectedSeason] = useState(2026)
   const [selectedRace, setSelectedRace] = useState('tour-2026')
   const [selectedWorkout, setSelectedWorkout] = useState('recovery-30')
+  const [selectedStageNumber, setSelectedStageNumber] = useState(1)
   const [raceStrategy, setRaceStrategy] = useState<RaceStrategy>('Balanced')
   const { ride, elapsed, end } = useActiveRide()
 
@@ -46,7 +49,7 @@ function RideTheRacesApp() {
   }, [career.settings.theme, career.settings.reducedMotion])
 
   useEffect(() => {
-    if (screen === 'tactics' || screen === 'ride') window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    if (['race','stageDetail','tactics','ride'].includes(screen)) window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
   }, [screen])
 
   const tourActionable=actionableStage(career.races.tour,raceStages.map(stage=>stage.number))
@@ -94,14 +97,16 @@ function RideTheRacesApp() {
       )}
 
       {screen === 'season' && getSeason(selectedSeason) && <SeasonCalendarScreen season={getSeason(selectedSeason)!} currentRace={career.season.currentRace} onBack={() => setScreen('teamBus')} onOpenRace={(raceId) => { setSelectedRace(raceId); setScreen('race') }} />}
-      {(screen === 'race' || screen === 'training') && <RaceLibraryScreen library={screen === 'training' ? 'training' : selectedRace} selectedStageNumber={selectedRace==='vuelta-2026'?vueltaActionable:tourActionable} onSelectStage={(stage)=>selectRaceStage(selectedRace==='vuelta-2026'?'vuelta':'tour',stage)} onSelectWorkout={setSelectedWorkout} onBack={() => setScreen(screen === 'training' ? 'teamBus' : 'season')} onContinue={() => setScreen('tactics')} onOpenRestDay={() => setScreen('restDay')} />}
+      {screen === 'race' && <RaceOverviewScreen library={selectedRace} actionable={selectedRace==='vuelta-2026'?vueltaActionable:tourActionable} onBack={() => setScreen('season')} onOpenStage={(stage)=>{setSelectedStageNumber(stage);setScreen('stageDetail')}} />}
+      {screen === 'stageDetail' && <StageDetailScreen library={selectedRace} stageNumber={selectedStageNumber} onBack={()=>setScreen('race')} onBriefing={()=>{selectRaceStage(selectedRace==='vuelta-2026'?'vuelta':'tour',selectedStageNumber);setScreen('tactics')}} />}
+      {screen === 'training' && <RaceLibraryScreen library="training" selectedStageNumber={tourActionable} onSelectStage={()=>{}} onSelectWorkout={setSelectedWorkout} onBack={() => setScreen('teamBus')} onContinue={() => setScreen('tactics')} onOpenRestDay={() => setScreen('restDay')} />}
       {screen === 'roster' && <TeamRosterScreen onBack={() => setScreen('teamBus')} />}
 
       {screen === 'tactics' && (
         <TacticsScreen
-          stageNumber={selectedRace==='vuelta-2026'?vueltaActionable:tourActionable}
-          stageData={selectedRace==='vuelta-2026'?getLibraryStage('vuelta-2026',vueltaActionable):selectedRace==='training'?getLibraryStage('training',trainingRides.find(r=>r.id===selectedWorkout)?.stage.number??30,selectedWorkout):undefined}
-          onBack={() => setScreen(selectedRace==='training'?'training':'race')}
+          stageNumber={selectedRace==='training'?tourActionable:selectedStageNumber}
+          stageData={selectedRace==='vuelta-2026'?getLibraryStage('vuelta-2026',selectedStageNumber):selectedRace==='training'?getLibraryStage('training',trainingRides.find(r=>r.id===selectedWorkout)?.stage.number??30,selectedWorkout):getRaceStage(selectedStageNumber)}
+          onBack={() => setScreen(selectedRace==='training'?'training':'stageDetail')}
           onStartRide={(strategy) => {
             setRaceStrategy(strategy)
             setScreen('ride')
@@ -114,8 +119,8 @@ function RideTheRacesApp() {
       )}
       {screen === 'ride' && (
         <RideScreen
-          stageNumber={ride?.stageNumber ?? (selectedRace==='vuelta-2026'?vueltaActionable:tourActionable)}
-          stageData={ride?getLibraryStage(ride.library,ride.stageNumber,ride.workoutId):getLibraryStage(selectedRace,selectedRace==='vuelta-2026'?vueltaActionable:trainingRides.find(r=>r.id===selectedWorkout)?.stage.number??tourActionable,selectedWorkout)}
+          stageNumber={ride?.stageNumber ?? selectedStageNumber}
+          stageData={ride?getLibraryStage(ride.library,ride.stageNumber,ride.workoutId):selectedRace==='tour-2026'?getRaceStage(selectedStageNumber):getLibraryStage(selectedRace,selectedRace==='vuelta-2026'?selectedStageNumber:trainingRides.find(r=>r.id===selectedWorkout)?.stage.number??tourActionable,selectedWorkout)}
           library={ride?.library??selectedRace}
           workoutId={ride?.workoutId??(selectedRace==='training'?selectedWorkout:undefined)}
           strategy={ride?.strategy ?? raceStrategy}
