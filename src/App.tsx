@@ -18,12 +18,13 @@ import SettingsScreen from './screens/SettingsScreen'
 import { useEffect } from 'react'
 import FinaleScreen from './screens/FinaleScreen'
 import { ActiveRideProvider, useActiveRide } from './state/ActiveRideContext'
-import { getRaceStage } from './data/raceStages'
+import { getRaceStage, raceStages } from './data/raceStages'
 import SeasonCalendarScreen from './screens/SeasonCalendarScreen'
 import { getSeason, seasons } from './data/seasonCalendar'
 import { adaptSegments } from './engine/adaptiveRide'
 import { createStageTimeline } from './engine/stageEngine'
 import { getLibraryStage, trainingRides } from './data/raceLibrary'
+import { actionableStage } from './utils/navigation'
 
 type Screen = 'hq' | 'teamBus' | 'season' | 'race' | 'training' | 'roster' | 'tactics' | 'ride' | 'restDay' | 'rideData' | 'health' | 'profile' | 'settings' | 'finale'
 
@@ -43,6 +44,13 @@ function RideTheRacesApp() {
     root.dataset.theme = resolvedTheme
     root.dataset.motion = career.settings.reducedMotion ? 'reduced' : 'full'
   }, [career.settings.theme, career.settings.reducedMotion])
+
+  useEffect(() => {
+    if (screen === 'tactics' || screen === 'ride') window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [screen])
+
+  const tourActionable=actionableStage(career.races.tour,raceStages.map(stage=>stage.number))
+  const vueltaActionable=actionableStage(career.races.vuelta,Array.from({length:9},(_,index)=>index+1))
 
   if (!career.onboardingComplete) return <OnboardingScreen />
 
@@ -86,13 +94,13 @@ function RideTheRacesApp() {
       )}
 
       {screen === 'season' && getSeason(selectedSeason) && <SeasonCalendarScreen season={getSeason(selectedSeason)!} currentRace={career.season.currentRace} onBack={() => setScreen('teamBus')} onOpenRace={(raceId) => { setSelectedRace(raceId); setScreen('race') }} />}
-      {(screen === 'race' || screen === 'training') && <RaceLibraryScreen library={screen === 'training' ? 'training' : selectedRace} selectedStageNumber={selectedRace==='vuelta-2026'?career.races.vuelta.currentStage:career.races.tour.currentStage} onSelectStage={(stage)=>selectRaceStage(selectedRace==='vuelta-2026'?'vuelta':'tour',stage)} onSelectWorkout={setSelectedWorkout} onBack={() => setScreen(screen === 'training' ? 'teamBus' : 'season')} onContinue={() => setScreen('tactics')} onOpenRestDay={() => setScreen('restDay')} />}
+      {(screen === 'race' || screen === 'training') && <RaceLibraryScreen library={screen === 'training' ? 'training' : selectedRace} selectedStageNumber={selectedRace==='vuelta-2026'?vueltaActionable:tourActionable} onSelectStage={(stage)=>selectRaceStage(selectedRace==='vuelta-2026'?'vuelta':'tour',stage)} onSelectWorkout={setSelectedWorkout} onBack={() => setScreen(screen === 'training' ? 'teamBus' : 'season')} onContinue={() => setScreen('tactics')} onOpenRestDay={() => setScreen('restDay')} />}
       {screen === 'roster' && <TeamRosterScreen onBack={() => setScreen('teamBus')} />}
 
       {screen === 'tactics' && (
         <TacticsScreen
-          stageNumber={screen==='tactics'&&selectedRace==='vuelta-2026'?career.races.vuelta.currentStage:career.races.tour.currentStage}
-          stageData={selectedRace==='vuelta-2026'?getLibraryStage('vuelta-2026',career.races.vuelta.currentStage):selectedRace==='training'?getLibraryStage('training',trainingRides.find(r=>r.id===selectedWorkout)?.stage.number??30,selectedWorkout):undefined}
+          stageNumber={selectedRace==='vuelta-2026'?vueltaActionable:tourActionable}
+          stageData={selectedRace==='vuelta-2026'?getLibraryStage('vuelta-2026',vueltaActionable):selectedRace==='training'?getLibraryStage('training',trainingRides.find(r=>r.id===selectedWorkout)?.stage.number??30,selectedWorkout):undefined}
           onBack={() => setScreen(selectedRace==='training'?'training':'race')}
           onStartRide={(strategy) => {
             setRaceStrategy(strategy)
@@ -106,8 +114,8 @@ function RideTheRacesApp() {
       )}
       {screen === 'ride' && (
         <RideScreen
-          stageNumber={ride?.stageNumber ?? (selectedRace==='vuelta-2026'?career.races.vuelta.currentStage:career.races.tour.currentStage)}
-          stageData={ride?getLibraryStage(ride.library,ride.stageNumber,ride.workoutId):getLibraryStage(selectedRace,selectedRace==='vuelta-2026'?career.races.vuelta.currentStage:trainingRides.find(r=>r.id===selectedWorkout)?.stage.number??career.races.tour.currentStage,selectedWorkout)}
+          stageNumber={ride?.stageNumber ?? (selectedRace==='vuelta-2026'?vueltaActionable:tourActionable)}
+          stageData={ride?getLibraryStage(ride.library,ride.stageNumber,ride.workoutId):getLibraryStage(selectedRace,selectedRace==='vuelta-2026'?vueltaActionable:trainingRides.find(r=>r.id===selectedWorkout)?.stage.number??tourActionable,selectedWorkout)}
           library={ride?.library??selectedRace}
           workoutId={ride?.workoutId??(selectedRace==='training'?selectedWorkout:undefined)}
           strategy={ride?.strategy ?? raceStrategy}
