@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { getRaceStage } from '../data/raceStages'
+import { getRaceStage, type RaceStage } from '../data/raceStages'
 import { adaptSegment, strategyProfiles } from '../engine/adaptiveRide'
 import { useCareer } from '../state/CareerContext'
 import type { RaceStrategy } from '../types/tactics'
@@ -8,14 +8,16 @@ import StageSectionPreview from '../components/StageSectionPreview'
 
 type TacticsScreenProps = {
   stageNumber: number
+  stageData?: RaceStage
+  library?: string
   onBack: () => void
   onStartRide: (strategy: RaceStrategy) => void
 }
 
-function TacticsScreen({ stageNumber, onBack, onStartRide }: TacticsScreenProps) {
+function TacticsScreen({ stageNumber, stageData, onBack, onStartRide }: TacticsScreenProps) {
   const { career } = useCareer()
   const [strategy, setStrategy] = useState<RaceStrategy>('Balanced')
-  const stage = useMemo(() => getRaceStage(stageNumber), [stageNumber])
+  const stage = useMemo(() => stageData ?? getRaceStage(stageNumber), [stageNumber, stageData])
   const adaptedSegments = useMemo(() => stage.segments.map((segment) => adaptSegment(segment, career.rider.ftp, strategy)), [stage, career.rider.ftp, strategy])
   const minutes = Math.round(adaptedSegments.reduce((sum, segment) => sum + segment.sec, 0) / 60)
   const decisiveSegment = adaptedSegments.find((segment) => /climb|finish|attack|sprint/i.test(`${segment.type} ${segment.name}`)) ?? adaptedSegments[0]
@@ -26,8 +28,8 @@ function TacticsScreen({ stageNumber, onBack, onStartRide }: TacticsScreenProps)
       <button type="button" onClick={onBack}>← Team Bus</button>
 
       <header className="compact-page-header">
-        <p className="eyebrow">TEAM LORIOT • STAGE {stage.number}</p>
-        <h1>Race Briefing</h1>
+        <p className="eyebrow">TEAM LORIOT • {stage.isTraining ? 'TODAY’S SESSION' : `STAGE ${stage.number}`}</p>
+        <h1>{stage.isTraining ? 'Training Ride Briefing' : 'Race Briefing'}</h1>
         <p>{stage.route} • {stage.distanceKm.toFixed(1)} km / {kmToMi(stage.distanceKm).toFixed(1)} mi • {minutes} min</p>
       </header>
 
@@ -72,7 +74,7 @@ function TacticsScreen({ stageNumber, onBack, onStartRide }: TacticsScreenProps)
           </article>
         </div>
 
-        <button type="button" className="primary-cta briefing-start" onClick={() => onStartRide(strategy)}>🚩 Roll Out • Stage {stage.number}</button>
+        <button type="button" className="primary-cta briefing-start" onClick={() => onStartRide(strategy)}>🚩 {stage.isTraining ? 'Start Ride' : `Roll Out • Stage ${stage.number}`}</button>
       </section>
     </section>
   )

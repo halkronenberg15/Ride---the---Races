@@ -69,6 +69,9 @@ type CareerContextValue = {
   career: CareerState
   setCurrentStage: (stage: number) => void
   completeStage: (stage: number) => void
+  selectRaceStage: (race: 'tour'|'vuelta', stage:number) => void
+  completeRaceStage: (race:'tour'|'vuelta', stage:number) => void
+  completeTraining: (workoutId:string,durationMinutes:number) => void
   addRide: (ride: RideMetricEntry) => void
   updateHealth: (entry: HealthEntry) => void
   updateRider: (rider: Partial<CareerState['rider']>) => void
@@ -111,6 +114,9 @@ export function CareerProvider({ children }: { children: React.ReactNode }) {
         races: { ...current.races, tour: { currentStage: Math.min(21, stage + 1), completedStages: Array.from(new Set([...current.races.tour.completedStages, stage])).sort((a,b)=>a-b) } },
       }))
     },
+    selectRaceStage(race, stage) { setCareer(current=>({...current,races:{...current.races,[race]:{...current.races[race],currentStage:stage}},season:race==='tour'?{...current.season,currentStage:stage}:current.season})) },
+    completeRaceStage(race, stage) { setCareer(current=>{const progress=current.races[race]; const completedStages=Array.from(new Set([...progress.completedStages,stage])).sort((a,b)=>a-b); return {...current,races:{...current.races,[race]:{currentStage:Math.min(21,stage+1),completedStages}},season:race==='tour'?{...current.season,currentStage:Math.min(21,stage+1),completedStages}:current.season} }) },
+    completeTraining(workoutId,durationMinutes) { setCareer(current=>({...current,trainingHistory:[{workoutId,durationMinutes,completedAt:new Date().toISOString(),completed:true},...current.trainingHistory]})) },
     addRide(ride) {
       setCareer((current) => ({ ...current, rideHistory: [ride, ...current.rideHistory] }))
     },

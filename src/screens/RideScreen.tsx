@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps -- radio and wake-lock callbacks intentionally read the live cockpit closure without restarting timed effects. */
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { getRaceStage } from '../data/raceStages'
+import { getRaceStage, type RaceStage } from '../data/raceStages'
 import type { RaceStrategy } from '../types/tactics'
 import { adaptSegments } from '../engine/adaptiveRide'
 import { useCareer } from '../state/CareerContext'
@@ -12,9 +12,13 @@ import { createRoadModel } from '../engine/roadModel'
 import { jeanCue, jeanMode } from '../engine/jeanDirector'
 import { speakAsJean } from '../services/jeanVoice'
 import { CLICK_IN_CUE, PRE_RIDE_COUNTDOWN } from '../engine/preRide'
+import { raceIdentities } from '../data/raceLibrary'
 
 type RideScreenProps = {
   stageNumber: number
+  stageData?: RaceStage
+  library?: string
+  workoutId?: string
   strategy: RaceStrategy
   onBack: () => void
   onFinish: () => void
@@ -41,17 +45,17 @@ type WakeLockSentinelLike = {
 }
 
 function RideScreen({
-  stageNumber,
+  stageNumber, stageData, library='tour-2026', workoutId,
   strategy,
   onBack,
   onFinish,
 }: RideScreenProps) {
   const { career } = useCareer()
   const measurementSystem = career.settings.measurementSystem
-  const stage = useMemo(() => getRaceStage(stageNumber), [stageNumber])
+  const stage = useMemo(() => stageData ?? getRaceStage(stageNumber), [stageNumber, stageData])
   const segments = useMemo(() => adaptSegments(stage.segments, career.rider.ftp, strategy), [stage, career.rider.ftp, strategy])
   const activeRide = useActiveRide()
-  const timeline = useMemo(() => createRoadModel(stage.number, segments, stage.distanceKm), [segments, stage.distanceKm, stage.number])
+  const timeline = useMemo(() => createRoadModel(stage.number, segments, stage.distanceKm, raceIdentities[library as keyof typeof raceIdentities]), [segments, stage.distanceKm, stage.number, library])
   const profilePoints = timeline.profilePoints
   const elapsedSeconds = activeRide.ride?.stageNumber === stageNumber ? activeRide.elapsed : 0
   const isRunning = activeRide.ride?.stageNumber === stageNumber && activeRide.ride.runningSince !== null
@@ -418,7 +422,7 @@ function RideScreen({
       void requestWakeLock()
       return
     }
-    activeRide.begin(stageNumber, strategy)
+    activeRide.begin(stageNumber, strategy, library, workoutId)
     speak(CLICK_IN_CUE)
     setCountdown(PRE_RIDE_COUNTDOWN[0])
     let value: number = PRE_RIDE_COUNTDOWN[0]
@@ -510,16 +514,8 @@ function RideScreen({
 
         .master-stage-profile .live-profile-wrap { height: 86px; }
 
-        .race-marker { position:absolute; top:2px; transform:translateX(-50%); z-index:3; color:#fff; font-size:.55rem; font-weight:900; letter-spacing:.03em; text-align:center; text-shadow:0 1px 3px #000; }
-        .race-marker i { display:block; width:3px; height:60px; margin:2px auto 0; background:#fff; box-shadow:0 0 4px #000; }
-        .race-marker.kilometre-zero { color:#ffae60; }
-        .race-marker.kilometre-zero i { background:#f46a00; }
-        .race-marker.sprint { color:#7dd3fc; }
-        .race-marker.sprint i { background:#38bdf8; }
-        .race-marker.kom { color:#fca5a5; }
-        .race-marker.kom i { background:#ef4444; }
-        .race-marker.kom i, .race-marker.finish i { height:72px; }
-        .race-marker.finish i { background:repeating-linear-gradient(#fff 0 4px,#111 4px 8px); width:5px; }
+        .race-marker { position:absolute; transform:translate(-50%,-100%); z-index:3; font-size:.5rem; font-weight:900; letter-spacing:.03em; text-align:center; text-shadow:0 1px 3px #000; white-space:nowrap; }
+        .race-marker i { display:block; width:3px; height:28px; margin:2px auto 0; background:currentColor; box-shadow:0 0 4px #000; }
 
         .live-profile-head {
           display: flex;
@@ -992,7 +988,7 @@ function RideScreen({
                   {timeline.segmentStarts.slice(1).map((start) => <line key={start} x1={start / timeline.duration * 100} x2={start / timeline.duration * 100} y1="88" y2="100" stroke="rgba(255,255,255,.5)" vectorEffect="non-scaling-stroke" />)}
                   <line x1={riderMarkerX} x2={riderMarkerX} y1="2" y2="98" stroke="#fff" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
                 </svg>
-                {timeline.markers.map((marker) => <span key={marker.key} className={`race-marker ${marker.type}`} style={{ left: `${marker.position * 100}%` }} title={marker.label}>{marker.label}<i /></span>)}
+                {!stage.isTraining && timeline.markers.map((marker) => <span key={marker.key} className={`race-marker ${marker.type}`} style={{ left: `${marker.position * 100}%`, top:`${marker.localY}%`, color:marker.color }} title={marker.label}>{marker.label}<i /></span>)}
                 <div style={{ position: 'absolute', left: `${riderMarkerX}%`, top: `${riderMarkerY}%`, transform: 'translate(-50%, -80%)', zIndex: 5, fontSize: '1.35rem', transition: 'left .25s linear, top .25s linear' }}>🚴</div>
               </div>
             </div>
@@ -1073,7 +1069,7 @@ function RideScreen({
                     {timeline.segmentStarts.slice(1).map((start) => <line key={start} x1={start / timeline.duration * 100} x2={start / timeline.duration * 100} y1="88" y2="100" stroke="rgba(255,255,255,.5)" vectorEffect="non-scaling-stroke" />)}
                     <line x1={riderMarkerX} x2={riderMarkerX} y1="2" y2="98" stroke="rgba(255,255,255,0.68)" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
                   </svg>
-                  {timeline.markers.map((marker) => <span key={marker.key} className={`race-marker ${marker.type}`} style={{ left: `${marker.position * 100}%` }} title={marker.label}>{marker.label}<i /></span>)}
+                  {!stage.isTraining && timeline.markers.map((marker) => <span key={marker.key} className={`race-marker ${marker.type}`} style={{ left: `${marker.position * 100}%`, top:`${marker.localY}%`, color:marker.color }} title={marker.label}>{marker.label}<i /></span>)}
                   <div style={{ position: 'absolute', left: `${riderMarkerX}%`, top: `${riderMarkerY}%`, transform: 'translate(-50%, -80%)', zIndex: 5, fontSize: '1.35rem', transition: 'left .25s linear, top .25s linear' }}>🚴</div>
                 </div>
               </>
