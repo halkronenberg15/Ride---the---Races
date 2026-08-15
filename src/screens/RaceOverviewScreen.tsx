@@ -1,11 +1,10 @@
 import { useCareer } from '../state/CareerContext'
-import { raceStages } from '../data/raceStages'
-import { vuelta2026 } from '../data/professionalRaces'
+import { tour2026, vuelta2026 } from '../data/professionalRaces'
 
 const dateLabel=(value:string)=>new Intl.DateTimeFormat('en',{weekday:'short',month:'short',day:'numeric',timeZone:'UTC'}).format(new Date(value+'T00:00:00Z'))
 export default function RaceOverviewScreen({library,actionable,onBack,onOpenStage}:{library:string;actionable:number;onBack:()=>void;onOpenStage:(stage:number)=>void}){
  const {career}=useCareer(); const isVuelta=library==='vuelta-2026'; const completed=isVuelta?career.races.vuelta.completedStages:career.races.tour.completedStages
- const race=isVuelta?vuelta2026:{id:'tour-2026',name:'Tour de France',shortName:'Le Tour',season:2026,startDate:'2026-07-04',endDate:'2026-07-26',identity:{raceAccentColor:'#f2d13d'},routeMap:{alt:'Simplified Tour de France route overview',points:[{x:15,y:75},{x:35,y:42},{x:60,y:62},{x:83,y:25}]},restDays:[{afterStage:9,label:'Rest Day 1'},{afterStage:15,label:'Rest Day 2'}],stages:raceStages.map((s,i)=>({number:s.number,date:`2026-07-${String(3+i).padStart(2,'0')}`,start:s.route.split('→')[0].trim(),finish:s.route.split('→')[1]?.trim()??'',classification:s.theme,officialDistanceKm:s.distanceKm,officialAscentM:s.elevationM,workoutReady:true}))}
+ const race=isVuelta?vuelta2026:tour2026
  return <section className="race-overview" style={{'--race-accent':race.identity.raceAccentColor} as React.CSSProperties}>
   <button onClick={onBack}>← Back to Season</button><header className="race-hub-header"><p className="eyebrow">TEAM LORIOT • {race.season}</p><h1>{race.name}</h1><p>{dateLabel(race.startDate)} – {dateLabel(race.endDate)} • {race.stages.length} stages</p><strong>{completed.length} / {race.stages.length} COMPLETE</strong></header>
   <section className="dashboard-card route-map-card" aria-label={race.routeMap.alt}><p className="eyebrow">RACE ROUTE</p><svg viewBox="0 0 100 100" role="img" aria-label={race.routeMap.alt}><polyline points={race.routeMap.points?.map(p=>`${p.x},${p.y}`).join(' ')} /><circle cx={race.routeMap.points?.[0].x} cy={race.routeMap.points?.[0].y} r="3"/><circle cx={race.routeMap.points?.at(-1)?.x} cy={race.routeMap.points?.at(-1)?.y} r="3"/></svg><small>Offline simplified route representation</small></section>
