@@ -8,7 +8,7 @@ import { formatDistance, formatElevation } from '../utils/units'
 import { buildJeanTimeline, isClimb, jeanEventsCrossed, type JeanTimelineEvent } from '../engine/stageEngine'
 import { useActiveRide } from '../state/ActiveRideContext'
 import { gradientDifficultyColor } from '../engine/gradientRoad'
-import { createRoadModel } from '../engine/roadModel'
+import { createRoadModel, markerLabelOffset } from '../engine/roadModel'
 import { jeanCue, jeanMode } from '../engine/jeanDirector'
 import { speakAsJean } from '../services/jeanVoice'
 import { CLICK_IN_CUE, PRE_RIDE_COUNTDOWN } from '../engine/preRide'
@@ -55,7 +55,7 @@ function RideScreen({
   const stage = useMemo(() => stageData ?? getRaceStage(stageNumber), [stageNumber, stageData])
   const segments = useMemo(() => adaptSegments(stage.segments, career.rider.ftp, strategy), [stage, career.rider.ftp, strategy])
   const activeRide = useActiveRide()
-  const timeline = useMemo(() => createRoadModel(stage.number, segments, stage.distanceKm, raceIdentities[library as keyof typeof raceIdentities]), [segments, stage.distanceKm, stage.number, library])
+  const timeline = useMemo(() => createRoadModel(stage.number, segments, stage.distanceKm, raceIdentities[library as keyof typeof raceIdentities], stage.profilePoints, stage.courseMarkers), [segments, stage, library])
   const profilePoints = timeline.profilePoints
   const elapsedSeconds = activeRide.ride?.stageNumber === stageNumber ? activeRide.elapsed : 0
   const isRunning = activeRide.ride?.stageNumber === stageNumber && activeRide.ride.runningSince !== null
@@ -515,6 +515,7 @@ function RideScreen({
         .master-stage-profile .live-profile-wrap { height: 86px; }
 
         .race-marker { position:absolute; transform:translate(-50%,-100%); z-index:3; font-size:.5rem; font-weight:900; letter-spacing:.03em; text-align:center; text-shadow:0 1px 3px #000; white-space:nowrap; }
+        .race-marker b { position:absolute; bottom:30px; left:0; display:block; font:inherit; }
         .race-marker i { display:block; width:3px; height:28px; margin:2px auto 0; background:currentColor; box-shadow:0 0 4px #000; }
 
         .live-profile-head {
@@ -988,7 +989,7 @@ function RideScreen({
                   {timeline.segmentStarts.slice(1).map((start) => <line key={start} x1={start / timeline.duration * 100} x2={start / timeline.duration * 100} y1="88" y2="100" stroke="rgba(255,255,255,.5)" vectorEffect="non-scaling-stroke" />)}
                   <line x1={riderMarkerX} x2={riderMarkerX} y1="2" y2="98" stroke="#fff" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
                 </svg>
-                {!stage.isTraining && timeline.markers.map((marker) => <span key={marker.key} className={`race-marker ${marker.type}`} style={{ left: `${marker.position * 100}%`, top:`${marker.localY}%`, color:marker.color }} title={marker.label}>{marker.label}<i /></span>)}
+                {!stage.isTraining && timeline.markers.map((marker) => <span key={marker.key} className={`race-marker ${marker.type}`} style={{ left: `${marker.position * 100}%`, top:`${marker.localY}%`, color:marker.color }} title={marker.label}><b style={{ transform:`translate(${markerLabelOffset(marker.position,timeline.markers.map(item=>item.position)).translateX}%, ${markerLabelOffset(marker.position,timeline.markers.map(item=>item.position)).translateY}px)` }}>{marker.label}</b><i /></span>)}
                 <div style={{ position: 'absolute', left: `${riderMarkerX}%`, top: `${riderMarkerY}%`, transform: 'translate(-50%, -80%)', zIndex: 5, fontSize: '1.35rem', transition: 'left .25s linear, top .25s linear' }}>🚴</div>
               </div>
             </div>
@@ -1069,7 +1070,7 @@ function RideScreen({
                     {timeline.segmentStarts.slice(1).map((start) => <line key={start} x1={start / timeline.duration * 100} x2={start / timeline.duration * 100} y1="88" y2="100" stroke="rgba(255,255,255,.5)" vectorEffect="non-scaling-stroke" />)}
                     <line x1={riderMarkerX} x2={riderMarkerX} y1="2" y2="98" stroke="rgba(255,255,255,0.68)" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
                   </svg>
-                  {!stage.isTraining && timeline.markers.map((marker) => <span key={marker.key} className={`race-marker ${marker.type}`} style={{ left: `${marker.position * 100}%`, top:`${marker.localY}%`, color:marker.color }} title={marker.label}>{marker.label}<i /></span>)}
+                  {!stage.isTraining && timeline.markers.map((marker) => <span key={marker.key} className={`race-marker ${marker.type}`} style={{ left: `${marker.position * 100}%`, top:`${marker.localY}%`, color:marker.color }} title={marker.label}><b style={{ transform:`translate(${markerLabelOffset(marker.position,timeline.markers.map(item=>item.position)).translateX}%, ${markerLabelOffset(marker.position,timeline.markers.map(item=>item.position)).translateY}px)` }}>{marker.label}</b><i /></span>)}
                   <div style={{ position: 'absolute', left: `${riderMarkerX}%`, top: `${riderMarkerY}%`, transform: 'translate(-50%, -80%)', zIndex: 5, fontSize: '1.35rem', transition: 'left .25s linear, top .25s linear' }}>🚴</div>
                 </div>
               </>

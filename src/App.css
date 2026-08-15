@@ -853,10 +853,20 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .briefing-mission { padding:13px 15px; border-left:4px solid #ff6a00; border-radius:0 12px 12px 0; background:rgba(255,106,0,.08); }
 .briefing-mission h2 { margin:4px 0 0; font-size:clamp(1.1rem,4vw,1.45rem); line-height:1.35; }
 .strategy-selector { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; } 
-.strategy-selector button { box-sizing:border-box; width:100%; min-width:0; min-height:88px; padding:12px 8px; display:grid; place-items:center; align-content:center; gap:3px; color:#f4f4f5; background:#202024; border:2px solid #414149; overflow-wrap:anywhere; }
+.strategy-selector button { box-sizing:border-box; width:100%; min-width:0; min-height:88px; padding:12px 4px; display:grid; place-items:center; align-content:center; gap:3px; color:#f4f4f5; background:#202024; border:2px solid #414149; }
+.strategy-selector button strong { white-space:nowrap; font-size:clamp(.74rem,3.25vw,1rem); }
 .strategy-selector button.selected { border-color:#ff7a21; box-shadow:0 0 0 2px rgba(255,106,0,.32) inset; }
 .strategy-selector button span,.strategy-selector button strong,.strategy-selector button small { display:block; }
 .strategy-selector button small { color:#888; font-size:.65rem; }
+
+.health-screen, .health-screen header h1, .health-screen header p, .health-screen label { color:#f4f4f5; }
+.health-screen header > p:last-child, .health-screen label span { color:#b9b9c2; }
+.health-screen input, .health-screen select { color:#fff; background:#202024; border-color:#55555f; }
+.health-screen input:disabled, .health-screen select:disabled, .health-screen button:disabled { color:#aaa; opacity:.65; }
+.health-screen input[type='range'] { accent-color:#f46a00; }
+.calendar-stage-row:disabled { opacity:1; background:#171719; color:#aaaab3; }
+.calendar-stage-row:disabled .calendar-route strong { color:#c2c2ca; }
+.calendar-stage-row:disabled .calendar-state { color:#ff7a21; }
 .briefing-columns { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 .team-plan-card,.workout-impact-card { padding:15px; border:1px solid rgba(255,255,255,.1); border-radius:15px; background:rgba(255,255,255,.03); }
 .team-plan-card ul { margin:9px 0 0; padding-left:18px; line-height:1.55; }

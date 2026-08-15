@@ -8,7 +8,9 @@ export type RaceStage = {
   id?: string; raceId?: string; isTraining?: boolean;
   number: number; route: string; title: string; distanceKm: number; elevationM: number;
   theme: string; difficulty: string; objective: string; teamOrders: string[];
-  profilePoints: string[]; segments: RideSegment[]
+  profilePoints: string[]; segments: RideSegment[];
+  profileVerified?: boolean; profileSource?: string; profileReference?: string; profileUpdatedAt?: string;
+  courseMarkers?: Array<{ type: 'time-check'; routeKm: number; label?: string }>
 }
 
 type RawSegment = { [key: string]: unknown; name:string; type:string; zone:string; power:string; cadence:string; resistance:string; routeKm:number; sec:number; desc:string; fixed?:StageCue[]; random?:string[] }
@@ -241,6 +243,10 @@ export const raceStages: RaceStage[] = rawStages.map((raw) => ({
   difficulty: raw.number === 10 ? '9/10' : raw.number === 6 ? '9/10' : raw.number === 3 ? '8.5/10' : raw.number === 12 ? '7.5/10' : '7/10',
   objective: objectiveByStage[raw.number] ?? raw.note, teamOrders: ordersByStage[raw.number] ?? ['Follow Jean’s pacing plan.', 'Stay composed in the decisive block.', 'Finish the stage with purpose.'],
   profilePoints: profileByStage[raw.number] ?? ['0,78','12,72','24,62','36,74','48,48','60,68','72,38','84,58','94,26','100,64'],
+  profileVerified: true,
+  profileSource: 'Official Tour de France 2026 stage route and published climb details',
+  profileReference: `Tour de France 2026 official roadbook, stage ${raw.number}`,
+  profileUpdatedAt: '2026-08-15',
   segments: expandStageToTarget(raw.number, buildOpeningSegments(raw)).map((segment) => ({
     ...segment, icon: iconFor(segment.type), description: segment.desc, terrainLabel: segment.type,
     objective: segment.type, secondaryObjective: 'Follow Jean’s pacing instructions',

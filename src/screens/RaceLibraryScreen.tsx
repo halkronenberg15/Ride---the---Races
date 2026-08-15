@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { raceStages } from '../data/raceStages'
 import { teamLoriot } from '../game/team'
 import { useCareer } from '../state/CareerContext'
@@ -36,6 +36,8 @@ function RaceLibraryScreen({
   const { career } = useCareer()
   const [expandedStage, setExpandedStage] = useState(selectedStageNumber)
   const [showRoster, setShowRoster] = useState(false)
+  const actionableRef = useRef<HTMLDivElement>(null)
+  useEffect(() => { actionableRef.current?.scrollIntoView({ block: 'center' }) }, [library])
   const raceMetadata = seasons.flatMap((season) => season.races).find((race) => race.raceLibraryId === library)
   const selectedStage = library==='vuelta-2026' ? vuelta2026.stages.find(item=>item.number===selectedStageNumber)?.stage ?? raceStages[0] : raceStages.find((stage) => stage.number === selectedStageNumber) ?? raceStages[0]
 
@@ -95,7 +97,7 @@ function RaceLibraryScreen({
             const selected = stage.number === selectedStageNumber
             const expanded = stage.number === expandedStage
             return (
-              <div className={`calendar-stage${selected ? ' selected' : ''}`} key={stage.number}>
+              <div ref={selected ? actionableRef : undefined} data-stage-number={stage.number} className={`calendar-stage${selected ? ' selected' : ''}`} key={stage.number}>
                 <button type="button" className="calendar-stage-row" onClick={() => selectStage(stage.number)} aria-expanded={expanded}>
                   <span className="calendar-day">{String(stage.number).padStart(2, '0')}</span>
                   <span className="calendar-route">
@@ -133,7 +135,7 @@ function RaceLibraryScreen({
 
       {library === 'vuelta-2026' && <section className="dashboard-card roadbook-calendar">
         <div className="section-title-row"><div><p className="eyebrow">LA VUELTA 2026</p><h2>Stage Roadbook</h2></div><small>Stages 1–9 rideable</small></div>
-        <div className="calendar-stage-list">{vuelta2026.stages.map((item) => {const expanded=expandedStage===item.number;const selected=selectedStageNumber===item.number;return <div className={`calendar-stage${selected?' selected':''}`} key={item.number}><button type="button" className="calendar-stage-row" disabled={!item.rideable} onClick={()=>selectStage(item.number)} aria-expanded={expanded}><span className="calendar-day">{String(item.number).padStart(2,'0')}</span><span className="calendar-route"><strong>{item.start} → {item.finish}</strong><small>{item.type} • {item.plannedDurationMinutes ? `${item.plannedDurationMinutes} min indoor`:'Roadbook in preparation'}</small></span><span className="calendar-state">{item.rideable?(career.races.vuelta.completedStages.includes(item.number)?'✓':selected?'TODAY':'+'):'PLANNED'}</span></button>{expanded&&item.stage&&<div className="stage-expansion"><div className="mini-stage-profile"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><polygon points={`0,100 ${item.stage.profilePoints.join(' ')} 100,100`}/><polyline points={item.stage.profilePoints.join(' ')}/></svg></div><div className="stage-preview-metrics"><span><small>DISTANCE</small><strong>{dualDistance(item.distanceKm)}</strong></span><span><small>ELEVATION</small><strong>{dualElevation(item.stage.elevationM)}</strong></span><span><small>RIDE TIME</small><strong>{item.plannedDurationMinutes} min</strong></span></div><p>{item.stage.objective}</p>{selected&&<button type="button" className="primary-cta" onClick={onContinue}>Open Race Briefing →</button>}</div>}{vuelta2026.restDays.find(day=>day.afterStage===item.number)&&<div className="rest-day-row">🛌 Rest Day 1</div>}</div>})}</div>
+        <div className="calendar-stage-list">{vuelta2026.stages.map((item) => {const expanded=expandedStage===item.number;const selected=selectedStageNumber===item.number;return <div ref={selected?actionableRef:undefined} data-stage-number={item.number} className={`calendar-stage${selected?' selected':''}`} key={item.number}><button type="button" className="calendar-stage-row" disabled={!item.rideable} onClick={()=>selectStage(item.number)} aria-expanded={expanded}><span className="calendar-day">{String(item.number).padStart(2,'0')}</span><span className="calendar-route"><strong>{item.start} → {item.finish}</strong><small>{item.type} • {item.plannedDurationMinutes ? `${item.plannedDurationMinutes} min indoor`:'Roadbook in preparation'}</small></span><span className="calendar-state">{item.rideable?(career.races.vuelta.completedStages.includes(item.number)?'✓':selected?'TODAY':'+'):'PLANNED'}</span></button>{expanded&&item.stage&&<div className="stage-expansion"><div className="mini-stage-profile"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><polygon points={`0,100 ${item.stage.profilePoints.join(' ')} 100,100`}/><polyline points={item.stage.profilePoints.join(' ')}/></svg></div><div className="stage-preview-metrics"><span><small>DISTANCE</small><strong>{dualDistance(item.distanceKm)}</strong></span><span><small>ELEVATION</small><strong>{dualElevation(item.stage.elevationM)}</strong></span><span><small>RIDE TIME</small><strong>{item.plannedDurationMinutes} min</strong></span></div><p>{item.stage.objective}</p>{selected&&<button type="button" className="primary-cta" onClick={onContinue}>Open Race Briefing →</button>}</div>}{vuelta2026.restDays.find(day=>day.afterStage===item.number)&&<div className="rest-day-row">🛌 Rest Day 1</div>}</div>})}</div>
       </section>}
 
       {library === 'training' && <section className="dashboard-card roadbook-calendar">

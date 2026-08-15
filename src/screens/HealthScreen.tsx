@@ -9,7 +9,7 @@ function HealthScreen({ onBack }: Props) {
   const [entry, setEntry] = useState(career.health)
   const [saved, setSaved] = useState(false)
   function submit(event: React.FormEvent) { event.preventDefault(); const next: HealthEntry = { ...entry, date: new Date().toISOString().slice(0, 10) }; updateHealth(next); setSaved(true) }
-  return <section className="data-screen">
+  return <section className="data-screen health-screen">
     <button className="back-button" type="button" onClick={onBack}>← Team HQ</button>
     <header><p className="eyebrow">HEALTH ENGINE • DAILY CHECK-IN</p><h1>How is the rider today?</h1><p>Readiness will eventually combine connected recovery data with the rider's own check-in.</p></header>
     <form className="metric-form" onSubmit={submit}>

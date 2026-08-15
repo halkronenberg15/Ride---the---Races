@@ -4,7 +4,7 @@ import { createStageTimeline, isClimb, type StageSnapshot, type StageTimeline } 
 import { buildSprintPhases, sprintSnapshot, type SprintPhase, type SprintSnapshot } from './sprintPhases.ts'
 import type { RaceIdentity } from '../data/raceLibrary.ts'
 
-export type RaceMarkerType = 'kilometre-zero' | 'sprint' | 'kom' | 'finish'
+export type RaceMarkerType = 'kilometre-zero' | 'sprint' | 'kom' | 'time-check' | 'finish'
 export const COURSE_MARKER_HEIGHT = 28
 export type RaceMarker = { key: string; type: RaceMarkerType; label: string; position: number; at: number; localY:number; topY:number; color:string }
 export type RoadPoint = { position: number; elevation: number }
@@ -49,7 +49,12 @@ const text = (segment: Pick<RideSegment, 'name' | 'type'>) => `${segment.name} $
 
 /** One road coordinate and geography shared by the tracker, gradients, resistance and coaching. */
 export function markerGeometry(localY:number){return {localY,topY:localY-COURSE_MARKER_HEIGHT,height:COURSE_MARKER_HEIGHT}}
-export function createRoadModel(stageNumber: number, segments: RideSegment[], distanceKm: number, identity?:RaceIdentity): RoadModel {
+export function markerLabelOffset(position:number, nearbyPositions:number[]=[]){
+  const edgeOffset=position>.94?-100:position<.06?0:-50
+  const collisionIndex=nearbyPositions.filter(value=>value<position&&position-value<.055).length
+  return { translateX:edgeOffset, translateY:collisionIndex%2?-11:0 }
+}
+export function createRoadModel(stageNumber: number, segments: RideSegment[], distanceKm: number, identity?:RaceIdentity, explicitProfile?:string[], courseMarkers?:Array<{type:'time-check';routeKm:number;label?:string}>): RoadModel {
   const timeline = createStageTimeline(segments, distanceKm)
   const sectionGradients = segments.map((segment, index) => isClimb(segment)
     ? buildGradientSections(`${stageNumber}-${index}-${segment.name}-${segment.type}`, segment.sec, segment.zone)
@@ -72,10 +77,11 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
       raw.push({ position: end, elevation })
     }
   })
+  const explicitPoints=(explicitProfile??[]).map(value=>{const [x,y]=value.split(',').map(Number);return {position:x/100,elevation:y}}).filter(point=>Number.isFinite(point.position)&&Number.isFinite(point.elevation)).sort((a,b)=>a.position-b.position)
   const min = Math.min(...raw.map((point) => point.elevation))
   const max = Math.max(...raw.map((point) => point.elevation))
   const span = Math.max(1, max - min)
-  const points = raw.map((point) => ({ ...point, elevation: 82 - ((point.elevation - min) / span) * 62 }))
+  const points = explicitPoints.length>=2 ? explicitPoints : raw.map((point) => ({ ...point, elevation: 82 - ((point.elevation - min) / span) * 62 }))
   const elevationAt = (position: number) => {
     const p = Math.min(1, Math.max(0, position))
     const rightIndex = points.findIndex((point) => point.position >= p)
@@ -98,6 +104,10 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
       const at = start + segment.sec
       const position=at/timeline.duration; markers.push({ key: `kom-${index}`, type: 'kom', label: 'KOM', position, at, ...markerGeometry(elevationAt(position)), color:identity?.komColor??'#ef3340' })
     }
+  })
+  courseMarkers?.forEach((marker,index)=>{
+    const position=Math.min(1,Math.max(0,marker.routeKm/distanceKm)); const at=position*timeline.duration
+    markers.push({key:`time-check-${index}`,type:'time-check',label:marker.label??'TT CHECK',position,at,...markerGeometry(elevationAt(position)),color:identity?.timeCheckColor??'#55dff7'})
   })
   markers.push({ key: 'finish', type: 'finish', label: 'FINISH', position: 1, at: timeline.duration, ...markerGeometry(elevationAt(1)), color:identity?.finishColor??'#ffffff' })
 

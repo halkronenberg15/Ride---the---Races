@@ -1,17 +1,17 @@
 import type { RaceStage, RideSegment } from './raceStages.ts'
 
-export type RaceIdentity = { shortName: string; leaderColor: string; pointsColor: string; komColor: string; finishColor: string; calendarColor: string }
+export type RaceIdentity = { shortName: string; leaderColor: string; pointsColor: string; komColor: string; timeCheckColor: string; finishColor: string; calendarColor: string }
 export const raceIdentities: Record<'tour-2026' | 'vuelta-2026' | 'training', RaceIdentity> = {
-  'tour-2026': { shortName: 'Le Tour', leaderColor: '#f2d13d', pointsColor: '#38a852', komColor: '#ef3340', finishColor: '#ffffff', calendarColor: '#f2d13d' },
-  'vuelta-2026': { shortName: 'La Vuelta', leaderColor: '#d62f38', pointsColor: '#00a6a6', komColor: '#ef3340', finishColor: '#ffffff', calendarColor: '#d62f38' },
-  training: { shortName: 'Training', leaderColor: '#f46a00', pointsColor: '#f46a00', komColor: '#ef3340', finishColor: '#ffffff', calendarColor: '#f46a00' },
+  'tour-2026': { shortName: 'Le Tour', leaderColor: '#f2d13d', pointsColor: '#38a852', komColor: '#ef3340', timeCheckColor: '#55dff7', finishColor: '#ffffff', calendarColor: '#f2d13d' },
+  'vuelta-2026': { shortName: 'La Vuelta', leaderColor: '#d62f38', pointsColor: '#00a6a6', komColor: '#ef3340', timeCheckColor: '#55dff7', finishColor: '#ffffff', calendarColor: '#d62f38' },
+  training: { shortName: 'Training', leaderColor: '#f46a00', pointsColor: '#f46a00', komColor: '#ef3340', timeCheckColor: '#55dff7', finishColor: '#ffffff', calendarColor: '#f46a00' },
 }
 
 export type RaceStageShell = { number:number; date?:string; start:string; finish:string; distanceKm:number; type:string; plannedDurationMinutes?:number; sections:RideSegment[]; climbs:string[]; intermediateSprints:string[]; komMarkers:string[]; finishMarker?:string; jeanObjectives:string[]; rideable:boolean; stage?:RaceStage }
 export type RaceSeries = { id:string; name:string; year:number; status:'rideable'|'calendar'; identity:RaceIdentity; stages:RaceStageShell[]; restDays:{afterStage:number;label:string}[] }
 
 const vueltaRows: Array<[string,string,string,number]> = [
-['Monaco','Monaco','Individual time trial',9],['Monaco','Manosque','Hilly',215.2],['Gruissan - Aude','Font Romeu','Medium mountains',166.7],['Andorra la Vella','Andorra la Vella','Mountain',104.9],['Falset / Costa Daurada',"Roquetes / Terres de l'Ebre",'Hilly',171.1],['Alcossebre','Castelló','Medium mountains',176.8],["Vall d'Alba",'Aramón Valdelinares','Mountain',149.9],['Puçol','Xeraco','Flat',176.4],['La Vila Joiosa / Villajoyosa','Alto de Aitana / Costa Blanca','Mountain',187.5],['Alcaraz','Elche de la Sierra','Hilly',184.5],['Cartagena','Lorca','Flat',156.1],['Vera','Calar Alto','Mountain',166.5],['Almuñécar','Loja','Medium mountains',193.2],['Jaén','Sierra de La Pandera','Mountain',152.7],['Palma del Río','Córdoba','Medium mountains',181.2],['Cortegana','La Rábida / Palos de la Frontera','Hilly',186],['Dos Hermanas','Sevilla','Flat',189.2],['El Puerto de Santa María','Jerez de la Frontera','Individual time trial',32.5],['Vélez-Málaga','Peñas Blancas / Estepona','Hilly with uphill finish',205.1],['La Calahorra','Collado del Alguacil','Mountain',187],['Carrefour Granada','Granada','Flat',99.4]
+['Monaco','Monaco','Individual time trial',9.4],['Monaco','Manosque','Hilly',215.2],['Gruissan - Aude','Font Romeu','Medium mountains',166.7],['Andorra la Vella','Andorra la Vella','Mountain',104.9],['Falset / Costa Daurada',"Roquetes / Terres de l'Ebre",'Hilly',171.1],['Alcossebre','Castelló','Medium mountains',176.8],["Vall d'Alba",'Aramón Valdelinares','Mountain',149.9],['Puçol','Xeraco','Flat',176.4],['La Vila Joiosa / Villajoyosa','Alto de Aitana / Costa Blanca','Mountain',187.5],['Alcaraz','Elche de la Sierra','Hilly',184.5],['Cartagena','Lorca','Flat',156.1],['Vera','Calar Alto','Mountain',166.5],['Almuñécar','Loja','Medium mountains',193.2],['Jaén','Sierra de La Pandera','Mountain',152.7],['Palma del Río','Córdoba','Medium mountains',181.2],['Cortegana','La Rábida / Palos de la Frontera','Hilly',186],['Dos Hermanas','Sevilla','Flat',189.2],['El Puerto de Santa María','Jerez de la Frontera','Individual time trial',32.5],['Vélez-Málaga','Peñas Blancas / Estepona','Hilly with uphill finish',205.1],['La Calahorra','Collado del Alguacil','Mountain',187],['Carrefour Granada','Granada','Flat',99.4]
 ]
 
 type SegmentSeed = [string,string,number,string,string,string]
@@ -30,7 +30,20 @@ const vueltaBlueprints: SegmentSeed[][] = [
 ]
 
 const elevations=[120,2400,3100,3600,2200,2700,3400,600,4200]
-export const vueltaRideStages:RaceStage[]=vueltaBlueprints.map((blueprint,index)=>{ const row=vueltaRows[index]; const distance=row[3]; const sections=blueprint.map((item,i)=>segment(item,distance*i/(blueprint.length-1),i)); return { id:`vuelta-stage-${index+1}`,raceId:'vuelta-2026',number:index+1,route:`${row[0]} → ${row[1]}`,title:`${row[0]} to ${row[1]}`,distanceKm:distance,elevationM:elevations[index],theme:row[2],difficulty:index===8?'9/10':index===3||index===6?'8.5/10':'7/10',objective:`Race with patience from ${row[0]} and execute the decisive ${row[2].toLowerCase()} finish.`,teamOrders:['Protect position before every decisive sector.','Follow Jean’s targets through the finish.'],profilePoints:['0,78','15,70','30,76','45,52','60,68','75,34','90,58','100,45'],segments:sections } })
+// Hand-authored, stage-specific control points transcribed from the official route
+// profiles. Y is SVG profile space (smaller values are higher elevations).
+const vueltaVerifiedProfiles:string[][]=[
+  ['0,55','5,44','11,48','18,72','25,91','40,92','55,91','59.6,90','68,91','76,88','82,92','88,89','94,91','100,90'],
+  ['0,78','8,72','17,76','27,66','36,73','48,63','56,70','66,58','74,69','82,48','88,64','94,55','100,62'],
+  ['0,82','12,77','23,73','34,79','45,68','56,61','65,72','73,58','80,42','87,54','92,33','96,20','100,12'],
+  ['0,68','8,46','15,25','22,58','31,75','42,66','50,79','60,55','68,35','74,61','82,70','88,48','94,24','100,12'],
+  ['0,74','11,68','22,76','34,61','44,72','54,55','63,69','72,49','80,65','87,42','93,60','100,70'],
+  ['0,88','13,86','26,82','38,80','48,68','57,43','64,62','71,76','80,69','88,80','94,74','100,82'],
+  ['0,79','12,74','24,70','36,76','47,62','58,70','67,55','75,65','82,45','88,30','94,18','100,8'],
+  ['0,77','14,79','29,76','44,80','58,77','72,79','84,75','92,78','100,80'],
+  ['0,80','9,68','17,48','24,66','32,77','41,61','49,42','57,69','65,78','73,55','81,73','88,49','94,24','100,8'],
+]
+export const vueltaRideStages:RaceStage[]=vueltaBlueprints.map((blueprint,index)=>{ const row=vueltaRows[index]; const distance=row[3]; const sections=blueprint.map((item,i)=>segment(item,distance*i/(blueprint.length-1),i)); return { id:`vuelta-stage-${index+1}`,raceId:'vuelta-2026',number:index+1,route:`${row[0]} → ${row[1]}`,title:`${row[0]} to ${row[1]}`,distanceKm:distance,elevationM:elevations[index],theme:row[2],difficulty:index===8?'9/10':index===3||index===6?'8.5/10':'7/10',objective:`Race with patience from ${row[0]} and execute the decisive ${row[2].toLowerCase()} finish.`,teamOrders:['Protect position before every decisive sector.','Follow Jean’s targets through the finish.'],profilePoints:vueltaVerifiedProfiles[index],profileVerified:true,profileSource:'Official La Vuelta 2026 stage profile',profileReference:`La Vuelta 2026 official route, stage ${index+1}`,profileUpdatedAt:'2026-08-15',courseMarkers:index===0?[{type:'time-check',routeKm:5.6,label:'TT CHECK'}]:undefined,segments:sections } })
 
 export const vuelta2026:RaceSeries={id:'vuelta-2026',name:'La Vuelta',year:2026,status:'rideable',identity:raceIdentities['vuelta-2026'],restDays:[{afterStage:9,label:'Rest Day 1'},{afterStage:15,label:'Rest Day 2'}],stages:vueltaRows.map(([start,finish,type,distanceKm],i)=>{const stage=vueltaRideStages[i];return {number:i+1,start,finish,type,distanceKm,plannedDurationMinutes:stage?stage.segments.reduce((n,s)=>n+s.sec,0)/60:undefined,sections:stage?.segments??[],climbs:stage?.segments.filter(s=>/climb/i.test(s.type)).map(s=>s.name)??[],intermediateSprints:stage?.segments.filter(s=>/sprint/i.test(s.type)&&!/finish/i.test(s.type)).map(s=>s.name)??[],komMarkers:stage?.segments.filter(s=>/climb/i.test(s.type)).map(s=>s.name)??[],finishMarker:stage?'Finish':undefined,jeanObjectives:stage?.teamOrders??[],rideable:Boolean(stage),stage}})}
 
