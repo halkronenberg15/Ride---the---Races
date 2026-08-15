@@ -105,7 +105,7 @@ function RideTheRacesApp() {
       {screen === 'tactics' && (
         <TacticsScreen
           stageNumber={selectedRace==='training'?tourActionable:selectedStageNumber}
-          stageData={selectedRace==='vuelta-2026'?getLibraryStage('vuelta-2026',selectedStageNumber):selectedRace==='training'?getLibraryStage('training',trainingRides.find(r=>r.id===selectedWorkout)?.stage.number??30,selectedWorkout):getRaceStage(selectedStageNumber)}
+          stageData={selectedRace==='training'?getLibraryStage('training',trainingRides.find(r=>r.id===selectedWorkout)?.stage.number??30,selectedWorkout):getLibraryStage(selectedRace,selectedStageNumber)}
           onBack={() => setScreen(selectedRace==='training'?'training':'stageDetail')}
           onStartRide={(strategy) => {
             setRaceStrategy(strategy)
@@ -120,7 +120,7 @@ function RideTheRacesApp() {
       {screen === 'ride' && (
         <RideScreen
           stageNumber={ride?.stageNumber ?? selectedStageNumber}
-          stageData={ride?getLibraryStage(ride.library,ride.stageNumber,ride.workoutId):selectedRace==='tour-2026'?getRaceStage(selectedStageNumber):getLibraryStage(selectedRace,selectedRace==='vuelta-2026'?selectedStageNumber:trainingRides.find(r=>r.id===selectedWorkout)?.stage.number??tourActionable,selectedWorkout)}
+          stageData={ride?getLibraryStage(ride.library,ride.stageNumber,ride.workoutId):getLibraryStage(selectedRace,selectedRace==='training'?trainingRides.find(r=>r.id===selectedWorkout)?.stage.number??tourActionable:selectedStageNumber,selectedWorkout)}
           library={ride?.library??selectedRace}
           workoutId={ride?.workoutId??(selectedRace==='training'?selectedWorkout:undefined)}
           strategy={ride?.strategy ?? raceStrategy}

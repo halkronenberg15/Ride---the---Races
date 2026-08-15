@@ -1,9 +1,9 @@
 import { createRoadModel } from '../engine/roadModel'
 import { raceIdentities } from '../data/raceLibrary'
 import { raceStages } from '../data/raceStages'
-import { vuelta2026, toRaceStage } from '../data/professionalRaces'
+import { tour2026, vuelta2026, toRaceStage } from '../data/professionalRaces'
 export default function StageDetailScreen({library,stageNumber,onBack,onBriefing}:{library:string;stageNumber:number;onBack:()=>void;onBriefing:()=>void}){
- const isVuelta=library==='vuelta-2026'; const professional=isVuelta?vuelta2026.stages.find(s=>s.number===stageNumber):undefined; const stage=professional?toRaceStage(vuelta2026,professional):raceStages.find(s=>s.number===stageNumber)??raceStages[0]
+ const isVuelta=library==='vuelta-2026'; const race=isVuelta?vuelta2026:tour2026; const professional=race.stages.find(s=>s.number===stageNumber); const stage=professional?toRaceStage(race,professional):raceStages.find(s=>s.number===stageNumber)??raceStages[0]
  const [start,finish]=stage.route.split('→').map(v=>v.trim()); const model=createRoadModel(stage.number,stage.segments.length?stage.segments:[{name:'Course',type:'Course',zone:'-',power:'-',cadence:'-',resistance:'-',routeKm:0,icon:'🚴',sec:1800,description:'Course',objective:'Course',secondaryObjective:'Course',terrainLabel:'Course'}],stage.distanceKm,raceIdentities[isVuelta?'vuelta-2026':'tour-2026'],stage.profilePoints,stage.courseMarkers)
  const date=professional?.date; const map=professional?.stageMap
  return <section className="stage-detail" style={{'--race-accent':isVuelta?'#d62f38':'#f2d13d'} as React.CSSProperties}><button onClick={onBack}>← Back to Race</button><header className="race-hub-header"><p className="eyebrow">TEAM LORIOT • {isVuelta?'LA VUELTA':'TOUR DE FRANCE'}</p><h1>Stage {stage.number}</h1><h2>{start} → {finish}</h2></header>
