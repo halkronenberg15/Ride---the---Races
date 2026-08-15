@@ -3,6 +3,7 @@ import { buildGradientSections, gradientResistance, gradientSectionIndex, type G
 import { createStageTimeline, isClimb, type StageSnapshot, type StageTimeline } from './stageEngine.ts'
 import { buildSprintPhases, sprintSnapshot, type SprintPhase, type SprintSnapshot } from './sprintPhases.ts'
 import type { RaceIdentity } from '../data/raceLibrary.ts'
+import { getAuthoritativeProfile } from '../data/courseProfile.ts'
 
 export type RaceMarkerType = 'kilometre-zero' | 'sprint' | 'kom' | 'time-check' | 'finish'
 export const COURSE_MARKER_HEIGHT = 28
@@ -39,6 +40,7 @@ export type ActionTargets = { current: ActionTarget; next: ActionTarget | null; 
 export type RoadModel = StageTimeline & {
   points: RoadPoint[]
   profilePoints: string[]
+  profileSourceKind: 'authoritative' | 'generated-fallback'
   markers: RaceMarker[]
   roadSnapshot: (elapsedSeconds: number) => RoadSnapshot
   elevationAt: (position: number) => number
@@ -50,7 +52,7 @@ const text = (segment: Pick<RideSegment, 'name' | 'type'>) => `${segment.name} $
 /** One road coordinate and geography shared by the tracker, gradients, resistance and coaching. */
 export function markerGeometry(localY:number){return {localY,topY:localY-COURSE_MARKER_HEIGHT,height:COURSE_MARKER_HEIGHT}}
 export function markerLabelOffset(position:number, nearbyPositions:number[]=[]){
-  const edgeOffset=position>.94?-100:position<.06?0:-50
+  const edgeOffset=position>.94?-112:position<.06?0:-50
   const collisionIndex=nearbyPositions.filter(value=>value<position&&position-value<.055).length
   return { translateX:edgeOffset, translateY:collisionIndex%2?-11:0 }
 }
@@ -62,7 +64,7 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
   const sectionSprints = segments.map(buildSprintPhases)
   const raw: RoadPoint[] = [{ position: 0, elevation: 0 }]
   let elevation = 0
-  segments.forEach((segment, index) => {
+  if (!explicitProfile?.length) segments.forEach((segment, index) => {
     const start = timeline.segmentStarts[index] / timeline.duration
     const end = (timeline.segmentStarts[index] + segment.sec) / timeline.duration
     const gradients = sectionGradients[index]
@@ -78,7 +80,9 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
     }
   })
   const officialProfile=explicitProfile?.some(value=>typeof value!=='string')
-  const explicitPoints=(explicitProfile??[]).map(value=>{if(typeof value!=='string')return {position:value.distanceKm/distanceKm,elevation:value.elevationM};const [x,y]=value.split(',').map(Number);return {position:x/100,elevation:y}}).filter(point=>Number.isFinite(point.position)&&Number.isFinite(point.elevation)).sort((a,b)=>a.position-b.position)
+  const officialInput=(explicitProfile??[]).filter((value):value is {distanceKm:number;elevationM:number}=>typeof value!=='string')
+  const renderProfile=officialInput.length===explicitProfile?.length?getAuthoritativeProfile({profilePoints:officialInput,verification:{profile:true}}):explicitProfile??[]
+  const explicitPoints=renderProfile.map(value=>{if(typeof value!=='string')return {position:value.distanceKm/distanceKm,elevation:value.elevationM};const [x,y]=value.split(',').map(Number);return {position:x/100,elevation:y}}).filter(point=>Number.isFinite(point.position)&&Number.isFinite(point.elevation)).sort((a,b)=>a.position-b.position)
   const min = Math.min(...raw.map((point) => point.elevation))
   const max = Math.max(...raw.map((point) => point.elevation))
   const span = Math.max(1, max - min)
@@ -112,11 +116,12 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
     const position=Math.min(1,Math.max(0,marker.routeKm/distanceKm)); const at=position*timeline.duration
     markers.push({key:`time-check-${index}`,type:'time-check',label:marker.label??'TT',position,at,...markerGeometry(profileYAt(position)),color:identity?.timeCheckColor??'#55dff7'})
   })
-  markers.push({ key: 'finish', type: 'finish', label: 'FIN', position: 1, at: timeline.duration, ...markerGeometry(profileYAt(1)), color:identity?.finishColor??'#ffffff' })
+  markers.push({ key: 'finish', type: 'finish', label: 'FINISH', position: 1, at: timeline.duration, ...markerGeometry(profileYAt(1)), color:identity?.finishColor??'#ffffff' })
 
   return {
     ...timeline,
     points,
+    profileSourceKind: explicitPoints.length>=2?'authoritative':'generated-fallback',
     profilePoints: points.map((point) => `${(point.position * 100).toFixed(3)},${profileYAt(point.position).toFixed(3)}`),
     markers,
     elevationAt,

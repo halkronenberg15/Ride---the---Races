@@ -10,7 +10,7 @@ export const raceIdentities: Record<'tour-2026' | 'vuelta-2026' | 'training', Ra
 export type RaceStageShell = { number:number; date?:string; start:string; finish:string; distanceKm:number; type:string; plannedDurationMinutes?:number; sections:RideSegment[]; climbs:string[]; intermediateSprints:string[]; komMarkers:string[]; finishMarker?:string; jeanObjectives:string[]; rideable:boolean; stage?:RaceStage }
 export type RaceSeries = { id:string; name:string; year:number; status:'rideable'|'calendar'; identity:RaceIdentity; stages:RaceStageShell[]; restDays:{afterStage:number;label:string}[] }
 
-export { tour2026, vuelta2026, vueltaRideStages } from './professionalRaces.ts'
+export { tour2026, vuelta2026, vueltaRideStages, uciWorlds2026 } from './professionalRaces.ts'
 import { tour2026, toRaceStage, vuelta2026, vueltaRideStages } from './professionalRaces.ts'
 
 type SegmentSeed = [string,string,number,string,string,string]
