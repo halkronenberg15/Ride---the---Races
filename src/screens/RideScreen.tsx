@@ -5,7 +5,7 @@ import type { RaceStrategy } from '../types/tactics'
 import { adaptSegments } from '../engine/adaptiveRide'
 import { useCareer } from '../state/CareerContext'
 import { formatDistance, formatElevation } from '../utils/units'
-import { buildJeanTimeline, isClimb, jeanEventsCrossed, type JeanTimelineEvent } from '../engine/stageEngine'
+import { buildJeanTimeline, isClimb, jeanCourseEventsCrossed, type JeanTimelineEvent } from '../engine/stageEngine'
 import { useActiveRide } from '../state/ActiveRideContext'
 import { gradientDifficultyColor } from '../engine/gradientRoad'
 import { createRoadModel, markerLabelOffset } from '../engine/roadModel'
@@ -87,11 +87,10 @@ function RideScreen({
   const stageDuration = timeline.duration
 
   const engine = useMemo(() => timeline.roadSnapshot(elapsedSeconds), [elapsedSeconds, timeline])
-  const coachingTimeline = useMemo(() => buildJeanTimeline(segments), [segments])
+  const coachingTimeline = useMemo(() => buildJeanTimeline(segments, stage.distanceKm), [segments, stage.distanceKm])
   const segmentData = { index: engine.segmentIndex, segment: engine.segment, elapsedInSegment: engine.elapsedInSegment }
 
   const currentSegment = segmentData.segment
-  const nextSegment = engine.nextSegment
   const openingStatus = currentSegment.type.toLowerCase().includes('neutral')
     ? 'NEUTRALIZED'
     : currentSegment.name === 'Kilometre Zero'
@@ -109,7 +108,7 @@ function RideScreen({
   const kmZeroAt = timeline.markers.find((marker) => marker.type === 'kilometre-zero')?.at ?? 0
   const afterKmZero = elapsedSeconds > kmZeroAt
 
-  const progress = engine.stageProgress * 100
+  const progress = engine.courseProgress * 100
 
   const routeKm = engine.routeDistanceKm
 
@@ -118,22 +117,16 @@ function RideScreen({
   const riderMarkerX = engine.roadPosition * 100
   const riderMarkerY = engine.profileY
 
-  const currentSegmentProgress = engine.segmentProgress
-
   const currentSegmentIsClimb = isClimb(currentSegment)
 
   const gradientBlocks = engine.gradientSections
   const activeGradientIndex = engine.gradientIndex
   const activeGradient = engine.gradient
-  const climbAverage = gradientBlocks.length
-    ? gradientBlocks.reduce((sum, block) => sum + block.gradient, 0) / gradientBlocks.length
-    : 0
+  const climbAverage = timeline.profileSourceKind === 'authoritative'
+    ? engine.climbAverageGradient
+    : gradientBlocks.length ? gradientBlocks.reduce((sum, block) => sum + block.gradient, 0) / gradientBlocks.length : 0
   const nextGradient = engine.nextGradient
-  const climbDistanceKm = Math.max(
-    0.5,
-    (nextSegment?.routeKm ?? stage.distanceKm) - currentSegment.routeKm,
-  )
-  const summitDistanceKm = climbDistanceKm * (1 - currentSegmentProgress)
+  const summitDistanceKm = engine.distanceToSummit
   const mode = jeanMode(currentSegment, isFinished)
   const actions = useMemo(() => timeline.actionTargets(elapsedSeconds), [elapsedSeconds, timeline])
 
@@ -310,7 +303,8 @@ function RideScreen({
     const previous = previousCoachingElapsed.current
     previousCoachingElapsed.current = elapsedSeconds
     if (!isRunning || elapsedSeconds <= previous) return
-    const crossed = jeanEventsCrossed(coachingTimeline, previous, elapsedSeconds)
+    const previousDistance = timeline.roadSnapshot(previous).courseDistance
+    const crossed = jeanCourseEventsCrossed(coachingTimeline, previousDistance, engine.courseDistance, previous, elapsedSeconds)
       .filter((event) => event.type !== 'sector-entry' && !spokenTimelineEvents.current.has(event.key))
     // Navigation/resume can cross historical cues. Only a fresh road event is eligible.
     const event = crossed.filter((item) => elapsedSeconds - item.at <= 5).at(-1)
@@ -1034,8 +1028,8 @@ function RideScreen({
                   })}
                 </div>
                 <div className="climb-footer">
-                  <span>{Math.round(currentSegmentProgress * 100)}% of climb complete</span>
-                  <strong>{formatDistance(summitDistanceKm, measurementSystem)} • {formatTime(segmentRemaining)} to summit</strong>
+                  <span>{Math.round(engine.climbProgress * 100)}% of climb complete</span>
+                  <strong>{formatDistance(summitDistanceKm, measurementSystem)} • {formatTime(engine.estimatedTimeToSummit)} to summit</strong>
                 </div>
               </>
             ) : (
@@ -1067,7 +1061,7 @@ function RideScreen({
                     <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="rgba(244,106,0,0.42)" />
                     <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="rgba(92,92,92,.88)" clipPath="url(#completedStageClip)" />
                     <polyline points={profilePoints.join(' ')} fill="none" stroke="rgba(255,174,96,0.98)" strokeWidth="2.4" vectorEffect="non-scaling-stroke" />
-                    {timeline.segmentStarts.slice(1).map((start) => <line key={start} x1={start / timeline.duration * 100} x2={start / timeline.duration * 100} y1="88" y2="100" stroke="rgba(255,255,255,.5)" vectorEffect="non-scaling-stroke" />)}
+                    {timeline.segmentStarts.slice(1).map((start) => { const x=timeline.roadSnapshot(start).courseProgress*100; return <line key={start} x1={x} x2={x} y1="88" y2="100" stroke="rgba(255,255,255,.5)" vectorEffect="non-scaling-stroke" /> })}
                     <line x1={riderMarkerX} x2={riderMarkerX} y1="2" y2="98" stroke="rgba(255,255,255,0.68)" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
                   </svg>
                   {!stage.isTraining && timeline.markers.map((marker) => <span key={marker.key} className={`race-marker ${marker.type}`} style={{ left: `${marker.position * 100}%`, top:`${marker.localY}%`, color:marker.color }} title={marker.label}><b style={{ transform:`translate(${markerLabelOffset(marker.position,timeline.markers.map(item=>item.position)).translateX}%, ${markerLabelOffset(marker.position,timeline.markers.map(item=>item.position)).translateY}px)` }}>{marker.label}</b><i /></span>)}

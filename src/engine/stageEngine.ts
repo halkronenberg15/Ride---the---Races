@@ -14,9 +14,14 @@ export type StageSnapshot = {
   stageRemaining: number
   elapsed: number
   routeDistanceKm: number
+  /** Canonical geographic coordinate. All professional-course rendering and events use this value. */
+  courseDistance: number
+  courseProgress: number
   riderPosition: number
   segmentStartProgress: number
   segmentEndProgress: number
+  sectionStartCourseDistance: number
+  sectionEndCourseDistance: number
   events: StageEvent[]
 }
 
@@ -62,9 +67,13 @@ export function createStageTimeline(segments: RideSegment[], routeDistanceKm?: n
       const segment = segments[segmentIndex]
       const elapsedInSegment = Math.min(segment.sec, elapsed - segmentStarts[segmentIndex])
       const complete = elapsed >= duration
-      const nextRoute = segments[segmentIndex + 1]?.routeKm ?? routeDistanceKm ?? segment.routeKm
-      const distance = Math.max(0, segment.routeKm + (nextRoute - segment.routeKm) * Math.min(1, Math.max(0, elapsedInSegment / Math.max(1, segment.sec))))
       const totalDistance = routeDistanceKm ?? Math.max(...segments.map((item) => item.routeKm), 1)
+      const sectionStartCourseDistance = Math.min(totalDistance, Math.max(0, segment.routeKm))
+      const sectionEndCourseDistance = Math.min(totalDistance, Math.max(sectionStartCourseDistance,
+        segments[segmentIndex + 1]?.routeKm ?? totalDistance))
+      const sectionFraction = Math.min(1, Math.max(0, elapsedInSegment / Math.max(1, segment.sec)))
+      const distance = complete ? totalDistance : sectionStartCourseDistance
+        + (sectionEndCourseDistance - sectionStartCourseDistance) * sectionFraction
       const events: StageEvent[] = []
       if (Math.floor(elapsed) === Math.floor(duration / 2)) events.push('stage-halfway')
       if (Math.floor(elapsedInSegment) === Math.floor(segment.sec / 2)) events.push('sector-halfway')
@@ -95,12 +104,15 @@ export function createStageTimeline(segments: RideSegment[], routeDistanceKm?: n
         stageRemaining: Math.max(0, duration - elapsed),
         elapsed,
         routeDistanceKm: Math.min(totalDistance, distance),
-        // The profile, sector selection and coaching all travel on stage time. Route
-        // kilometres remain display data because indoor adaptations are not ridden
-        // at a constant real-world speed.
-        riderPosition: Math.min(1, elapsed / duration),
+        courseDistance: Math.min(totalDistance, distance),
+        courseProgress: Math.min(1, distance / totalDistance),
+        // Indoor time is piecewise mapped over authored real-course section bounds.
+        // This normalized coordinate is therefore geographic, not elapsed-time progress.
+        riderPosition: Math.min(1, distance / totalDistance),
         segmentStartProgress: segmentStarts[segmentIndex] / duration,
         segmentEndProgress: (segmentStarts[segmentIndex] + segment.sec) / duration,
+        sectionStartCourseDistance,
+        sectionEndCourseDistance,
         events,
       }
     },
@@ -112,11 +124,12 @@ export type JeanTimelineEvent = {
   at: number
   type: 'sector-entry' | 'kilometre-zero-warning' | 'kilometre-zero' | 'sprint-approach' | 'sprint' | 'climb-approach' | 'climb-entry' | 'summit-minute' | 'summit' | 'descent' | 'recovery' | 'finish-approach' | 'finish'
   segmentIndex: number
+  courseDistance?: number
 }
 
 /** Deterministic coaching schedule generated from the same segment boundaries as snapshots. */
-export function buildJeanTimeline(segments: RideSegment[]): JeanTimelineEvent[] {
-  const timeline = createStageTimeline(segments)
+export function buildJeanTimeline(segments: RideSegment[], routeDistanceKm?: number): JeanTimelineEvent[] {
+  const timeline = createStageTimeline(segments, routeDistanceKm)
   const events: JeanTimelineEvent[] = []
   segments.forEach((segment, index) => {
     const start = timeline.segmentStarts[index]
@@ -142,7 +155,24 @@ export function buildJeanTimeline(segments: RideSegment[]): JeanTimelineEvent[] 
   })
   if (timeline.duration >= 60) events.push({ key: 'finish-approach', at: timeline.duration - 60, type: 'finish-approach', segmentIndex: segments.length - 1 })
   events.push({ key: 'finish', at: timeline.duration, type: 'finish', segmentIndex: segments.length - 1 })
-  return events.sort((a, b) => a.at - b.at)
+  return events.sort((a, b) => a.at - b.at).map(event => ({
+    ...event,
+    courseDistance: timeline.snapshot(event.at).courseDistance,
+  }))
+}
+
+/** One-time geographic crossing semantics for Jean and authoritative course markers. */
+export function jeanCourseEventsCrossed(events: JeanTimelineEvent[], fromDistance: number, toDistance: number, fromElapsed?: number, toElapsed?: number) {
+  if (toDistance < fromDistance) return []
+  return events.filter(event => {
+    if (event.courseDistance === undefined) return false
+    if (event.courseDistance > fromDistance && event.courseDistance <= toDistance) return true
+    // KM0/start-ramp cues can share a zero-length geographic interval. Time only
+    // breaks that coordinate tie; it never supplies an alternative road position.
+    return fromElapsed !== undefined && toElapsed !== undefined
+      && event.courseDistance === fromDistance && event.courseDistance === toDistance
+      && event.at > fromElapsed && event.at <= toElapsed
+  })
 }
 
 export function jeanEventsCrossed(events: JeanTimelineEvent[], from: number, to: number) {
