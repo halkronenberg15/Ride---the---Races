@@ -113,6 +113,23 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
     return left.elevation + (right.elevation - left.elevation) * local
   }
   const profileYAt=(position:number)=>officialProfile?92-((elevationAt(position)-pointMin)/pointSpan)*80:elevationAt(position)
+  const geometryGradientAt=(courseDistance:number)=>{
+    const distance=Math.min(distanceKm,Math.max(0,courseDistance))
+    const rightIndex=points.findIndex(point=>point.position*distanceKm>distance+1e-9)
+    if(rightIndex<=0)return 0
+    const left=points[rightIndex-1],right=points[rightIndex]
+    return (right.elevation-left.elevation)/Math.max(.001,(right.position-left.position)*distanceKm)*.1
+  }
+  const geometryGradientSections=(startDistance:number,endDistance:number):GradientSection[]=>{
+    const length=Math.max(Number.EPSILON,endDistance-startDistance)
+    const boundaries=[startDistance,...points.map(point=>point.position*distanceKm)
+      .filter(distance=>distance>startDistance&&distance<endDistance),endDistance]
+    return boundaries.slice(0,-1).map((start,index)=>({
+      start:(start-startDistance)/length,
+      end:(boundaries[index+1]-startDistance)/length,
+      gradient:Number(geometryGradientAt((start+boundaries[index+1])/2).toFixed(1)),
+    }))
+  }
   const elapsedAtCourseDistance=(courseDistance:number)=>{
     const target=Math.min(distanceKm,Math.max(0,courseDistance))
     if(target>=distanceKm)return timeline.duration
@@ -202,18 +219,9 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
     },
     roadSnapshot(elapsedSeconds) {
       const base = timeline.snapshot(elapsedSeconds)
-      const gradientSections = sectionGradients[base.segmentIndex]
+      const authoredGradientSections = sectionGradients[base.segmentIndex]
       const sprintPhases = sectionSprints[base.segmentIndex]
       const sprintPhase = sprintSnapshot(sprintPhases, base.elapsedInSegment)
-      const gradientIndex = gradientSectionIndex(gradientSections, base.segmentProgress)
-      const geometryGradient=()=>{
-        const distance=base.courseDistance
-        const rightIndex=points.findIndex(point=>point.position*distanceKm>distance+1e-9)
-        if(rightIndex<=0)return 0
-        const left=points[rightIndex-1],right=points[rightIndex]
-        return (right.elevation-left.elevation)/Math.max(.001,(right.position-left.position)*distanceKm)*.1
-      }
-      const gradient = officialProfile ? geometryGradient() : gradientSections[gradientIndex]?.gradient ?? (/descent/i.test(text(base.segment)) ? -3.2 : 0)
       const priorIndex=base.segmentIndex-1
       const atPriorSummit=priorIndex>=0&&isClimb(segments[priorIndex])
         && Math.abs(base.elapsed-timeline.segmentStarts[base.segmentIndex])<1e-9
@@ -221,9 +229,15 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
       const climbActive=climbIndex>=0
       const climbStartDistance=climbActive?Math.min(distanceKm,segments[climbIndex].routeKm):null
       const summitDistance=climbActive?Math.min(distanceKm,segments[climbIndex+1]?.routeKm??distanceKm):null
-      const distanceToSummit=summitDistance===null?0:Math.max(0,summitDistance-base.courseDistance)
-      const climbProgress=climbActive&&summitDistance!>climbStartDistance!
+      const gradientSections=officialProfile&&climbStartDistance!==null&&summitDistance!==null
+        ? geometryGradientSections(climbStartDistance,summitDistance):authoredGradientSections
+      const geographicClimbProgress=climbActive&&summitDistance!>climbStartDistance!
         ? Math.min(1,Math.max(0,(base.courseDistance-climbStartDistance!)/(summitDistance!-climbStartDistance!))):0
+      const gradientIndex=gradientSectionIndex(gradientSections,officialProfile?geographicClimbProgress:base.segmentProgress)
+      const gradient=officialProfile?Number(geometryGradientAt(base.courseDistance).toFixed(1))
+        :gradientSections[gradientIndex]?.gradient??(/descent/i.test(text(base.segment))?-3.2:0)
+      const distanceToSummit=summitDistance===null?0:Math.max(0,summitDistance-base.courseDistance)
+      const climbProgress=geographicClimbProgress
       const climbAverageGradient=climbActive&&summitDistance!>climbStartDistance!
         ? (elevationAt(summitDistance!/distanceKm)-elevationAt(climbStartDistance!/distanceKm))
           /(summitDistance!-climbStartDistance!)*.1:0
@@ -237,7 +251,7 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
         sprintPhase,
         gradientIndex,
         gradient,
-        nextGradient: officialProfile ? geometryGradient() : gradientSections[Math.min(gradientIndex + 1, gradientSections.length - 1)]?.gradient ?? gradient,
+        nextGradient: gradientSections[Math.min(gradientIndex + 1, gradientSections.length - 1)]?.gradient ?? gradient,
         climbProgress,
         activeClimbId: climbActive?`${stageNumber}-${climbIndex}-${segments[climbIndex].name}`:null,
         climbStartDistance,
