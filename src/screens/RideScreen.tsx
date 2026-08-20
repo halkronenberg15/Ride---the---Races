@@ -117,7 +117,11 @@ function RideScreen({
   const riderMarkerX = engine.roadPosition * 100
   const riderMarkerY = engine.profileY
 
-  const currentSegmentIsClimb = isClimb(currentSegment)
+  // Verified-course climb UI follows the road coordinate, including the exact
+  // summit sample; training fallback retains its authored workout semantics.
+  const currentSegmentIsClimb = timeline.profileSourceKind === 'authoritative'
+    ? engine.activeClimbId !== null
+    : isClimb(currentSegment)
 
   const gradientBlocks = engine.gradientSections
   const activeGradientIndex = engine.gradientIndex
@@ -980,7 +984,7 @@ function RideScreen({
                   <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="rgba(244,106,0,.34)" />
                   <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="rgba(105,105,105,.9)" clipPath="url(#climbStageClip)" />
                   <polyline points={profilePoints.join(' ')} fill="none" stroke="#ffae60" strokeWidth="2.4" vectorEffect="non-scaling-stroke" />
-                  {timeline.segmentStarts.slice(1).map((start) => <line key={start} x1={start / timeline.duration * 100} x2={start / timeline.duration * 100} y1="88" y2="100" stroke="rgba(255,255,255,.5)" vectorEffect="non-scaling-stroke" />)}
+                  {timeline.segmentStarts.slice(1).map((start) => { const x=timeline.roadSnapshot(start).courseProgress*100; return <line key={start} x1={x} x2={x} y1="88" y2="100" stroke="rgba(255,255,255,.5)" vectorEffect="non-scaling-stroke" /> })}
                   <line x1={riderMarkerX} x2={riderMarkerX} y1="2" y2="98" stroke="#fff" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
                 </svg>
                 {!stage.isTraining && timeline.markers.map((marker) => <span key={marker.key} className={`race-marker ${marker.type}`} style={{ left: `${marker.position * 100}%`, top:`${marker.localY}%`, color:marker.color }} title={marker.label}><b style={{ transform:`translate(${markerLabelOffset(marker.position,timeline.markers.map(item=>item.position)).translateX}%, ${markerLabelOffset(marker.position,timeline.markers.map(item=>item.position)).translateY}px)` }}>{marker.label}</b><i /></span>)}
