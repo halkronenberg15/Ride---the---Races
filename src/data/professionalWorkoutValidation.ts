@@ -7,6 +7,16 @@ const PLACEHOLDER=/workout in preparation|profile coming soon|race course|execut
 export function validateProfessionalStage(race:ProfessionalRace,stage:ProfessionalStage):string[]{
  const id=`${race.name} Stage ${stage.number} (${race.id}-stage-${stage.number})`; const errors:string[]=[]; const fail=(message:string)=>errors.push(`${id}: ${message}`)
  if(!stage.verification.profile) fail('profileVerified !== true')
+ if(!(stage.officialDistanceKm>0)) fail(`official distance expected > 0 km; actual ${stage.officialDistanceKm} km`)
+ if(stage.profilePoints.length<2) fail(`verified profile expected at least 2 samples; actual ${stage.profilePoints.length}`)
+ let previousProfile=-Infinity
+ stage.profilePoints.forEach((point,index)=>{
+  if(!Number.isFinite(point.distanceKm)||!Number.isFinite(point.elevationM)) fail(`profile sample ${index+1} expected finite distance/elevation; actual ${point.distanceKm}/${point.elevationM}`)
+  if(point.distanceKm<previousProfile) fail(`profile sample ${index+1} expected ordered after ${previousProfile} km; actual ${point.distanceKm} km`)
+  previousProfile=point.distanceKm
+ })
+ if(stage.profilePoints[0]?.distanceKm!==0) fail(`profile origin expected 0 km; actual ${stage.profilePoints[0]?.distanceKm} km`)
+ if(stage.profilePoints.at(-1)?.distanceKm!==stage.officialDistanceKm) fail(`profile finish expected ${stage.officialDistanceKm} km; actual ${stage.profilePoints.at(-1)?.distanceKm} km`)
  if(!stage.start||!stage.finish||!stage.classification) fail('invalid stage identity')
  if(!stage.segments.length) fail('no authored workout sections')
  if(!Number.isFinite(stage.indoorDurationMinutes)||stage.indoorDurationMinutes!<=0) fail('invalid indoor duration')
