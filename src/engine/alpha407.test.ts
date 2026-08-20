@@ -23,10 +23,10 @@ test('all four training workouts have exact durations, targets, and FTP scaling'
   assert.notEqual(base,stronger)
 })
 
-test('La Vuelta stages 1–9 are complete synchronized-engine stage definitions',()=>{
+test('all La Vuelta stages are complete synchronized-engine stage definitions',()=>{
   assert.equal(vuelta2026.stages.length,21); assert.equal(vueltaRideStages.length,21)
   for(const stage of vueltaRideStages.filter(stage=>stage.workoutReady)){assert.ok(stage.segments.length>=5);assert.ok(stage.segments.every(s=>s.sec>0&&s.power&&s.cadence&&s.resistance));assert.ok(vuelta2026.stages[stage.number-1].rideable)}
-  assert.ok(vuelta2026.stages.slice(9).every(stage=>!stage.rideable))
+  assert.ok(vuelta2026.stages.every(stage=>stage.rideable))
 })
 
 test('course markers use metadata colors and fixed upward-only local geometry',()=>{
