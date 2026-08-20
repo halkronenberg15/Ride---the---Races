@@ -5,6 +5,7 @@ import { isClimb } from '../engine/stageEngine'
 import { buildSprintPhases } from '../engine/sprintPhases'
 import { formatDistance } from '../utils/units'
 import type { MeasurementSystem } from '../types/career'
+import { composeSentences } from '../utils/text'
 
 type Props = { stageNumber: number; segments: RideSegment[]; measurementSystem: MeasurementSystem }
 const time = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
@@ -30,7 +31,7 @@ export default function StageSectionPreview({ stageNumber, segments, measurement
         <span className="preview-stat"><small>CADENCE</small><strong>{segment.cadence}</strong></span>
         <span className="preview-stat"><small>RESISTANCE</small><strong>{segment.resistance}</strong></span>
       </div>
-      <p><strong>Jean / team objective:</strong> {segment.objective}. {segment.secondaryObjective}</p>
+      <p><strong>Jean / team objective:</strong> {composeSentences(segment.objective, segment.secondaryObjective)}</p>
       {gradients.length > 0 && <p><strong>Climb / terrain:</strong> {gradients.map((item) => `${item.gradient}%`).join(' · ')}</p>}
       {sprintPhases.length > 0 && <p><strong>Sprint phases:</strong> {sprintPhases.map((phase) => `${phase.name} ${phase.zone} · ${phase.power} · ${phase.cadence} · ${phase.resistance}`).join(' | ')}</p>}
     </div>
