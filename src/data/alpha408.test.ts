@@ -19,9 +19,9 @@ test('Vuelta signature terrain remains identifiable in authoritative metre data'
  assert.ok(Math.min(...elevations(19).slice(-7,-4))<30&&elevations(19).at(-1)!>1200)
  assert.ok(Math.min(...elevations(20))>1100); assert.ok(elevations(21).slice(-9).filter((v,i,a)=>i>0&&i<a.length-1&&v>a[i-1]&&v>a[i+1]).length>=3)
 })
-test('verification and workout readiness are independent production states',()=>{
- assert.equal(vueltaRideStages.filter(stage=>stage.profileVerified).length,21); assert.equal(vueltaRideStages.filter(stage=>stage.workoutReady).length,9)
+test('verification and workout readiness are independently validated production states',()=>{
+ assert.equal(vueltaRideStages.filter(stage=>stage.profileVerified).length,21); assert.equal(vueltaRideStages.filter(stage=>stage.workoutReady).length,21)
  const valid=(stage:ProfessionalStage)=>!stage.verification.profile||Boolean(stage.verification.source&&stage.verification.reference&&stage.verification.updatedAt)
- assert.ok(vuelta2026.stages.every(valid)); assert.ok(vuelta2026.stages.slice(9).every(stage=>stage.verification.profile&&!stage.workoutReady))
+ assert.ok(vuelta2026.stages.every(valid)); assert.ok(vuelta2026.stages.every(stage=>stage.verification.profile&&stage.workoutReady))
 })
 test('currently rideable Tour stages retain explicit course-audit provenance',()=>{for(const stage of raceStages){assert.equal(stage.profileVerified,true);assert.ok(stage.profileSource&&stage.profileReference&&stage.profileUpdatedAt)}})

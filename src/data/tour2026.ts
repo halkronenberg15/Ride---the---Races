@@ -47,20 +47,44 @@ const seeds: TourSeed[] = [
 
 const routeMap = (alt:string):RouteMap => ({type:'simplified-route',alt,verified:false,source:SOURCE,points:[{x:8,y:51},{x:24,y:46},{x:39,y:53},{x:57,y:48},{x:74,y:55},{x:94,y:47}]})
 
+const signatureNames:Record<number,string[]>={
+ 1:['Barcelona Team Warm-up','TTT Start Ramp','Rotation Settling','Montjuïc Terrain Response','Rotation Pressure','Coordinated Finish Drive'],
+ 14:['Mulhouse Neutral Start','Kilometre Zero','Grand Ballon','Grand Ballon Descent','Col du Page','Ballon d’Alsace','Col du Haag','Markstein Cooldown'],
+ 16:['Évian ITT Warm-up','ITT Start Ramp','Sustained Lake Pacing','Terrain Response','Controlled Descent','Thonon Finish Drive'],
+ 17:['Chambéry Neutral Start','Kilometre Zero','Early Alpine Climb One','Early Alpine Climb Two','Descent to the Plains','Voiron Positioning','Voiron Finish'],
+ 18:['Voiron Neutral Start','Kilometre Zero','Opening Mountain','Valley Recovery','Middle Climb','Final-Climb Approach','Orcières-Merlette Summit','Summit Cooldown'],
+ 19:['Gap Neutral Start','Kilometre Zero','Col Bayard','Col du Noyer','Noyer Descent','Col d’Ornon','Alpe d’Huez','Summit Cooldown'],
+ 20:['Bourg d’Oisans Neutral Start','Kilometre Zero','Croix de Fer','Télégraphe','Galibier','Sarenne','Alpe d’Huez','Summit Cooldown'],
+ 21:['Thoiry Ceremonial Start','Kilometre Zero','Paris Circuit Tempo','Montmartre Ramp One','Montmartre Ramp Two','Champs-Élysées Sprint','Paris Cooldown'],
+}
+const signatureMissions:Record<number,string>={
+ 1:'Ride as one team: launch together, settle the rotation, respond on Montjuïc, and coordinate the final drive.',
+ 14:'Pace Grand Ballon, Col du Page and Ballon d’Alsace before committing over Col du Haag.',
+ 16:'Execute a disciplined individual time trial: sustained pacing, controlled terrain response, descent control, and a final drive.',
+ 17:'Respect the meaningful early climbing despite the flat label, then conserve for the Voiron finale.',
+ 18:'Save the deepest sustained effort for the summit finish at Orcières-Merlette.',
+ 19:'Manage Bayard, Noyer and Ornon with patience before the final Alpe d’Huez ascent.',
+ 20:'Survive Croix de Fer, Télégraphe, Galibier and Sarenne, then give Alpe d’Huez the largest final commitment.',
+ 21:'Enjoy the procession, then race repeated late Montmartre ramps and the Champs-Élysées finish.',
+}
+
 const stageFromSeed = (seed:TourSeed,index:number):ProfessionalStage => {
  const [date,start,finish,classification,distanceKm,elevations]=seed
  const workout=raceStages.find(stage=>stage.number===index+1)
+ const names=signatureNames[index+1]
+ const segments=(workout?.segments??[]).map((segment,segmentIndex)=>({...segment,name:names?.[segmentIndex]??segment.name,routeKm:Math.min(distanceKm,Math.max(0,segment.routeKm))}))
+ if(segments.length) segments[segments.length-1]={...segments[segments.length-1],routeKm:distanceKm}
  return {
   number:index+1,date,start,finish,classification,type:classification,
   officialDistanceKm:distanceKm,distanceKm,officialAscentM:workout?.elevationM??0,
   indoorDurationMinutes:workout?Math.round(workout.segments.reduce((sum,segment)=>sum+segment.sec,0)/60):undefined,
   plannedDurationMinutes:workout?Math.round(workout.segments.reduce((sum,segment)=>sum+segment.sec,0)/60):undefined,
-  mission:workout?.objective??`Complete the official ${classification.toLowerCase()} course.`,
+  mission:signatureMissions[index+1]??workout?.objective??`Complete the official ${classification.toLowerCase()} course.`,
   profilePoints:elevations.map((elevationM,pointIndex)=>({distanceKm:Number((distanceKm*pointIndex/(elevations.length-1)).toFixed(3)),elevationM})),
   verification:{profile:true,distance:true,ascent:false,markers:false,map:false,source:SOURCE,reference:`https://www.letour.fr/en/stage-${index+1}`,updatedAt:UPDATED_AT},
   workoutReady:Boolean(workout),rideable:Boolean(workout),stageMap:routeMap(`Tour de France Stage ${index+1}, ${start} to ${finish}`),
   // No course marker is added unless its route kilometre is supported by the source.
-  segments:workout?.segments??[],
+  segments,
  }
 }
 
