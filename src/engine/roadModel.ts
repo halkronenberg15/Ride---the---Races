@@ -113,17 +113,24 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
     return left.elevation + (right.elevation - left.elevation) * local
   }
   const profileYAt=(position:number)=>officialProfile?92-((elevationAt(position)-pointMin)/pointSpan)*80:elevationAt(position)
+  // A 600 m distance window suppresses interpolation micro-sample noise while
+  // retaining genuine short pitches. Elevation is sampled in the canonical
+  // course-distance domain; positive elevation gain therefore stays positive.
   const geometryGradientAt=(courseDistance:number)=>{
-    const distance=Math.min(distanceKm,Math.max(0,courseDistance))
-    const rightIndex=points.findIndex(point=>point.position*distanceKm>distance+1e-9)
-    if(rightIndex<=0)return 0
-    const left=points[rightIndex-1],right=points[rightIndex]
-    return (right.elevation-left.elevation)/Math.max(.001,(right.position-left.position)*distanceKm)*.1
+    if (!officialProfile) return 0
+    const halfWindow=Math.min(.3,distanceKm/20)
+    const leftDistance=Math.max(0,courseDistance-halfWindow)
+    const rightDistance=Math.min(distanceKm,courseDistance+halfWindow)
+    if(rightDistance-leftDistance<.05)return 0
+    const rise=elevationAt(rightDistance/distanceKm)-elevationAt(leftDistance/distanceKm)
+    return rise/((rightDistance-leftDistance)*10)
   }
   const geometryGradientSections=(startDistance:number,endDistance:number):GradientSection[]=>{
     const length=Math.max(Number.EPSILON,endDistance-startDistance)
-    const boundaries=[startDistance,...points.map(point=>point.position*distanceKm)
-      .filter(distance=>distance>startDistance&&distance<endDistance),endDistance]
+    // At most six readable, distance-equal blocks. Workout duration and
+    // authored sector boundaries never select these geographic intervals.
+    const count=Math.max(1,Math.min(6,Math.ceil(length/2)))
+    const boundaries=Array.from({length:count+1},(_,index)=>startDistance+length*index/count)
     return boundaries.slice(0,-1).map((start,index)=>({
       start:(start-startDistance)/length,
       end:(boundaries[index+1]-startDistance)/length,
@@ -149,9 +156,13 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
       const at = start + segment.sec
       const position=timeline.snapshot(at).courseProgress; markers.push({ key: `sprint-${index}`, type: 'sprint', label: 'SPR', position, at, ...markerGeometry(profileYAt(position)), color:identity?.pointsColor??'#38a852' })
     }
-    if (isClimb(segment)) {
+    // Legacy Tour segments contain researched named summit distances. Vuelta
+    // verification explicitly says markers=false, so its workout sectors must
+    // never fabricate KOM geography.
+    if (isClimb(segment) && identity?.shortName === 'Le Tour') {
       const at = start + segment.sec
-      const position=timeline.snapshot(at).courseProgress; markers.push({ key: `kom-${index}`, type: 'kom', label: 'KOM', position, at, ...markerGeometry(profileYAt(position)), color:identity?.komColor??'#ef3340' })
+      const position=timeline.snapshot(at).courseProgress
+      markers.push({ key: `kom-${index}`, type: 'kom', label: 'KOM', position, at, ...markerGeometry(profileYAt(position)), color:identity.komColor })
     }
   })
   courseMarkers?.forEach((marker,index)=>{
@@ -234,7 +245,9 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
       const geographicClimbProgress=climbActive&&summitDistance!>climbStartDistance!
         ? Math.min(1,Math.max(0,(base.courseDistance-climbStartDistance!)/(summitDistance!-climbStartDistance!))):0
       const gradientIndex=gradientSectionIndex(gradientSections,officialProfile?geographicClimbProgress:base.segmentProgress)
-      const gradient=officialProfile?Number(geometryGradientAt(base.courseDistance).toFixed(1))
+      const gradient=officialProfile&&gradientSections.length
+        ? gradientSections[gradientIndex].gradient
+        :officialProfile?Number(geometryGradientAt(base.courseDistance).toFixed(1))
         :gradientSections[gradientIndex]?.gradient??(/descent/i.test(text(base.segment))?-3.2:0)
       const distanceToSummit=summitDistance===null?0:Math.max(0,summitDistance-base.courseDistance)
       const climbProgress=geographicClimbProgress
@@ -251,7 +264,8 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
         sprintPhase,
         gradientIndex,
         gradient,
-        nextGradient: gradientSections[Math.min(gradientIndex + 1, gradientSections.length - 1)]?.gradient ?? gradient,
+        nextGradient: gradientSections[Math.min(gradientIndex + 1, gradientSections.length - 1)]?.gradient
+          ?? (officialProfile ? Number(geometryGradientAt(Math.min(distanceKm,base.courseDistance+.8)).toFixed(1)) : gradient),
         climbProgress,
         activeClimbId: climbActive?`${stageNumber}-${climbIndex}-${segments[climbIndex].name}`:null,
         climbStartDistance,
