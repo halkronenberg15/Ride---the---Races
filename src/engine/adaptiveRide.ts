@@ -1,5 +1,6 @@
 import type { RideSegment } from '../data/raceStages'
 import type { RaceStrategy } from '../types/tactics'
+import { createPrescription, ftpIntensity } from './prescription.ts'
 
 const BASELINE_FTP = 206
 
@@ -79,6 +80,19 @@ export function adaptSegment(
   const powerStrategy = recovery
     ? 1 + (profile.powerMultiplier - 1) * 0.35
     : profile.powerMultiplier
+
+  const intendedIntensity = ftpIntensity(segment)
+  if (intendedIntensity) {
+    const prescription = createPrescription(segment, ftp, {
+      min: intendedIntensity.min * powerStrategy,
+      max: intendedIntensity.max * powerStrategy,
+    })
+    return {
+      ...segment,
+      ...prescription,
+      sec: recovery ? Math.max(30, Math.round(segment.sec * profile.recoveryMultiplier)) : segment.sec,
+    }
+  }
 
   const powerRange = parseRange(segment.power, ' W')
   const resistanceRange = parseRange(segment.resistance, '%')

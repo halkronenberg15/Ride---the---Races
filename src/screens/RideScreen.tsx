@@ -13,6 +13,7 @@ import { jeanCue, jeanMode } from '../engine/jeanDirector'
 import { speakAsJean } from '../services/jeanVoice'
 import { CLICK_IN_CUE, PRE_RIDE_COUNTDOWN } from '../engine/preRide'
 import { raceIdentities } from '../data/raceLibrary'
+import { isIndividualTimeTrial, officialSegments, ttStartSnapshot } from '../engine/startArchitecture'
 
 type RideScreenProps = {
   stageNumber: number
@@ -53,11 +54,15 @@ function RideScreen({
   const { career } = useCareer()
   const measurementSystem = career.settings.measurementSystem
   const stage = useMemo(() => stageData ?? getRaceStage(stageNumber), [stageNumber, stageData])
-  const segments = useMemo(() => adaptSegments(stage.segments, career.rider.ftp, strategy), [stage, career.rider.ftp, strategy])
+  const adaptedSegments = useMemo(() => adaptSegments(stage.segments, career.rider.ftp, strategy), [stage, career.rider.ftp, strategy])
+  const isTimeTrial = useMemo(() => isIndividualTimeTrial(adaptedSegments), [adaptedSegments])
+  const segments = useMemo(() => officialSegments(adaptedSegments), [adaptedSegments])
   const activeRide = useActiveRide()
   const timeline = useMemo(() => createRoadModel(stage.number, segments, stage.distanceKm, raceIdentities[library as keyof typeof raceIdentities], stage.profilePoints, stage.courseMarkers), [segments, stage, library])
   const profilePoints = timeline.profilePoints
-  const elapsedSeconds = activeRide.ride?.stageNumber === stageNumber ? activeRide.elapsed : 0
+  const rideElapsed = activeRide.ride?.stageNumber === stageNumber ? activeRide.elapsed : 0
+  const ttStart = useMemo(() => ttStartSnapshot(adaptedSegments, rideElapsed), [adaptedSegments, rideElapsed])
+  const elapsedSeconds = isTimeTrial ? ttStart.officialElapsed : rideElapsed
   const isRunning = activeRide.ride?.stageNumber === stageNumber && activeRide.ride.runningSince !== null
   const [countdown, setCountdown] = useState<number | null>(null)
   const [isFinished, setIsFinished] = useState(false)
@@ -91,7 +96,10 @@ function RideScreen({
   const segmentData = { index: engine.segmentIndex, segment: engine.segment, elapsedInSegment: engine.elapsedInSegment }
 
   const currentSegment = segmentData.segment
-  const openingStatus = currentSegment.type.toLowerCase().includes('neutral')
+  const openingStatus = isTimeTrial && !ttStart.official
+    ? ttStart.state === 'warm-up' ? 'WARM UP' : ttStart.state === 'start-gate' ? 'START GATE' : ttStart.state.replace('countdown-', '')
+    : isTimeTrial && ttStart.state === 'go' ? 'GO'
+    : currentSegment.type.toLowerCase().includes('neutral')
     ? 'NEUTRALIZED'
     : currentSegment.name === 'Kilometre Zero'
       ? 'RACE START'
@@ -133,6 +141,18 @@ function RideScreen({
   const summitDistanceKm = engine.distanceToSummit
   const mode = jeanMode(currentSegment, isFinished)
   const actions = useMemo(() => timeline.actionTargets(elapsedSeconds), [elapsedSeconds, timeline])
+
+  useEffect(() => {
+    if (!isRunning || !isTimeTrial || ttStart.official) return
+    const cue = ttStart.state === 'start-gate' && Math.ceil(ttStart.remaining) === 30
+      ? 'Thirty seconds. Into the start gate.'
+      : ttStart.state.startsWith('countdown-') ? ttStart.state.replace('countdown-', '')
+      : null
+    if (cue && lastSpokenCue.current !== `tt-${cue}`) {
+      lastSpokenCue.current = `tt-${cue}`
+      speak(cue)
+    }
+  }, [isRunning, isTimeTrial, ttStart.official, ttStart.remaining, ttStart.state])
 
   function timelineMessage(event: JeanTimelineEvent) {
     const eventSegment = segments[event.segmentIndex]
@@ -993,6 +1013,10 @@ function RideScreen({
             </div>
           )}
           <div className="live-profile-card" aria-label={currentSegmentIsClimb ? "Live climb gradient profile" : "Live stage profile"}>
+            <div className="current-gradient" aria-label="Current road gradient">
+              <small>CURRENT GRADIENT</small>
+              <strong>{timeline.profileSourceKind === 'authoritative' ? `${activeGradient.toFixed(1)}% ${activeGradient > 0 ? '↑' : activeGradient < 0 ? '↓' : ''}` : '—'}</strong>
+            </div>
             {currentSegmentIsClimb ? (
               <>
                 <div className="gradient-summary">
@@ -1142,7 +1166,7 @@ function RideScreen({
 
             <div className="cockpit-sections" aria-label="Current and next actionable target">
               <div className="cockpit-section current"><small>CURRENT</small><strong>{actions.current.type === 'sprint' ? '⚡ ' : ''}{actions.current.name}</strong><div className="action-meta">{actions.current.zone} · {formatTime(actions.current.remaining ?? 0)} remaining</div></div>
-              <div className="cockpit-section"><small>UP NEXT</small>{actions.next ? <><strong>{actions.next.type === 'sprint' ? '⚡ ' : ''}{actions.next.name}</strong><div className="action-meta">{actions.next.zone} · in {formatTime(actions.timeUntilNext ?? 0)}</div><div className="action-targets"><span>POWER {actions.next.power}</span><span>CAD {actions.next.cadence}</span><span>RES {actions.next.resistance}</span></div></> : <strong>Stage complete · no upcoming target</strong>}</div>
+              <div className="cockpit-section"><small>UP NEXT</small>{actions.next ? <><strong>{actions.next.type === 'sprint' ? '⚡ ' : ''}{actions.next.name}</strong><div className="action-meta">{actions.next.zone} · Starts in {formatTime(actions.timeUntilNext ?? 0)} · Duration {formatTime(actions.next.remaining ?? 0)}</div><div className="action-targets"><span>POWER {actions.next.power}</span><span>CAD {actions.next.cadence}</span><span>RES {actions.next.resistance}</span></div></> : <strong>Stage complete · no upcoming target</strong>}</div>
             </div>
 
             <div className="radio-strip">
@@ -1232,30 +1256,6 @@ function RideScreen({
                   </strong>
                 </div>
               </div>
-
-              <div
-                className="dashboard-card ride-detail-objectives"
-                style={{ borderLeft: '4px solid #f46a00' }}
-              >
-                <p className="eyebrow">OBJECTIVES</p>
-                <p>
-                  <strong>✓ {currentSegment.objective}</strong>
-                </p>
-                <p style={{ opacity: 0.78 }}>
-                  ✓ {currentSegment.secondaryObjective}
-                </p>
-                <p style={{ opacity: 0.68 }}>
-                  {currentSegment.description}
-                </p>
-              </div>
-
-              <div className="dashboard-card">
-                <p className="eyebrow">UP NEXT</p>
-                <h2>{actions.next ? `${actions.next.type === 'sprint' ? '⚡ ' : ''}${actions.next.name}` : 'FINISH'}</h2>
-                <p>{actions.next ? `in ${formatTime(actions.timeUntilNext ?? 0)} • ${actions.next.zone} • ${actions.next.power} • ${actions.next.cadence} • ${actions.next.resistance}` : 'No upcoming target'}</p>
-              </div>
-
-
 
               <button
                 type="button"
