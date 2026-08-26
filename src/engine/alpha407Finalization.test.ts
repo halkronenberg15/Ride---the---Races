@@ -22,13 +22,13 @@ test('Monaco time trial has the corrected distance, early descent and flat late 
   assert.ok(points.slice(1,5).some(([,y],index)=>y-(points[index]?.[1]??y)>15),'early profile descends')
   const late=points.filter(([x])=>x>=45).map(([,y])=>y)
   assert.ok(Math.max(...late)-Math.min(...late)<=4,'road after descent is predominantly flat')
-  assert.deepEqual(stage.courseMarkers,[{type:'time-check',routeKm:5.6,label:'TT CHECK'}])
+  assert.deepEqual(stage.officialCourseMarkers,[{id:'vuelta-2026-s1-tt-check-1',type:'tt-check',routeKm:5.6,label:'TT CHECK',verified:true,source:{organization:'La Vuelta',reference:'https://www.lavuelta.es/en/overall-route',verifiedAt:'2026-08-15'}}])
   assert.ok(stage.segments.every(segment=>!/sprint|climb|kom/i.test(`${segment.name} ${segment.type}`)))
 })
 
 test('time-check marker uses metadata color and approved marker geometry',()=>{
   const stage=vueltaRideStages[0]
-  const model=createRoadModel(stage.number,stage.segments,stage.distanceKm,raceIdentities['vuelta-2026'],stage.profilePoints,stage.courseMarkers)
+  const model=createRoadModel(stage.number,stage.segments,stage.distanceKm,raceIdentities['vuelta-2026'],stage.profilePoints,stage.officialCourseMarkers)
   const check=model.markers.find(marker=>marker.type==='time-check')
   assert.ok(check)
   assert.equal(check.label,'TT CHECK')

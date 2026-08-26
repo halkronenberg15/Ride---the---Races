@@ -5,6 +5,7 @@ import { buildSprintPhases, sprintSnapshot, type SprintPhase, type SprintSnapsho
 import type { RaceIdentity } from '../data/raceLibrary.ts'
 import { getAuthoritativeProfile } from '../data/courseProfile.ts'
 import { resolvePrescriptionAtState, type PrescriptionState } from './prescription.ts'
+import { markerPosition, resolveOfficialCourseMarkers, type OfficialCourseMarker } from '../data/courseMarkers.ts'
 
 export type RaceMarkerType = 'kilometre-zero' | 'sprint' | 'kom' | 'time-check' | 'finish'
 export const COURSE_MARKER_HEIGHT = 28
@@ -73,7 +74,7 @@ export function markerLabelOffset(position:number, nearbyPositions:number[]=[]){
   const collisionIndex=nearbyPositions.filter(value=>value<position&&position-value<.055).length
   return { translateX:edgeOffset, translateY:collisionIndex%2?-11:0 }
 }
-export function createRoadModel(stageNumber: number, segments: RideSegment[], distanceKm: number, identity?:RaceIdentity, explicitProfile?:Array<string|{distanceKm:number;elevationM:number}>, courseMarkers?:Array<{type:'time-check';routeKm:number;label?:string}>): RoadModel {
+export function createRoadModel(stageNumber: number, segments: RideSegment[], distanceKm: number, identity?:RaceIdentity, explicitProfile?:Array<string|{distanceKm:number;elevationM:number}>, officialCourseMarkers?:OfficialCourseMarker[], raceName=identity?.shortName??'Professional race'): RoadModel {
   const timeline = createStageTimeline(segments, distanceKm)
   const sectionGradients = segments.map((segment, index) => isClimb(segment)
     ? buildGradientSections(`${stageNumber}-${index}-${segment.name}-${segment.type}`, segment.sec, segment.zone)
@@ -149,29 +150,12 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
     }
     return timeline.duration
   }
-  const markers: RaceMarker[] = []
-  segments.forEach((segment, index) => {
-    const start = timeline.segmentStarts[index]
-    const position = timeline.snapshot(start).courseProgress
-    if (/kilometre zero|race start|official time trial start/i.test(text(segment))) markers.push({ key: `km0-${index}`, type: 'kilometre-zero', label: 'KM 0', position, at: start, ...markerGeometry(profileYAt(position)), color:'#ffd400' })
-    if (/sprint/i.test(text(segment)) && !/finish/i.test(text(segment))) {
-      const at = start + segment.sec
-      const position=timeline.snapshot(at).courseProgress; markers.push({ key: `sprint-${index}`, type: 'sprint', label: 'SPR', position, at, ...markerGeometry(profileYAt(position)), color:identity?.pointsColor??'#38a852' })
-    }
-    // Legacy Tour segments contain researched named summit distances. Vuelta
-    // verification explicitly says markers=false, so its workout sectors must
-    // never fabricate KOM geography.
-    if (isClimb(segment) && identity?.shortName === 'Le Tour') {
-      const at = start + segment.sec
-      const position=timeline.snapshot(at).courseProgress
-      markers.push({ key: `kom-${index}`, type: 'kom', label: 'KOM', position, at, ...markerGeometry(profileYAt(position)), color:identity.komColor })
-    }
+  const markerType = (type:OfficialCourseMarker['type']):RaceMarkerType => type==='km-zero'||type==='start'?'kilometre-zero':type==='tt-check'?'time-check':type==='bonus'?'sprint':type
+  const markerColor = (type:RaceMarkerType) => type==='kilometre-zero'?'#ffd400':type==='sprint'?identity?.pointsColor??'#38a852':type==='kom'?identity?.komColor??'#ef3340':type==='time-check'?identity?.timeCheckColor??'#55dff7':identity?.finishColor??'#ffffff'
+  const markers:RaceMarker[]=resolveOfficialCourseMarkers(officialCourseMarkers,{race:raceName,stageNumber,officialDistanceKm:distanceKm}).map(marker=>{
+    const position=markerPosition(marker,distanceKm)
+    return {key:marker.id,type:markerType(marker.type),label:marker.label,position,at:elapsedAtCourseDistance(marker.routeKm),...markerGeometry(profileYAt(position)),color:markerColor(markerType(marker.type))}
   })
-  courseMarkers?.forEach((marker,index)=>{
-    const position=Math.min(1,Math.max(0,marker.routeKm/distanceKm)); const at=elapsedAtCourseDistance(marker.routeKm)
-    markers.push({key:`time-check-${index}`,type:'time-check',label:marker.label??'TT',position,at,...markerGeometry(profileYAt(position)),color:identity?.timeCheckColor??'#55dff7'})
-  })
-  markers.push({ key: 'finish', type: 'finish', label: 'FINISH', position: 1, at: timeline.duration, ...markerGeometry(profileYAt(1)), color:identity?.finishColor??'#ffffff' })
 
   return {
     ...timeline,

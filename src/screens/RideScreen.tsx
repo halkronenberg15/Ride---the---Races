@@ -59,7 +59,7 @@ function RideScreen({
   const isTimeTrial = useMemo(() => isIndividualTimeTrial(adaptedSegments), [adaptedSegments])
   const segments = useMemo(() => officialSegments(adaptedSegments), [adaptedSegments])
   const activeRide = useActiveRide()
-  const timeline = useMemo(() => createRoadModel(stage.number, segments, stage.distanceKm, raceIdentities[library as keyof typeof raceIdentities], stage.profilePoints, stage.courseMarkers), [segments, stage, library])
+  const timeline = useMemo(() => createRoadModel(stage.number, segments, stage.distanceKm, raceIdentities[library as keyof typeof raceIdentities], stage.profilePoints, stage.officialCourseMarkers, stage.raceId), [segments, stage, library])
   const profilePoints = timeline.profilePoints
   const rideElapsed = activeRide.ride?.stageNumber === stageNumber ? activeRide.elapsed : 0
   const ttStart = useMemo(() => ttStartSnapshot(adaptedSegments, rideElapsed), [adaptedSegments, rideElapsed])

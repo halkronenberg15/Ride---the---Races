@@ -49,7 +49,7 @@ test('canonical mapping spans professional race types and training fallback with
  const professionalStages=[tour2026.stages[5],tour2026.stages[6],tour2026.stages[15],vuelta2026.stages[0],vuelta2026.stages[7]]
  for(const source of professionalStages){
   const stage=toRaceStage(source===vuelta2026.stages[0]||source===vuelta2026.stages[7]?vuelta2026:tour2026,source)
-  const road=createRoadModel(stage.number,stage.segments,stage.distanceKm,undefined,stage.profilePoints,stage.courseMarkers)
+  const road=createRoadModel(stage.number,stage.segments,stage.distanceKm,undefined,stage.profilePoints,stage.officialCourseMarkers)
   assert.equal(road.profileSourceKind,'authoritative')
   let prior=-1
   for(let elapsed=0;elapsed<=road.duration;elapsed+=Math.max(1,road.duration/20)){
