@@ -23,6 +23,9 @@ export type StageSnapshot = {
   sectionStartCourseDistance: number
   sectionEndCourseDistance: number
   events: StageEvent[]
+  courseComplete: boolean
+  officialWorkoutComplete: boolean
+  stageComplete: boolean
 }
 
 export type StageEvent = 'stage-halfway' | 'sector-halfway' | 'final-30' | 'final-10' | 'climb-entry' | 'summit-exit' | 'finish'
@@ -53,6 +56,15 @@ export function createStageTimeline(segments: RideSegment[], routeDistanceKm?: n
     segmentStarts.push(duration)
     duration += segment.sec
   })
+  const totalDistance = routeDistanceKm ?? Math.max(...segments.map((item) => item.routeKm), 1)
+  const routeStarts = segments.map(segment => Math.min(totalDistance, Math.max(0, segment.routeKm)))
+  // Some legacy workouts authored a cooldown at the finish coordinate. Keep it
+  // official, but map it over the final road interval so 100% is reached only
+  // at its final instant rather than at its first instant.
+  const finalIndex = routeStarts.length - 1
+  if (finalIndex > 0 && routeStarts[finalIndex] >= totalDistance) {
+    routeStarts[finalIndex] = routeStarts[finalIndex - 1] + (totalDistance - routeStarts[finalIndex - 1]) / 2
+  }
 
   return {
     duration,
@@ -67,10 +79,9 @@ export function createStageTimeline(segments: RideSegment[], routeDistanceKm?: n
       const segment = segments[segmentIndex]
       const elapsedInSegment = Math.min(segment.sec, elapsed - segmentStarts[segmentIndex])
       const complete = elapsed >= duration
-      const totalDistance = routeDistanceKm ?? Math.max(...segments.map((item) => item.routeKm), 1)
-      const sectionStartCourseDistance = Math.min(totalDistance, Math.max(0, segment.routeKm))
+      const sectionStartCourseDistance = routeStarts[segmentIndex]
       const sectionEndCourseDistance = Math.min(totalDistance, Math.max(sectionStartCourseDistance,
-        segments[segmentIndex + 1]?.routeKm ?? totalDistance))
+        routeStarts[segmentIndex + 1] ?? totalDistance))
       const sectionFraction = Math.min(1, Math.max(0, elapsedInSegment / Math.max(1, segment.sec)))
       const distance = complete ? totalDistance : sectionStartCourseDistance
         + (sectionEndCourseDistance - sectionStartCourseDistance) * sectionFraction
@@ -114,6 +125,9 @@ export function createStageTimeline(segments: RideSegment[], routeDistanceKm?: n
         sectionStartCourseDistance,
         sectionEndCourseDistance,
         events,
+        courseComplete: complete,
+        officialWorkoutComplete: complete,
+        stageComplete: complete,
       }
     },
   }

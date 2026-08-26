@@ -10,7 +10,8 @@ import { useActiveRide } from '../state/ActiveRideContext'
 import { gradientDifficultyColor } from '../engine/gradientRoad'
 import { createRoadModel, markerLabelOffset } from '../engine/roadModel'
 import { jeanCue, jeanMode } from '../engine/jeanDirector'
-import { speakAsJean } from '../services/jeanVoice'
+import { canUseJeanVoice, speakAsJean } from '../services/jeanVoice'
+import { createJeanEvent, JeanEventBus } from '../engine/jeanEvents'
 import { CLICK_IN_CUE, PRE_RIDE_COUNTDOWN } from '../engine/preRide'
 import { raceIdentities } from '../data/raceLibrary'
 import { isIndividualTimeTrial, officialSegments, ttStartSnapshot } from '../engine/startArchitecture'
@@ -81,6 +82,7 @@ function RideScreen({
   const previousSegmentIndex = useRef(0)
   const previousCoachingElapsed = useRef(elapsedSeconds)
   const spokenTimelineEvents = useRef(new Set<string>())
+  const jeanEventBus = useRef(new JeanEventBus())
   const segmentCardTimer = useRef<number | null>(null)
   const previousSprintPhase = useRef<string | null>(null)
   const wakeLockRef = useRef<WakeLockSentinelLike | null>(
@@ -109,10 +111,12 @@ function RideScreen({
 
   const segmentRemaining = engine.segmentRemaining
   const sprintPhase = engine.sprintPhase
-  const displayPower = sprintPhase?.power ?? currentSegment.power
-  const displayCadence = sprintPhase?.cadence ?? currentSegment.cadence
-  const displayResistance = sprintPhase?.resistance ?? engine.resistance
-  const displayZone = sprintPhase?.zone ?? currentSegment.zone
+  const prescriptionState = useMemo(() => timeline.prescriptionAt(elapsedSeconds), [elapsedSeconds, timeline])
+  const activePrescription = prescriptionState.currentPrescription
+  const displayPower = activePrescription.power
+  const displayCadence = activePrescription.cadence
+  const displayResistance = activePrescription.resistance
+  const displayZone = activePrescription.zone
   const kmZeroAt = timeline.markers.find((marker) => marker.type === 'kilometre-zero')?.at ?? 0
   const afterKmZero = elapsedSeconds > kmZeroAt
 
@@ -171,11 +175,14 @@ function RideScreen({
     return `${eventSegment.name}. ${eventSegment.description}`
   }
 
-  function speak(text: string) {
-    setRadioText(text)
-    // A road crossing supersedes queued advice about the road behind us.
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel()
-    speakAsJean(text, undefined, career.settings.jeanVoiceVolume)
+  function speak(text: string, eventId = `ride-${stage.number}-${segmentData.index}-${text}`) {
+    jeanEventBus.current.dispatch(createJeanEvent(eventId, 'coaching', text),
+      event => setRadioText(event.message),
+      event => {
+        if (!canUseJeanVoice()) { console.info(`[Jean] speech unavailable: ${event.id}`); return false }
+        speakAsJean(event.message, undefined, career.settings.jeanVoiceVolume)
+        return true
+      })
   }
 
   function showCurrentSegmentCard() {
@@ -334,7 +341,7 @@ function RideScreen({
     const event = crossed.filter((item) => elapsedSeconds - item.at <= 5).at(-1)
     if (!event) return
     crossed.forEach((item) => spokenTimelineEvents.current.add(item.key))
-    speak(timelineMessage(event))
+    speak(timelineMessage(event), `${library}-stage${stage.number}-${event.key}`)
   }, [coachingTimeline, elapsedSeconds, isRunning])
 
   useEffect(() => {
@@ -528,6 +535,8 @@ function RideScreen({
           background: rgba(13,13,13,.96);
           backdrop-filter: blur(16px);
           box-shadow: 0 12px 35px rgba(0,0,0,.4);
+          isolation: isolate;
+          margin-bottom: 10px;
         }
 
         .master-stage-profile .live-profile-wrap { height: 86px; }
@@ -553,6 +562,8 @@ function RideScreen({
           margin-top: 10px;
           padding-top: 10px;
           border-top: 1px solid rgba(255,255,255,0.10);
+          position: relative;
+          z-index: 0;
         }
 
         .gradient-summary {
