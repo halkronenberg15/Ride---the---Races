@@ -67,7 +67,7 @@ test('J-L: distance-aware gradients preserve elevation direction and canonical p
   const ascent = createRoadModel(99, [segment], 10, undefined, [{ distanceKm: 0, elevationM: 0 }, { distanceKm: 5, elevationM: 100 }, { distanceKm: 10, elevationM: 0 }])
   assert.ok(ascent.roadSnapshot(25).gradient > 0)
   assert.ok(ascent.roadSnapshot(75).gradient < 0)
-  assert.ok(ascent.roadSnapshot(25).nextGradient > 0)
+  assert.ok((ascent.roadSnapshot(25).nextGradient ?? 0) > 0)
   assert.equal(ascent.roadSnapshot(25).courseDistance, 2.5)
 })
 

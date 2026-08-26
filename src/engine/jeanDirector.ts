@@ -3,6 +3,15 @@ import type { RideSegment } from '../data/raceStages'
 export type JeanMode = 'neutral' | 'flat' | 'tempo' | 'time-trial' | 'climb' | 'sprint' | 'recovery' | 'finish'
 export type DialogueType = 'instruction' | 'observation' | 'warning' | 'tactical' | 'encouragement' | 'race-flavor' | 'transition' | 'recovery'
 export type JeanContext = { mode: JeanMode; afterKmZero: boolean; running: boolean; sprintPhase?: string; critical?: boolean }
+export type JeanGeographicContext = {
+  activeClimbId: string | null
+  climbProgress: number
+  distanceToSummit: number
+  currentGradient: number | null
+  courseDistance: number
+  remainingOfficialTime: number
+  segment: Pick<RideSegment, 'name' | 'type'>
+}
 export type JeanLine = { text: string; type: DialogueType; topic: string; preKmZeroOnly?: boolean; phase?: string }
 
 export function jeanMode(segment: Pick<RideSegment, 'name' | 'type'>, complete = false): JeanMode {
@@ -31,6 +40,17 @@ export const dialogueLibrary: Record<JeanMode, JeanLine[]> = {
 
 export function eligibleJeanLine(line: JeanLine, context: JeanContext) {
   return context.running && !(line.preKmZeroOnly && context.afterKmZero) && (!line.phase || line.phase === context.sprintPhase)
+}
+
+/** Final contextual gate; the canonical event bus still owns once-only dispatch. */
+export function jeanCallIsCurrent(message: string, context: JeanGeographicContext, eventType?: string) {
+  const preparing = /prepare(?: the gear)?(?: to climb)?|climb (?:is )?(?:ahead|in one minute)|lower slopes/i.test(message)
+  if (preparing && context.activeClimbId && context.climbProgress > .15) return false
+  const summitCall = /summit|crest/i.test(message)
+  if (summitCall && (!context.activeClimbId || (context.distanceToSummit <= 0 && eventType !== 'summit'))) return false
+  if (/one more push|one minute|final minute/i.test(message) && summitCall && context.distanceToSummit <= 0) return false
+  if (/settle into tempo/i.test(message) && (context.currentGradient ?? 0) >= 8 && context.remainingOfficialTime <= 180) return false
+  return context.courseDistance >= 0 && context.remainingOfficialTime >= 0
 }
 
 export class JeanMemory {

@@ -10,6 +10,8 @@ export type ResolvedPrescription = Prescription & {
   intervalId: string
   strategy: string
   resistanceRange: { min: number; max: number }
+  cadenceRange: { min: number; max: number }
+  powerRange: { min: number; max: number } | null
 }
 
 export type PrescriptionState = {
@@ -33,7 +35,7 @@ export function zoneForFtpRange(min: number, max: number) {
   return low === high ? low : `${low}–${high}`
 }
 
-function numericRange(value: string) {
+export function numericRange(value: string) {
   const match = value.replace(/[–—]/g, '-').match(/(\d+)\s*(?:-|to)\s*(\d+)/i)
   return match ? { min: Number(match[1]), max: Number(match[2]) } : null
 }
@@ -59,6 +61,8 @@ export function resolvePrescriptionAtState(
       cadence: segment.cadence,
       resistance: segment.resistance,
       resistanceRange: range,
+      cadenceRange: numericRange(segment.cadence) ?? { min: 80, max: 95 },
+      powerRange: numericRange(segment.power),
       ftpPercent: ftpIntensity(segment) ?? { min: 0, max: 0 },
     }
   }
@@ -69,6 +73,54 @@ export function resolvePrescriptionAtState(
     timeUntilNextPrescription: next ? Math.max(0, segmentStarts[index] + segments[index].sec - elapsed) : null,
     nextPrescriptionDuration: next?.sec ?? null,
     currentRemaining: Math.max(0, segmentStarts[index] + segments[index].sec - elapsed),
+  }
+}
+
+const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value))
+const formattedRange = (range: { min: number; max: number }, suffix: string) => `${Math.round(range.min)}–${Math.round(range.max)}${suffix}`
+
+/**
+ * Applies road pressure after the authored/strategy prescription has resolved.
+ * Gradient changes guidance inside the existing intent; it never changes road state.
+ */
+export function applyTerrainModifier(
+  base: ResolvedPrescription,
+  currentGradient: number,
+  segment: Pick<RideSegment, 'name' | 'type'>,
+  riderFtp: number,
+): ResolvedPrescription {
+  if (!/climb|mountain|summit|steep|ascent|col /i.test(`${segment.name} ${segment.type}`)) return base
+
+  // A continuous ramp beginning at 2% avoids noisy changes on false-flat road.
+  const pressure = clamp((Math.max(0, currentGradient) - 2) / 10, 0, 1)
+  const resistanceShift = pressure * 9
+  const resistanceRange = {
+    min: clamp(base.resistanceRange.min + resistanceShift, 20, 82),
+    max: clamp(base.resistanceRange.max + resistanceShift, 24, 88),
+  }
+  const cadenceDrop = pressure * 8
+  const cadenceRange = {
+    min: clamp(base.cadenceRange.min - cadenceDrop, 65, 110),
+    max: clamp(base.cadenceRange.max - cadenceDrop * .75, 75, 120),
+  }
+
+  // Bias toward the top of the authored watts range, never beyond it.
+  const authoredPower = base.powerRange
+  const powerRange = authoredPower ? {
+    min: Math.min(authoredPower.max, authoredPower.min + (authoredPower.max - authoredPower.min) * pressure * .2),
+    max: authoredPower.max,
+  } : null
+  const ftpCeiling = riderFtp * base.ftpPercent.max / 100
+  if (powerRange && Number.isFinite(ftpCeiling)) powerRange.max = Math.min(powerRange.max, ftpCeiling + 1)
+
+  return {
+    ...base,
+    resistanceRange,
+    cadenceRange,
+    powerRange,
+    resistance: formattedRange(resistanceRange, '%'),
+    cadence: formattedRange(cadenceRange, ' rpm'),
+    power: powerRange ? formattedRange(powerRange, ' W') : base.power,
   }
 }
 

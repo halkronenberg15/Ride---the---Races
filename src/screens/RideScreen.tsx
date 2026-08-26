@@ -9,7 +9,7 @@ import { buildJeanTimeline, isClimb, jeanCourseEventsCrossed, type JeanTimelineE
 import { useActiveRide } from '../state/ActiveRideContext'
 import { gradientDifficultyColor } from '../engine/gradientRoad'
 import { createRoadModel, markerLabelOffset } from '../engine/roadModel'
-import { jeanCue, jeanMode } from '../engine/jeanDirector'
+import { jeanCallIsCurrent, jeanCue, jeanMode } from '../engine/jeanDirector'
 import { canUseJeanVoice, speakAsJean } from '../services/jeanVoice'
 import { createJeanEvent, JeanEventBus } from '../engine/jeanEvents'
 import { CLICK_IN_CUE, PRE_RIDE_COUNTDOWN } from '../engine/preRide'
@@ -59,7 +59,7 @@ function RideScreen({
   const isTimeTrial = useMemo(() => isIndividualTimeTrial(adaptedSegments), [adaptedSegments])
   const segments = useMemo(() => officialSegments(adaptedSegments), [adaptedSegments])
   const activeRide = useActiveRide()
-  const timeline = useMemo(() => createRoadModel(stage.number, segments, stage.distanceKm, raceIdentities[library as keyof typeof raceIdentities], stage.profilePoints, stage.officialCourseMarkers, stage.raceId), [segments, stage, library])
+  const timeline = useMemo(() => createRoadModel(stage.number, segments, stage.distanceKm, raceIdentities[library as keyof typeof raceIdentities], stage.profilePoints, stage.officialCourseMarkers, stage.raceId, strategy, career.rider.ftp), [segments, stage, library, strategy, career.rider.ftp])
   const profilePoints = timeline.profilePoints
   const rideElapsed = activeRide.ride?.stageNumber === stageNumber ? activeRide.elapsed : 0
   const ttStart = useMemo(() => ttStartSnapshot(adaptedSegments, rideElapsed), [adaptedSegments, rideElapsed])
@@ -175,7 +175,16 @@ function RideScreen({
     return `${eventSegment.name}. ${eventSegment.description}`
   }
 
-  function speak(text: string, eventId = `ride-${stage.number}-${segmentData.index}-${text}`) {
+  function speak(text: string, eventId = `ride-${stage.number}-${segmentData.index}-${text}`, eventType?: JeanTimelineEvent['type']) {
+    if (!jeanCallIsCurrent(text, {
+      activeClimbId: engine.activeClimbId,
+      climbProgress: engine.climbProgress,
+      distanceToSummit: engine.distanceToSummit,
+      currentGradient: Number.isFinite(engine.gradient) ? engine.gradient : null,
+      courseDistance: engine.courseDistance,
+      remainingOfficialTime: engine.stageRemaining,
+      segment: currentSegment,
+    }, eventType)) return
     jeanEventBus.current.dispatch(createJeanEvent(eventId, 'coaching', text),
       event => setRadioText(event.message),
       event => {
@@ -341,7 +350,7 @@ function RideScreen({
     const event = crossed.filter((item) => elapsedSeconds - item.at <= 5).at(-1)
     if (!event) return
     crossed.forEach((item) => spokenTimelineEvents.current.add(item.key))
-    speak(timelineMessage(event), `${library}-stage${stage.number}-${event.key}`)
+    speak(timelineMessage(event), `${library}-stage${stage.number}-${event.key}`, event.type)
   }, [coachingTimeline, elapsedSeconds, isRunning])
 
   useEffect(() => {
@@ -1041,7 +1050,7 @@ function RideScreen({
                   <div style={{ textAlign: 'right' }}>
                     <small>CURRENT / NEXT</small>
                     <strong style={{ display: 'block', fontSize: '1.55rem', color: '#fff' }}>
-                      {activeGradient.toFixed(1)}% / {nextGradient.toFixed(1)}%
+                      {activeGradient.toFixed(1)}% / {nextGradient === null ? '—' : `${nextGradient.toFixed(1)}%`}
                     </strong>
                   </div>
                 </div>
