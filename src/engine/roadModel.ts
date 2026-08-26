@@ -1,9 +1,10 @@
 import type { RideSegment } from '../data/raceStages.ts'
-import { buildGradientSections, gradientResistance, gradientSectionIndex, type GradientSection } from './gradientRoad.ts'
+import { buildGradientSections, gradientSectionIndex, type GradientSection } from './gradientRoad.ts'
 import { createStageTimeline, isClimb, type StageSnapshot, type StageTimeline } from './stageEngine.ts'
 import { buildSprintPhases, sprintSnapshot, type SprintPhase, type SprintSnapshot } from './sprintPhases.ts'
 import type { RaceIdentity } from '../data/raceLibrary.ts'
 import { getAuthoritativeProfile } from '../data/courseProfile.ts'
+import { resolvePrescriptionAtState, type PrescriptionState } from './prescription.ts'
 
 export type RaceMarkerType = 'kilometre-zero' | 'sprint' | 'kom' | 'time-check' | 'finish'
 export const COURSE_MARKER_HEIGHT = 28
@@ -51,6 +52,7 @@ export type RoadModel = StageTimeline & {
   roadSnapshot: (elapsedSeconds: number) => RoadSnapshot
   elevationAt: (position: number) => number
   actionTargets: (elapsedSeconds: number) => ActionTargets
+  prescriptionAt: (elapsedSeconds: number) => PrescriptionState
   elapsedAtCourseDistance: (courseDistance: number) => number
   debugSnapshot: (elapsedSeconds: number) => CourseDebugSnapshot
 }
@@ -180,54 +182,17 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
     elevationAt,
     elapsedAtCourseDistance,
     actionTargets(elapsedSeconds) {
-      const elapsed = Math.max(0, Math.min(timeline.duration, elapsedSeconds))
-      const snapshot = timeline.snapshot(elapsed)
-      const index = snapshot.segmentIndex
-      const segment = snapshot.segment
-      const gradients = sectionGradients[index]
-      const gradientIndex = gradientSectionIndex(gradients, snapshot.segmentProgress)
-      const sprint = sprintSnapshot(sectionSprints[index], snapshot.elapsedInSegment)
-      const segmentStart = timeline.segmentStarts[index]
-      const current: ActionTarget = sprint ? {
-        name: sprint.name, type: 'sprint', zone: sprint.zone, power: sprint.power,
-        cadence: sprint.cadence, resistance: sprint.resistance, at: elapsed - snapshot.elapsedInSegment + sprint.start,
-        remaining: sprint.remaining,
-      } : {
-        name: gradients.length ? `${segment.name} · ${gradients[gradientIndex].gradient}%` : segment.name, type: gradients.length ? 'gradient' : 'section', zone: segment.zone,
-        power: segment.power, cadence: segment.cadence,
-        resistance: gradients.length ? gradientResistance(segment, gradients, gradientIndex) : segment.resistance,
-        at: gradients.length ? segmentStart + gradients[gradientIndex].start * segment.sec : segmentStart,
-        remaining: gradients.length ? Math.max(0, gradients[gradientIndex].end * segment.sec - snapshot.elapsedInSegment) : snapshot.segmentRemaining,
-        gradient: gradients[gradientIndex]?.gradient,
+      const prescriptions = resolvePrescriptionAtState(segments, timeline.segmentStarts, elapsedSeconds)
+      const snapshot = timeline.snapshot(elapsedSeconds)
+      const current = prescriptions.currentPrescription
+      const next = prescriptions.nextPrescription
+      return {
+        current: { name: snapshot.segment.name, type: 'section' as const, ...current, at: timeline.segmentStarts[snapshot.segmentIndex], remaining: prescriptions.currentRemaining },
+        next: next ? { name: segments[snapshot.segmentIndex + 1].name, type: 'section' as const, ...next, at: timeline.segmentStarts[snapshot.segmentIndex + 1], remaining: prescriptions.nextPrescriptionDuration ?? 0 } : null,
+        timeUntilNext: prescriptions.timeUntilNextPrescription,
       }
-
-      const candidates: ActionTarget[] = []
-      const nextSprint = sprint && sectionSprints[index][sprint.index + 1]
-      if (nextSprint) candidates.push({ ...nextSprint, type: 'sprint', at: segmentStart + nextSprint.start, remaining: nextSprint.end - nextSprint.start })
-      const nextGradientSection = gradients[gradientIndex + 1]
-      if (!sprint && nextGradientSection) candidates.push({
-        name: `${segment.name} · ${nextGradientSection.gradient}%`, type: 'gradient', zone: segment.zone,
-        power: segment.power, cadence: segment.cadence,
-        resistance: gradientResistance(segment, gradients, gradientIndex + 1), gradient: nextGradientSection.gradient,
-        at: segmentStart + nextGradientSection.start * segment.sec,
-        remaining: (nextGradientSection.end - nextGradientSection.start) * segment.sec,
-      })
-      const nextSegment = segments[index + 1]
-      if (nextSegment) {
-        const nextStart = timeline.segmentStarts[index + 1]
-        const nextPhases = sectionSprints[index + 1]
-        const nextGradients = sectionGradients[index + 1]
-        const firstPhase = nextPhases[0]
-        candidates.push(firstPhase ? { ...firstPhase, type: 'sprint', at: nextStart, remaining: firstPhase.end - firstPhase.start } : {
-          name: nextSegment.name, type: nextGradients.length ? 'gradient' : 'section', zone: nextSegment.zone,
-          power: nextSegment.power, cadence: nextSegment.cadence,
-          resistance: nextGradients.length ? gradientResistance(nextSegment, nextGradients, 0) : nextSegment.resistance,
-          gradient: nextGradients[0]?.gradient, at: nextStart, remaining: nextSegment.sec,
-        })
-      }
-      const next = elapsed >= timeline.duration ? null : candidates.filter((item) => item.at > elapsed).sort((a, b) => a.at - b.at)[0] ?? null
-      return { current, next, timeUntilNext: next ? Math.max(0, next.at - elapsed) : null }
     },
+    prescriptionAt(elapsedSeconds) { return resolvePrescriptionAtState(segments, timeline.segmentStarts, elapsedSeconds) },
     roadSnapshot(elapsedSeconds) {
       const base = timeline.snapshot(elapsedSeconds)
       const authoredGradientSections = sectionGradients[base.segmentIndex]
@@ -238,8 +203,8 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
         && Math.abs(base.elapsed-timeline.segmentStarts[base.segmentIndex])<1e-9
       const climbIndex=atPriorSummit?priorIndex:(isClimb(base.segment)?base.segmentIndex:-1)
       const climbActive=climbIndex>=0
-      const climbStartDistance=climbActive?Math.min(distanceKm,segments[climbIndex].routeKm):null
-      const summitDistance=climbActive?Math.min(distanceKm,segments[climbIndex+1]?.routeKm??distanceKm):null
+      const climbStartDistance=climbActive?timeline.snapshot(timeline.segmentStarts[climbIndex]).courseDistance:null
+      const summitDistance=climbActive?timeline.snapshot(timeline.segmentStarts[climbIndex]+segments[climbIndex].sec).courseDistance:null
       const gradientSections=officialProfile&&climbStartDistance!==null&&summitDistance!==null
         ? geometryGradientSections(climbStartDistance,summitDistance):authoredGradientSections
       const geographicClimbProgress=climbActive&&summitDistance!>climbStartDistance!
@@ -273,7 +238,7 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
         distanceToSummit,
         estimatedTimeToSummit: summitDistance===null?0:Math.max(0,elapsedAtCourseDistance(summitDistance)-base.elapsed),
         climbAverageGradient,
-        resistance: sprintPhase?.resistance ?? (gradientSections.length ? gradientResistance(base.segment, gradientSections, gradientIndex) : base.segment.resistance),
+        resistance: resolvePrescriptionAtState(segments, timeline.segmentStarts, elapsedSeconds).currentPrescription.resistance,
       }
     },
     debugSnapshot(elapsedSeconds){

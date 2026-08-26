@@ -4,6 +4,22 @@ export type Prescription = Pick<RideSegment, 'zone' | 'power' | 'cadence' | 'res
   ftpPercent: { min: number; max: number }
 }
 
+export type ResolvedPrescription = Prescription & {
+  prescriptionId: string
+  segmentId: string
+  intervalId: string
+  strategy: string
+  resistanceRange: { min: number; max: number }
+}
+
+export type PrescriptionState = {
+  currentPrescription: ResolvedPrescription
+  nextPrescription: ResolvedPrescription | null
+  timeUntilNextPrescription: number | null
+  nextPrescriptionDuration: number | null
+  currentRemaining: number
+}
+
 const FTP_ZONES = [
   { max: 55, label: 'Z1' }, { max: 75, label: 'Z2' }, { max: 90, label: 'Z3' },
   { max: 105, label: 'Z4' }, { max: 120, label: 'Z5' }, { max: Infinity, label: 'Z6' },
@@ -20,6 +36,40 @@ export function zoneForFtpRange(min: number, max: number) {
 function numericRange(value: string) {
   const match = value.replace(/[–—]/g, '-').match(/(\d+)\s*(?:-|to)\s*(\d+)/i)
   return match ? { min: Number(match[1]), max: Number(match[2]) } : null
+}
+
+/** Canonical workout target resolver. Geography is deliberately not an input. */
+export function resolvePrescriptionAtState(
+  segments: RideSegment[], segmentStarts: number[], elapsedSeconds: number, strategy = 'Balanced',
+): PrescriptionState {
+  const duration = segments.reduce((sum, segment) => sum + segment.sec, 0)
+  const elapsed = Math.max(0, Math.min(duration, elapsedSeconds))
+  let index = segments.findIndex((segment, item) => elapsed < segmentStarts[item] + segment.sec)
+  if (index < 0) index = segments.length - 1
+  const resolve = (segment: RideSegment, item: number): ResolvedPrescription => {
+    const range = numericRange(segment.resistance) ?? { min: 0, max: 0 }
+    const segmentId = `${item}-${segment.name}`
+    return {
+      prescriptionId: `${segmentId}-${strategy}`,
+      segmentId,
+      intervalId: segmentId,
+      strategy,
+      zone: segment.zone,
+      power: segment.power,
+      cadence: segment.cadence,
+      resistance: segment.resistance,
+      resistanceRange: range,
+      ftpPercent: ftpIntensity(segment) ?? { min: 0, max: 0 },
+    }
+  }
+  const next = segments[index + 1]
+  return {
+    currentPrescription: resolve(segments[index], index),
+    nextPrescription: next ? resolve(next, index + 1) : null,
+    timeUntilNextPrescription: next ? Math.max(0, segmentStarts[index] + segments[index].sec - elapsed) : null,
+    nextPrescriptionDuration: next?.sec ?? null,
+    currentRemaining: Math.max(0, segmentStarts[index] + segments[index].sec - elapsed),
+  }
 }
 
 /** Resolve the authored intensity once; every displayed target then follows it. */
