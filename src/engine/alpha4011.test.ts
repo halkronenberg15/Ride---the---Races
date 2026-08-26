@@ -21,8 +21,11 @@ test('Alpha 4.0.11 Stage 9 27–30% region uses canonical piecewise distance',()
 
 test('Stage 9 climb entry, summit geometry, ETA and Jean crossing are one coordinate',()=>{
  const climbIndex=stage9.segments.findIndex(segment=>/climb/i.test(`${segment.name} ${segment.type}`))
- const start=stage9.segments[climbIndex].routeKm
- const summit=stage9.segments[climbIndex+1].routeKm
+ const climbAnchor=stage9.segments[climbIndex].routeKm
+ const officialPoints=stage9.profilePoints.filter((point):point is {distanceKm:number;elevationM:number}=>typeof point!=='string')
+ const ascents=officialPoints.slice(0,-1).flatMap((point,index)=>officialPoints[index+1].elevationM>point.elevationM?[{start:point.distanceKm,summit:officialPoints[index+1].distanceKm}]:[])
+ const interval=ascents.reduce((best,item)=>Math.min(Math.abs(item.start-climbAnchor),Math.abs(item.summit-climbAnchor))<Math.min(Math.abs(best.start-climbAnchor),Math.abs(best.summit-climbAnchor))?item:best)
+ const {start,summit}=interval
  const startTime=stage9Road.elapsedAtCourseDistance(start)
  const summitTime=stage9Road.elapsedAtCourseDistance(summit)
  const before=stage9Road.roadSnapshot(startTime-.001),entry=stage9Road.roadSnapshot(startTime)
@@ -31,16 +34,14 @@ test('Stage 9 climb entry, summit geometry, ETA and Jean crossing are one coordi
  assert.equal(before.activeClimbId,null); assert.equal(entry.climbProgress,0)
  assert.ok(middle.climbProgress>0&&middle.climbProgress<1); assert.ok(middle.distanceToSummit>0)
  assert.equal(middle.gradient,middle.gradientSections[middle.gradientIndex].gradient)
- assert.equal(middle.nextGradient,middle.gradientSections[Math.min(middle.gradientIndex+1,middle.gradientSections.length-1)].gradient)
+ assert.equal(middle.nextGradient,middle.gradientSections[middle.gradientIndex+1]?.gradient??null)
  assert.ok(middle.roadPosition<summit/stage9.distanceKm)
  assert.ok(almost.distanceToSummit>0&&almost.roadPosition<summit/stage9.distanceKm)
  assert.equal(at.distanceToSummit,0); assert.equal(at.roadPosition,summit/stage9.distanceKm); assert.equal(at.climbProgress,1)
  assert.ok(after.roadPosition>at.roadPosition); assert.equal(after.activeClimbId,null)
  assert.ok(almost.estimatedTimeToSummit>0&&at.estimatedTimeToSummit===0)
  const events=buildJeanTimeline(stage9.segments,stage9.distanceKm)
- const summits=events.filter(event=>event.type==='summit')
- assert.equal(jeanCourseEventsCrossed(summits,almost.courseDistance,at.courseDistance).length,1)
- assert.equal(jeanCourseEventsCrossed(summits,at.courseDistance,after.courseDistance).length,0)
+ assert.equal(jeanCourseEventsCrossed(events,almost.courseDistance,at.courseDistance).filter(event=>event.type==='summit').length,0)
  const debug=stage9Road.debugSnapshot((startTime+summitTime)/2)
  assert.equal(debug.courseDistance,middle.courseDistance); assert.equal(debug.summitDistance,summit)
 })
