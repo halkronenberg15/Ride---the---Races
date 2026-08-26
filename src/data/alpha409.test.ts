@@ -28,10 +28,10 @@ test('signature Tour terrain survives independently of official classification',
 
 test('Tour identity colors and upward-only shared marker geometry remain stable',()=>{
  const stage=toRaceStage(tour2026,tour2026.stages[4]);const segments=[...stage.segments,{...stage.segments[0],name:'Intermediate Sprint',type:'Sprint',sec:30},{...stage.segments[0],name:'Test climb',type:'Category climb',sec:30}]
- const model=createRoadModel(5,segments,stage.distanceKm,raceIdentities['tour-2026'],stage.profilePoints)
+ const model=createRoadModel(5,segments,stage.distanceKm,raceIdentities['tour-2026'],stage.profilePoints,[{id:'sprint',type:'sprint',routeKm:40,label:'SPR',verified:true,source:{organization:'Test',reference:'fixture'}},{id:'kom',type:'kom',routeKm:70,label:'KOM',verified:true,source:{organization:'Test',reference:'fixture'}}])
  assert.equal(model.markers.find(marker=>marker.type==='sprint')?.color,'#38a852');assert.equal(model.markers.find(marker=>marker.type==='kom')?.color,'#ef3340');assert.equal(model.markers.find(marker=>marker.type==='finish')?.color,'#ffffff');assert.equal(model.markers.find(marker=>marker.type==='kilometre-zero')?.color,'#ffd400')
  for(const marker of model.markers){assert.equal(marker.localY-marker.topY,COURSE_MARKER_HEIGHT);assert.ok(marker.topY<marker.localY)}
- const tt=createRoadModel(1,stage.segments,stage.distanceKm,raceIdentities['tour-2026'],stage.profilePoints,[{type:'time-check',routeKm:5,label:'CHECK'}]);assert.equal(tt.markers.find(marker=>marker.type==='time-check')?.color,'#55dff7')
+ const tt=createRoadModel(1,stage.segments,stage.distanceKm,raceIdentities['tour-2026'],stage.profilePoints,[{id:'test-check',type:'tt-check',routeKm:5,label:'CHECK',verified:true,source:{organization:'Test',reference:'fixture'}}]);assert.equal(tt.markers.find(marker=>marker.type==='time-check')?.color,'#55dff7')
 })
 
 test('Tour and Vuelta share professional-race shape without changing Vuelta data',()=>{

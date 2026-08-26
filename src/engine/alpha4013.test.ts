@@ -13,7 +13,7 @@ test('Alpha 4.0.13 audits all 42 stages in one canonical distance domain', () =>
     assert.equal(race.stages.filter(stage => stage.workoutReady && stage.rideable).length, 21)
     for (const source of race.stages) {
       const stage = toRaceStage(race, source)
-      const road = createRoadModel(stage.number, stage.segments, stage.distanceKm, undefined, stage.profilePoints, stage.courseMarkers)
+      const road = createRoadModel(stage.number, stage.segments, stage.distanceKm, undefined, stage.profilePoints, stage.officialCourseMarkers)
       let prior = -1
       for (let elapsed = 0; elapsed <= road.duration; elapsed += Math.max(1, road.duration / 100)) {
         const state = road.roadSnapshot(elapsed)
@@ -69,7 +69,7 @@ test('authoritative profile transformations are immutable and schematic styling 
 test('Tour signature stages retain authoritative synchronized road models', () => {
   for (const number of [1, 9, 14, 16, 17, 18, 19, 20, 21]) {
     const stage = toRaceStage(tour2026, tour2026.stages[number - 1])
-    const road = createRoadModel(number, stage.segments, stage.distanceKm, undefined, stage.profilePoints, stage.courseMarkers)
+    const road = createRoadModel(number, stage.segments, stage.distanceKm, undefined, stage.profilePoints, stage.officialCourseMarkers)
     assert.equal(road.profileSourceKind, 'authoritative', `Tour Stage ${number}`)
     assert.equal(road.roadSnapshot(road.duration).courseProgress, 1, `Tour Stage ${number}`)
   }

@@ -81,5 +81,6 @@ test('V-Y: all 42 verified Grand Tour stages remain valid and rideable', () => {
     const model = createRoadModel(stage.number, stage.segments, stage.distanceKm, undefined, stage.profilePoints)
     assert.equal(model.roadSnapshot(model.duration).courseDistance, stage.distanceKm)
   }
-  for (const source of vuelta2026.stages) assert.equal(toRaceStage(vuelta2026, source).verification?.markers ?? false, false)
+  assert.equal(toRaceStage(vuelta2026, vuelta2026.stages[0]).verification?.markers, true)
+  for (const source of vuelta2026.stages.slice(1)) assert.equal(toRaceStage(vuelta2026, source).verification?.markers ?? false, false)
 })

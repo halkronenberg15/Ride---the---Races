@@ -1,3 +1,5 @@
+import type { OfficialCourseMarker } from './courseMarkers.ts'
+
 export type StageCue = { at: number; text: string }
 export type RideSegment = {
   name: string; type: string; zone: string; power: string; cadence: string; resistance: string;
@@ -13,7 +15,7 @@ export type RaceStage = {
   profileVerified?: boolean; profileSource?: string; profileReference?: string; profileUpdatedAt?: string;
   verification?: { profile:boolean; distance:boolean; ascent:boolean; markers:boolean; map:boolean; source:string; reference:string; updatedAt:string }
   workoutReady?: boolean
-  courseMarkers?: Array<{ type: 'time-check'; routeKm: number; label?: string }>
+  officialCourseMarkers?: OfficialCourseMarker[]
 }
 
 type RawSegment = { [key: string]: unknown; name:string; type:string; zone:string; power:string; cadence:string; resistance:string; routeKm:number; sec:number; desc:string; fixed?:StageCue[]; random?:string[] }
