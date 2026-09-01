@@ -6,6 +6,8 @@ import type { RaceIdentity } from '../data/raceLibrary.ts'
 import { getAuthoritativeProfile } from '../data/courseProfile.ts'
 import { resolvePrescriptionAtState, type PrescriptionState } from './prescription.ts'
 import { markerPosition, resolveOfficialCourseMarkers, type OfficialCourseMarker } from '../data/courseMarkers.ts'
+import type { LivePrescription } from './terrainModifier.ts'
+import { applyTerrainModifier } from './terrainModifier.ts'
 
 export type RaceMarkerType = 'kilometre-zero' | 'sprint' | 'kom' | 'time-check' | 'finish'
 export const COURSE_MARKER_HEIGHT = 28
@@ -18,7 +20,7 @@ export type RoadSnapshot = StageSnapshot & {
   gradientSections: GradientSection[]
   gradientIndex: number
   gradient: number
-  nextGradient: number
+  nextGradient: number | null
   climbProgress: number
   activeClimbId: string | null
   climbStartDistance: number | null
@@ -27,6 +29,7 @@ export type RoadSnapshot = StageSnapshot & {
   estimatedTimeToSummit: number
   climbAverageGradient: number
   resistance: string
+  livePrescription: LivePrescription
   sprintPhases: SprintPhase[]
   sprintPhase: SprintSnapshot | null
 }
@@ -74,7 +77,7 @@ export function markerLabelOffset(position:number, nearbyPositions:number[]=[]){
   const collisionIndex=nearbyPositions.filter(value=>value<position&&position-value<.055).length
   return { translateX:edgeOffset, translateY:collisionIndex%2?-11:0 }
 }
-export function createRoadModel(stageNumber: number, segments: RideSegment[], distanceKm: number, identity?:RaceIdentity, explicitProfile?:Array<string|{distanceKm:number;elevationM:number}>, officialCourseMarkers?:OfficialCourseMarker[], raceName=identity?.shortName??'Professional race'): RoadModel {
+export function createRoadModel(stageNumber: number, segments: RideSegment[], distanceKm: number, identity?:RaceIdentity, explicitProfile?:Array<string|{distanceKm:number;elevationM:number}>, officialCourseMarkers?:OfficialCourseMarker[], raceName=identity?.shortName??'Professional race', riderFtp=206): RoadModel {
   const timeline = createStageTimeline(segments, distanceKm)
   const sectionGradients = segments.map((segment, index) => isClimb(segment)
     ? buildGradientSections(`${stageNumber}-${index}-${segment.name}-${segment.type}`, segment.sec, segment.zone)
@@ -105,6 +108,16 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
   const max = Math.max(...raw.map((point) => point.elevation))
   const span = Math.max(1, max - min)
   const points = explicitPoints.length>=2 ? explicitPoints : raw.map((point) => ({ ...point, elevation: 82 - ((point.elevation - min) / span) * 62 }))
+  const canonicalClimbs = officialProfile ? points.slice(0, -1).reduce<Array<{start:number;summit:number;pointStart:number;pointEnd:number}>>((climbs, point, index) => {
+    if (points[index + 1].elevation <= point.elevation) return climbs
+    const previous = climbs.at(-1)
+    if (previous?.pointEnd === index) {
+      previous.pointEnd = index + 1
+      previous.summit = points[index + 1].position * distanceKm
+    }
+    else climbs.push({ start: point.position * distanceKm, summit: points[index + 1].position * distanceKm, pointStart: index, pointEnd: index + 1 })
+    return climbs
+  }, []) : []
   const pointMin=Math.min(...points.map(point=>point.elevation)); const pointMax=Math.max(...points.map(point=>point.elevation)); const pointSpan=Math.max(1,pointMax-pointMin)
   const elevationAt = (position: number) => {
     const p = Math.min(1, Math.max(0, position))
@@ -127,6 +140,14 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
     if(rightDistance-leftDistance<.05)return 0
     const rise=elevationAt(rightDistance/distanceKm)-elevationAt(leftDistance/distanceKm)
     return rise/((rightDistance-leftDistance)*10)
+  }
+  const profileBucketGradientAt=(courseDistance:number)=>{
+    if(!officialProfile)return 0
+    const km=Math.min(distanceKm,Math.max(0,courseDistance))
+    let rightIndex=points.findIndex((point,index)=>index>0&&km<point.position*distanceKm)
+    if(rightIndex<1)rightIndex=points.length-1
+    const left=points[rightIndex-1],right=points[rightIndex]
+    return Number(((right.elevation-left.elevation)/((right.position-left.position)*distanceKm*10)).toFixed(1))
   }
   const geometryGradientSections=(startDistance:number,endDistance:number):GradientSection[]=>{
     const length=Math.max(Number.EPSILON,endDistance-startDistance)
@@ -182,27 +203,33 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
       const authoredGradientSections = sectionGradients[base.segmentIndex]
       const sprintPhases = sectionSprints[base.segmentIndex]
       const sprintPhase = sprintSnapshot(sprintPhases, base.elapsedInSegment)
+      const geographicClimb=officialProfile?canonicalClimbs.find(climb=>base.courseDistance>=climb.start-1e-9&&base.courseDistance<=climb.summit+1e-9):undefined
       const priorIndex=base.segmentIndex-1
-      const atPriorSummit=priorIndex>=0&&isClimb(segments[priorIndex])
-        && Math.abs(base.elapsed-timeline.segmentStarts[base.segmentIndex])<1e-9
-      const climbIndex=atPriorSummit?priorIndex:(isClimb(base.segment)?base.segmentIndex:-1)
-      const climbActive=climbIndex>=0
-      const climbStartDistance=climbActive?timeline.snapshot(timeline.segmentStarts[climbIndex]).courseDistance:null
-      const summitDistance=climbActive?timeline.snapshot(timeline.segmentStarts[climbIndex]+segments[climbIndex].sec).courseDistance:null
-      const gradientSections=officialProfile&&climbStartDistance!==null&&summitDistance!==null
-        ? geometryGradientSections(climbStartDistance,summitDistance):authoredGradientSections
+      const atPriorSummit=!officialProfile&&priorIndex>=0&&isClimb(segments[priorIndex])&&Math.abs(base.elapsed-timeline.segmentStarts[base.segmentIndex])<1e-9
+      const climbIndex=officialProfile?-1:atPriorSummit?priorIndex:(isClimb(base.segment)?base.segmentIndex:-1)
+      const climbActive=Boolean(geographicClimb)||climbIndex>=0
+      const climbStartDistance=geographicClimb?.start??(climbIndex>=0?timeline.snapshot(timeline.segmentStarts[climbIndex]).courseDistance:null)
+      const summitDistance=geographicClimb?.summit??(climbIndex>=0?timeline.snapshot(timeline.segmentStarts[climbIndex]+segments[climbIndex].sec).courseDistance:null)
+      const gradientSections=geographicClimb
+        ? points.slice(geographicClimb.pointStart,geographicClimb.pointEnd).map((point,index)=>{const right=points[geographicClimb.pointStart+index+1];return {start:(point.position*distanceKm-geographicClimb.start)/(geographicClimb.summit-geographicClimb.start),end:(right.position*distanceKm-geographicClimb.start)/(geographicClimb.summit-geographicClimb.start),gradient:Number(((right.elevation-point.elevation)/((right.position-point.position)*distanceKm*10)).toFixed(1))}})
+        :officialProfile&&climbStartDistance!==null&&summitDistance!==null?geometryGradientSections(climbStartDistance,summitDistance):authoredGradientSections
       const geographicClimbProgress=climbActive&&summitDistance!>climbStartDistance!
         ? Math.min(1,Math.max(0,(base.courseDistance-climbStartDistance!)/(summitDistance!-climbStartDistance!))):0
       const gradientIndex=gradientSectionIndex(gradientSections,officialProfile?geographicClimbProgress:base.segmentProgress)
-      const gradient=officialProfile&&gradientSections.length
-        ? gradientSections[gradientIndex].gradient
-        :officialProfile?Number(geometryGradientAt(base.courseDistance).toFixed(1))
+      let gradient=geographicClimb&&gradientSections.length?gradientSections[gradientIndex].gradient:officialProfile?profileBucketGradientAt(base.courseDistance)
         :gradientSections[gradientIndex]?.gradient??(/descent/i.test(text(base.segment))?-3.2:0)
       const distanceToSummit=summitDistance===null?0:Math.max(0,summitDistance-base.courseDistance)
       const climbProgress=geographicClimbProgress
       const climbAverageGradient=climbActive&&summitDistance!>climbStartDistance!
         ? (elevationAt(summitDistance!/distanceKm)-elevationAt(climbStartDistance!/distanceKm))
           /(summitDistance!-climbStartDistance!)*.1:0
+      const atSummit=climbActive&&summitDistance!==null&&Math.abs(base.courseDistance-summitDistance)<1e-7
+      if(atSummit&&gradientSections.length)gradient=gradientSections.at(-1)!.gradient
+      const nextGradient=climbActive&&!atSummit
+        ? gradientSections.slice(gradientIndex+1).find(section=>section.gradient>0)?.gradient??null:null
+      const prescription=resolvePrescriptionAtState(segments,timeline.segmentStarts,elapsedSeconds).currentPrescription
+      const terrain=gradient<0?'descent':gradient>2?'climb':/rolling/i.test(text(base.segment))?'rolling':'flat'
+      const livePrescription=applyTerrainModifier(prescription,gradient,terrain,riderFtp)
       return {
         ...base,
         roadPosition: base.courseProgress,
@@ -213,16 +240,16 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
         sprintPhase,
         gradientIndex,
         gradient,
-        nextGradient: gradientSections[Math.min(gradientIndex + 1, gradientSections.length - 1)]?.gradient
-          ?? (officialProfile ? Number(geometryGradientAt(Math.min(distanceKm,base.courseDistance+.8)).toFixed(1)) : gradient),
+        nextGradient,
         climbProgress,
-        activeClimbId: climbActive?`${stageNumber}-${climbIndex}-${segments[climbIndex].name}`:null,
+        activeClimbId: climbActive?(geographicClimb?`${stageNumber}-geo-${geographicClimb.start}-${geographicClimb.summit}`:`${stageNumber}-${climbIndex}-${segments[climbIndex].name}`):null,
         climbStartDistance,
         summitDistance,
         distanceToSummit,
         estimatedTimeToSummit: summitDistance===null?0:Math.max(0,elapsedAtCourseDistance(summitDistance)-base.elapsed),
         climbAverageGradient,
-        resistance: resolvePrescriptionAtState(segments, timeline.segmentStarts, elapsedSeconds).currentPrescription.resistance,
+        resistance: livePrescription.resistance,
+        livePrescription,
       }
     },
     debugSnapshot(elapsedSeconds){

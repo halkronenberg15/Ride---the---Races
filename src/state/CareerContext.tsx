@@ -46,6 +46,7 @@ export const initialCareer: CareerState = {
     theme: 'dark',
     reducedMotion: false,
     dailyReminders: false,
+    preferredRideDurationMode: 'RECOMMENDED',
   },
 }
 

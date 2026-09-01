@@ -15,6 +15,7 @@ import { createJeanEvent, JeanEventBus } from '../engine/jeanEvents'
 import { CLICK_IN_CUE, PRE_RIDE_COUNTDOWN } from '../engine/preRide'
 import { raceIdentities } from '../data/raceLibrary'
 import { isIndividualTimeTrial, officialSegments, ttStartSnapshot } from '../engine/startArchitecture'
+import { applyDurationSelection, durationSelectionForStage, type DurationSelection } from '../engine/durationEngine'
 
 type RideScreenProps = {
   stageNumber: number
@@ -22,6 +23,7 @@ type RideScreenProps = {
   library?: string
   workoutId?: string
   strategy: RaceStrategy
+  durationSelection: DurationSelection
   onBack: () => void
   onFinish: () => void
 }
@@ -48,7 +50,7 @@ type WakeLockSentinelLike = {
 
 function RideScreen({
   stageNumber, stageData, library='tour-2026', workoutId,
-  strategy,
+  strategy, durationSelection,
   onBack,
   onFinish,
 }: RideScreenProps) {
@@ -56,13 +58,15 @@ function RideScreen({
   const measurementSystem = career.settings.measurementSystem
   const stage = useMemo(() => stageData ?? getRaceStage(stageNumber), [stageNumber, stageData])
   const adaptedSegments = useMemo(() => adaptSegments(stage.segments, career.rider.ftp, strategy), [stage, career.rider.ftp, strategy])
-  const isTimeTrial = useMemo(() => isIndividualTimeTrial(adaptedSegments), [adaptedSegments])
-  const segments = useMemo(() => officialSegments(adaptedSegments), [adaptedSegments])
+  const resolvedDuration=useMemo(()=>durationSelectionForStage(stage,durationSelection),[stage,durationSelection])
+  const timedSegments=useMemo(()=>stage.isTraining?adaptedSegments:applyDurationSelection(adaptedSegments,resolvedDuration).segments,[stage.isTraining,adaptedSegments,resolvedDuration])
+  const isTimeTrial = useMemo(() => isIndividualTimeTrial(timedSegments), [timedSegments])
+  const segments = useMemo(() => officialSegments(timedSegments), [timedSegments])
   const activeRide = useActiveRide()
-  const timeline = useMemo(() => createRoadModel(stage.number, segments, stage.distanceKm, raceIdentities[library as keyof typeof raceIdentities], stage.profilePoints, stage.officialCourseMarkers, stage.raceId), [segments, stage, library])
+  const timeline = useMemo(() => createRoadModel(stage.number, segments, stage.distanceKm, raceIdentities[library as keyof typeof raceIdentities], stage.profilePoints, stage.officialCourseMarkers, stage.raceId, career.rider.ftp), [segments, stage, library, career.rider.ftp])
   const profilePoints = timeline.profilePoints
   const rideElapsed = activeRide.ride?.stageNumber === stageNumber ? activeRide.elapsed : 0
-  const ttStart = useMemo(() => ttStartSnapshot(adaptedSegments, rideElapsed), [adaptedSegments, rideElapsed])
+  const ttStart = useMemo(() => ttStartSnapshot(timedSegments, rideElapsed), [timedSegments, rideElapsed])
   const elapsedSeconds = isTimeTrial ? ttStart.officialElapsed : rideElapsed
   const isRunning = activeRide.ride?.stageNumber === stageNumber && activeRide.ride.runningSince !== null
   const [countdown, setCountdown] = useState<number | null>(null)
@@ -111,8 +115,7 @@ function RideScreen({
 
   const segmentRemaining = engine.segmentRemaining
   const sprintPhase = engine.sprintPhase
-  const prescriptionState = useMemo(() => timeline.prescriptionAt(elapsedSeconds), [elapsedSeconds, timeline])
-  const activePrescription = prescriptionState.currentPrescription
+  const activePrescription = engine.livePrescription
   const displayPower = activePrescription.power
   const displayCadence = activePrescription.cadence
   const displayResistance = activePrescription.resistance
@@ -182,6 +185,11 @@ function RideScreen({
         if (!canUseJeanVoice()) { console.info(`[Jean] speech unavailable: ${event.id}`); return false }
         speakAsJean(event.message, undefined, career.settings.jeanVoiceVolume)
         return true
+      }, {
+        courseDistance: engine.courseDistance,
+        activeClimbId: engine.activeClimbId,
+        summitDistance: engine.summitDistance,
+        climbProgress: engine.climbProgress,
       })
   }
 
@@ -447,7 +455,7 @@ function RideScreen({
       void requestWakeLock()
       return
     }
-    activeRide.begin(stageNumber, strategy, library, workoutId)
+    activeRide.begin(stageNumber, strategy, library, workoutId, resolvedDuration)
     speak(CLICK_IN_CUE)
     setCountdown(PRE_RIDE_COUNTDOWN[0])
     let value: number = PRE_RIDE_COUNTDOWN[0]
@@ -1041,7 +1049,7 @@ function RideScreen({
                   <div style={{ textAlign: 'right' }}>
                     <small>CURRENT / NEXT</small>
                     <strong style={{ display: 'block', fontSize: '1.55rem', color: '#fff' }}>
-                      {activeGradient.toFixed(1)}% / {nextGradient.toFixed(1)}%
+                      {activeGradient.toFixed(1)}% / {nextGradient === null ? '—' : `${nextGradient.toFixed(1)}%`}
                     </strong>
                   </div>
                 </div>

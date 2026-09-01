@@ -27,6 +27,7 @@ import { getLibraryStage, trainingRides } from './data/raceLibrary'
 import { actionableStage } from './utils/navigation'
 import RaceOverviewScreen from './screens/RaceOverviewScreen'
 import StageDetailScreen from './screens/StageDetailScreen'
+import { applyDurationSelection, durationSelectionForStage, type DurationSelection } from './engine/durationEngine'
 
 type Screen = 'hq' | 'teamBus' | 'season' | 'race' | 'stageDetail' | 'training' | 'roster' | 'tactics' | 'ride' | 'restDay' | 'rideData' | 'health' | 'profile' | 'settings' | 'finale'
 
@@ -38,6 +39,7 @@ function RideTheRacesApp() {
   const [selectedWorkout, setSelectedWorkout] = useState('recovery-30')
   const [selectedStageNumber, setSelectedStageNumber] = useState(1)
   const [raceStrategy, setRaceStrategy] = useState<RaceStrategy>('Balanced')
+  const [rideDuration,setRideDuration]=useState<DurationSelection>({mode:'RECOMMENDED'})
   const { ride, elapsed, end } = useActiveRide()
 
   useEffect(() => {
@@ -61,7 +63,8 @@ function RideTheRacesApp() {
     const stage = ride?.stageNumber ?? career.season.currentStage
     if (ride) {
       const stageData = getLibraryStage(ride.library,ride.stageNumber,ride.workoutId) ?? getRaceStage(ride.stageNumber)
-      const plannedDurationSeconds = createStageTimeline(adaptSegments(stageData.segments, career.rider.ftp, ride.strategy), stageData.distanceKm).duration
+      const selection=durationSelectionForStage(stageData,{mode:ride.durationMode,customMinutes:ride.customDurationMinutes,targetMinutes:ride.targetDurationMinutes})
+      const plannedDurationSeconds = createStageTimeline(applyDurationSelection(adaptSegments(stageData.segments, career.rider.ftp, ride.strategy),selection).segments, stageData.distanceKm).duration
       addRide({ id: crypto.randomUUID(), date: new Date().toISOString(), source: 'Manual', durationMinutes: Math.round(elapsed / 60), distanceKm: stageData.distanceKm, race: career.season.currentRace, stageNumber: ride.stageNumber, stageName: stageData.title, plannedDurationSeconds, actualEngineDurationSeconds: Math.round(elapsed), tactic: ride.strategy, ftp: career.rider.ftp, recovery: career.health })
     }
     end()
@@ -107,8 +110,9 @@ function RideTheRacesApp() {
           stageNumber={selectedRace==='training'?tourActionable:selectedStageNumber}
           stageData={selectedRace==='training'?getLibraryStage('training',trainingRides.find(r=>r.id===selectedWorkout)?.stage.number??30,selectedWorkout):getLibraryStage(selectedRace,selectedStageNumber)}
           onBack={() => setScreen(selectedRace==='training'?'training':'stageDetail')}
-          onStartRide={(strategy) => {
+          onStartRide={(strategy,duration) => {
             setRaceStrategy(strategy)
+            setRideDuration(duration)
             setScreen('ride')
           }}
         />
@@ -124,6 +128,7 @@ function RideTheRacesApp() {
           library={ride?.library??selectedRace}
           workoutId={ride?.workoutId??(selectedRace==='training'?selectedWorkout:undefined)}
           strategy={ride?.strategy ?? raceStrategy}
+          durationSelection={ride?{mode:ride.durationMode,customMinutes:ride.customDurationMinutes,targetMinutes:ride.targetDurationMinutes}:rideDuration}
           onBack={() => setScreen('tactics')}
           onFinish={handleFinishRide}
         />

@@ -12,6 +12,7 @@ export type SeasonGoal = 'Improve fitness' | 'Increase FTP' | 'Ride longer' | 'L
 export type MeasurementSystem = 'metric' | 'imperial'
 export type ThemePreference = 'dark' | 'light' | 'system'
 export type DeviceSource = 'Garmin' | 'Peloton' | 'WHOOP' | 'Strava' | 'Wahoo' | 'Zwift' | 'Apple Health' | 'Manual only'
+export type PreferredRideDurationMode = 'RECOMMENDED'|'QUICK'|'STANDARD'|'EXTENDED'|'EPIC'
 
 export type RideMetricEntry = {
   id: string
@@ -81,5 +82,6 @@ export type CareerState = {
     theme: ThemePreference
     reducedMotion: boolean
     dailyReminders: boolean
+    preferredRideDurationMode: PreferredRideDurationMode
   }
 }

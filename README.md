@@ -1,5 +1,9 @@
 # React + TypeScript + Vite
 
+## Ride the Races engineering contract
+
+All product and engine changes are governed by [the Ride the Races architecture contract](docs/RTR_ARCHITECTURE.md). Canonical geography, stage simulation, prescription, tactics, Jean, telemetry, and environment translation must retain the boundaries defined there.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
