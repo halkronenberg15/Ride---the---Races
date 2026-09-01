@@ -39,6 +39,12 @@ export default function SettingsScreen({ onBack }: { onBack: () => void }) {
               <option value="imperial">Imperial</option><option value="metric">Metric</option>
             </select>
           </label>
+          <label>Preferred ride duration
+            <select value={settings.preferredRideDurationMode} onChange={(e) => updateSettings({ preferredRideDurationMode: e.target.value as typeof settings.preferredRideDurationMode })}>
+              <option value="RECOMMENDED">Recommended</option><option value="QUICK">Quick</option><option value="STANDARD">Standard</option><option value="EXTENDED">Extended</option><option value="EPIC">Epic</option>
+            </select>
+            <small>Used as the default for professional stages; each briefing can override it.</small>
+          </label>
           <label className="toggle-row"><span><strong>Daily reminders</strong><small>Save the preference for future notifications</small></span><input type="checkbox" checked={settings.dailyReminders} onChange={(e) => updateSettings({ dailyReminders: e.target.checked })} /></label>
         </article>
       </div>
