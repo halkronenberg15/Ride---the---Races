@@ -83,8 +83,8 @@ export function createStageTimeline(segments: RideSegment[], routeDistanceKm?: n
       const sectionEndCourseDistance = Math.min(totalDistance, Math.max(sectionStartCourseDistance,
         routeStarts[segmentIndex + 1] ?? totalDistance))
       const sectionFraction = Math.min(1, Math.max(0, elapsedInSegment / Math.max(1, segment.sec)))
-      const distance = complete ? totalDistance : sectionStartCourseDistance
-        + (sectionEndCourseDistance - sectionStartCourseDistance) * sectionFraction
+      const distance = complete ? totalDistance : Number((sectionStartCourseDistance
+        + (sectionEndCourseDistance - sectionStartCourseDistance) * sectionFraction).toFixed(9))
       const events: StageEvent[] = []
       if (Math.floor(elapsed) === Math.floor(duration / 2)) events.push('stage-halfway')
       if (Math.floor(elapsedInSegment) === Math.floor(segment.sec / 2)) events.push('sector-halfway')

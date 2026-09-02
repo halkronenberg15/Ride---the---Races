@@ -69,6 +69,16 @@ Modes are `QUICK`, `STANDARD`, `EXTENDED`, `EPIC`, `CUSTOM`, and `RECOMMENDED`. 
 
 **Alpha 4.0.18 integration status:** duration modes are persisted per active ride, selected in the professional Race Briefing, and consumed by `RideScreen` and the simulator through the same `TimeCompressionMap`. The rider preference supplies the default; CUSTOM remains a bounded per-ride override. Training rides retain their authored duration.
 
+### Internal duration mode vs rider-facing course duration
+
+`QUICK`, `STANDARD`, `RECOMMENDED`, `EXTENDED`, and `EPIC` are internal allocation policies. They are not the primary product language in a professional Race Briefing. The rider chooses a concrete, stage-derived number of minutes; `RECOMMENDED` is an annotation on the recommended time. RtR maps that time back to internal mode metadata and handles weighted compression.
+
+Available course durations derive from stage classification, canonical authored simulation, decisive terrain/narrative preservation, minimum viable fidelity, and maximum useful duration. Duplicate minute values collapse into one choice. CUSTOM remains bounded by the same course-specific fidelity envelope.
+
+> **Product rule:** The rider chooses time. RtR handles the compression. The course remains the course.
+
+Changing the selected minutes changes only elapsed-time allocation. At a fixed canonical distance, official gradient, elevation, climb geometry, official markers/checkpoints, finish, stage identity, and race-event order are invariant.
+
 Compression is weighted, never uniform: neutral road, valleys, transitions, and some recovery yield first; decisive climbs, sprints, KOM efforts, attacks, and race-defining finales have priority. Longer rides retain fatigue, sustained climbing, pressure, transitions, and buildup. Every duration remains recognizably the same race.
 
 Recommended design ranges (guidance, not limits): short TT 30–45 minutes including warm-up; long TT 45–60; flat/sprint 60–75; rolling 60–90; hilly/Classics 75–90; medium mountain 75–105; major mountain 90–120; queen stage 105–120. EPIC may exceed 120 minutes.
@@ -128,3 +138,43 @@ Responsive browser QA is repeatable at 390, 393, 430, and desktop widths and che
 ## Alpha 4.1 boundary
 
 Alpha 4.1 owns improved elevation/profile and Live Climb graphics, chase-line and tactical UI, typography, storytelling, animation, and hierarchy. Alpha 4.0.18 supplies trustworthy state only: **engine first, graphics second**.
+
+## Manual Resistance Translation Contract
+
+**Invariant: DISPLAYED GRADIENT → ACTIONABLE BIKE SETTING.** Whenever RtR displays a canonical gradient for a manually controlled bike, the selected `ManualBikeProfile` must translate it into one specific device-native `manualResistanceTarget`. The rider must be able to answer “what should I turn the knob to right now?” without interpreting a range. A resistance range may remain internal for compatibility, but it is not the primary manual instruction.
+
+The mandatory separation is:
+
+1. **Road / terrain:** canonical gradient → virtual road load → device-specific resistance target.
+2. **Race / training effort:** FTP + strategy + simulation section + tactical state → target power.
+3. **Pedaling solution:** road-load resistance + power demand + terrain cadence → final cockpit prescription.
+
+The mountain determines road feel; the race determines how hard the rider attacks that road. Race effort can change power and cadence emphasis, but cannot make a descent feel like a climb or alter the displayed gradient. A hard descent effort uses lower terrain resistance and an appropriate cadence rather than stale climbing resistance.
+
+### Device and calibration contract
+
+A `ManualBikeProfile` identifies manufacturer/model, native resistance bounds, calibration method/confidence, provenance-bearing samples, and a device-family road-load curve. Peloton Bike manual resistance is the initial reference profile, not a universal equation. Future profiles may represent Bike+, other manual bikes, smart bikes, or smart trainers. Manual devices display the knob target; smart devices may eventually apply the same road load automatically.
+
+`CalibrationSample` records resistance, cadence, power, source type (`historical-average`, `manual-calibration`, `live-telemetry`, or `imported-ride`), sample confidence, aggregate status, and optional duration/timestamp. Separate “best” summary metrics must never be combined into a synchronized tuple. Calibration profile confidence is:
+
+- **BASELINE:** device-family reference plus low-confidence aggregate evidence.
+- **PERSONALIZED:** sufficient synchronized observations from this bike.
+- **CALIBRATED:** dense high-confidence observations sufficient for reliable inversion.
+
+The current Peloton reference is BASELINE. Its four historical ride-average anchors (163 W/89 RPM/43, 166 W/87 RPM/44, 174 W/88 RPM/45, and 181 W/79 RPM/50) are LOW-confidence aggregates, not instantaneous measurements or proof of laboratory accuracy.
+
+The calibration model supports both estimated `Power = f(resistance, cadence, profile)` and diagnostic inversion `Resistance = f_inverse(power, cadence, profile)`. Inversion does not own the knob target: road load does. It helps assess whether cadence can satisfy race power at the terrain-owned setting.
+
+### Virtual load, scaling, and descents
+
+The deterministic `VirtualRoadLoad` preserves `canonicalGradient` and separately computes `effectiveGradient`. Road Feel (`comfortable`, `realistic`, `full-road`, or future custom scale) scales felt load only; 80% feel on a displayed 10% road may translate an 8% effective load, while the cockpit continues to display 10%. Alpha 4.0.18 defaults to 100% Full Road and does not expose this setting.
+
+The reference model may represent gradient, reference rolling load, aerodynamic load, mass, speed, and inertia as inputs become available. Missing physics inputs must be labeled as reference assumptions, never laboratory simulation. Road simulation remains separate from ERG/power control.
+
+On negative canonical gradient, the manual resistance target must fall with road load immediately at the summit boundary. Power may remain high, but cadence/effort—not stale climbing resistance—must provide it. Selected duration changes elapsed time allocation within geographic sectors; it cannot detach summit/descent road-load transitions from canonical distance.
+
+### Progressive calibration and Jean
+
+Future telemetry may feed a stable-sample detector. A sufficiently stable 10–20 second resistance/cadence/power window can produce a HIGH-confidence non-aggregate sample, which may improve the device profile. This API boundary does not imply unsupported Peloton connectivity.
+
+Jean may later announce materially useful resistance changes, but must use threshold/debounce behavior rather than chatter for every point. Alpha 4.0.18 prioritizes exact visual guidance and adds no fabricated resistance dialogue.

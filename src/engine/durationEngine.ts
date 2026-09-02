@@ -12,6 +12,7 @@ export type StageDurationPlan = {
   customMaxMinutes: number
   minutes: Record<PersistedDurationMode, number>
 }
+export type CourseDurationOption={minutes:number;mode:PersistedDurationMode;recommended:boolean}
 
 const decisive = (segment: RideSegment) => /summit|attack|sprint|kom|final|time trial/i.test(`${segment.name} ${segment.type}`)
 const important = (segment: RideSegment) => /climb|mountain|threshold|breakaway|chase/i.test(`${segment.name} ${segment.type}`)
@@ -22,12 +23,13 @@ export function stageDurationPlan(stage: { distanceKm: number; elevationM?:numbe
   const description=`${primary} ${stage.segments.map(segment=>`${segment.name} ${segment.type}`).join(' ')}`.toLowerCase()
   const isTt=/time trial|\btt\b/.test(primary)||(!stage.theme&&/time trial|\btt\b/.test(description))
   const classification:StageDurationPlan['classification']=isTt?(stage.distanceKm<=25?'short-tt':'long-tt')
-    :/queen/.test(primary)||(stage.elevationM??0)>=4500?'queen':/major mountain|high mountain|summit finish/.test(primary)||(stage.elevationM??0)>=3000?'major-mountain'
-    :/medium mountain|mountain/.test(primary)?'medium-mountain':/hilly|classic/.test(primary)?'hilly'
+    :/queen/.test(primary)||(stage.elevationM??0)>=4500?'queen':/medium mountain/.test(primary)?'medium-mountain'
+    :/major mountain|high mountain|summit finish/.test(primary)||(stage.elevationM??0)>=3000?'major-mountain'
+    :/mountain/.test(primary)?'medium-mountain':/hilly|classic/.test(primary)?'hilly'
     :/flat|sprint/.test(primary)?'flat':/rolling/.test(primary)?'rolling':'rolling'
   const ranges:Record<StageDurationPlan['classification'],[number,number,number,number,number]>={
     'short-tt':[30,35,40,45,50], 'long-tt':[40,45,52,60,65], flat:[45,60,68,75,90], rolling:[50,60,75,90,105],
-    hilly:[60,75,82,90,110], 'medium-mountain':[70,75,90,105,125], 'major-mountain':[80,90,105,120,140], queen:[90,105,112,120,150],
+    hilly:[60,75,82,90,110], 'medium-mountain':[70,80,105,120,140], 'major-mountain':[80,90,105,120,140], queen:[90,105,112,120,150],
   }
   const [quick,standard,recommended,extended,epic]=ranges[classification]
   return {classification,customMinMinutes:quick,customMaxMinutes:epic,minutes:{QUICK:quick,STANDARD:standard,RECOMMENDED:recommended,EXTENDED:extended,EPIC:epic}}
@@ -37,6 +39,15 @@ export function durationSelectionForStage(stage: Parameters<typeof stageDuration
   const plan=stageDurationPlan(stage)
   if(selection.mode==='CUSTOM')return {...selection,customMinutes:Math.min(plan.customMaxMinutes,Math.max(plan.customMinMinutes,selection.customMinutes??plan.minutes.RECOMMENDED))}
   return {...selection,targetMinutes:plan.minutes[selection.mode]}
+}
+
+/** Rider-facing choices are concrete times; mode remains internal compression metadata. */
+export function courseDurationOptions(stage:Parameters<typeof stageDurationPlan>[0]):CourseDurationOption[]{
+  const plan=stageDurationPlan(stage)
+  const modes:PersistedDurationMode[]=['QUICK','STANDARD','RECOMMENDED','EXTENDED','EPIC']
+  const byMinutes=new Map<number,CourseDurationOption>()
+  for(const mode of modes){const minutes=plan.minutes[mode],existing=byMinutes.get(minutes);byMinutes.set(minutes,{minutes,mode:mode==='RECOMMENDED'||!existing?mode:existing.mode,recommended:mode==='RECOMMENDED'||Boolean(existing?.recommended)})}
+  return [...byMinutes.values()].sort((a,b)=>a.minutes-b.minutes)
 }
 
 /** Builds a weighted time map; route kilometres and segment order are copied unchanged. */

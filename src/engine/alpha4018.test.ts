@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { tour2026, toRaceStage, vuelta2026 } from '../data/professionalRaces.ts'
-import { applyDurationSelection, durationSelectionForStage, DURATION_MODES, stageDurationPlan } from './durationEngine.ts'
+import { applyDurationSelection, courseDurationOptions, durationSelectionForStage, DURATION_MODES, stageDurationPlan } from './durationEngine.ts'
 import { createStageTimeline } from './stageEngine.ts'
 import { applyTerrainModifier } from './terrainModifier.ts'
 import { resolvePrescriptionAtState } from './prescription.ts'
@@ -26,6 +26,16 @@ test('duration modes change time but preserve canonical stage geography and orde
     assert.equal(finish.courseDistance, vuelta4.distanceKm); assert.equal(finish.courseProgress, 1); assert.equal(finish.stageComplete, true)
   }
   assert.ok(durations.size >= 5)
+})
+
+test('rider-facing choices are unique course times with Recommended as an annotation',()=>{
+  const options=courseDurationOptions(vuelta4);const recommended=options.filter(option=>option.recommended)
+  assert.equal(recommended.length,1);assert.equal(recommended[0].minutes,stageDurationPlan(vuelta4).minutes.RECOMMENDED)
+  assert.deepEqual(options.map(option=>option.minutes),[...new Set(options.map(option=>option.minutes))].sort((a,b)=>a-b))
+  const baseline=createRoadModel(vuelta4.number,vuelta4.segments,vuelta4.distanceKm,undefined,vuelta4.profilePoints,vuelta4.officialCourseMarkers,vuelta4.raceId,208)
+  for(const option of options){const selection=durationSelectionForStage(vuelta4,{mode:option.mode});const segments=applyDurationSelection(vuelta4.segments,selection).segments;const road=createRoadModel(vuelta4.number,segments,vuelta4.distanceKm,undefined,vuelta4.profilePoints,vuelta4.officialCourseMarkers,vuelta4.raceId,208)
+    for(const km of [0,14,34,51,70,88,vuelta4.distanceKm]){const a=baseline.roadSnapshot(baseline.elapsedAtCourseDistance(km)),b=road.roadSnapshot(road.elapsedAtCourseDistance(km));assert.equal(b.gradient,a.gradient);assert.equal(b.elevation,a.elevation);assert.equal(b.climbStartDistance,a.climbStartDistance);assert.equal(b.summitDistance,a.summitDistance)}
+  }
 })
 
 test('six signature stages expose classified, bounded duration plans without changing the race',()=>{
@@ -56,7 +66,7 @@ test('all 42 stages reconcile every duration mode at the exact same geographic f
 
 test('professional briefing, ActiveRide, simulator and RideScreen share duration selection contracts',()=>{
   const tactics=readFileSync(new URL('../screens/TacticsScreen.tsx',import.meta.url),'utf8');const ride=readFileSync(new URL('../screens/RideScreen.tsx',import.meta.url),'utf8');const active=readFileSync(new URL('../state/ActiveRideContext.tsx',import.meta.url),'utf8')
-  assert.match(tactics,/durationSelectionForStage/);assert.match(tactics,/RIDE DURATION/);assert.match(ride,/applyDurationSelection\(adaptedSegments,resolvedDuration\)/);assert.match(active,/durationMode:DurationMode/)
+  assert.match(tactics,/durationSelectionForStage/);assert.match(tactics,/CHOOSE YOUR RIDE/);assert.doesNotMatch(tactics,/>Quick</);assert.match(ride,/applyDurationSelection\(adaptedSegments,resolvedDuration\)/);assert.match(active,/durationMode:DurationMode/)
 })
 
 test('terrain modifier creates bounded deterministic climbing resistance and cadence', () => {
@@ -126,5 +136,6 @@ test('deterministic simulator completes all 42 professional stages exactly', () 
     for(let i=1;i<frames.length;i++) assert.ok(frames[i].courseDistance>=frames[i-1].courseDistance,`${race.name} ${stage.number}`)
     assert.ok(frames.every(frame=>frame.courseProgress>=0&&frame.courseProgress<=1))
     const finish=frames.at(-1)!; assert.equal(finish.courseDistance,stage.distanceKm); assert.equal(finish.courseProgress,1); assert.equal(finish.stageComplete,true)
+    assert.ok(frames.every(frame=>frame.canonicalGradient===frame.currentGradient&&frame.manualResistanceTarget>=0&&frame.manualResistanceTarget<=100&&frame.bikeProfile.length>0))
   }
 })

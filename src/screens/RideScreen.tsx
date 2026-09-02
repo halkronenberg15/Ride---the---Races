@@ -975,7 +975,7 @@ function RideScreen({
             </p>
 
             <strong>{displayZone} • {formatTime(currentSegment.sec)}</strong>
-            <div className="overlay-targets"><div><small>POWER</small><strong>{displayPower}</strong></div><div><small>CADENCE</small><strong>{displayCadence}</strong></div><div><small>RESISTANCE</small><strong>{displayResistance}</strong></div></div>
+            <div className="overlay-targets"><div><small>POWER</small><strong>{displayPower}</strong></div><div><small>CADENCE</small><strong>{displayCadence}</strong></div><div><small>SET RESISTANCE</small><strong>{displayResistance}</strong></div></div>
             <p style={{marginBottom:0,opacity:.8}}>Jean: “{currentSegment.description}”</p>
           </div>
         </div>
@@ -1176,7 +1176,7 @@ function RideScreen({
               </div>
 
               <div className="target-tile">
-                <small>RESISTANCE</small>
+                <small>SET RESISTANCE</small>
                 <strong>
                   {displayResistance}
                 </strong>

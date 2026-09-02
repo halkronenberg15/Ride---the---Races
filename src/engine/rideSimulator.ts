@@ -6,7 +6,7 @@ import { createRoadModel } from './roadModel.ts'
 import type { OfficialCourseMarker } from '../data/courseMarkers.ts'
 
 export type SimulatorInput = { stageNumber: number; distanceKm: number; segments: RideSegment[]; ftp: number; strategy: RaceStrategy; duration: DurationSelection; profilePoints?: Array<string|{distanceKm:number;elevationM:number}>; markers?: OfficialCourseMarker[]; intervalSeconds?: number }
-export type SimulatorFrame = { officialElapsed: number; officialRemaining: number; courseDistance: number; courseProgress: number; elevation: number; currentGradient: number; activeClimbId: string|null; climbProgress: number; distanceToSummit: number; power: string; resistance: string; cadence: string; courseComplete: boolean; officialWorkoutComplete: boolean; stageComplete: boolean }
+export type SimulatorFrame = { officialElapsed: number; officialRemaining: number; courseDistance: number; courseProgress: number; elevation: number; currentGradient: number; canonicalGradient:number; effectiveGradient:number; bikeProfile:string; calibrationConfidence:string; manualResistanceTarget:number; activeClimbId: string|null; climbProgress: number; distanceToSummit: number; power: string; powerRange:{min:number;max:number}; resistance: string; cadence: string; cadenceRange:{min:number;max:number}; courseComplete: boolean; officialWorkoutComplete: boolean; stageComplete: boolean }
 
 /** Runs the pure canonical engines end-to-end without a physical device. */
 export function simulateRide(input: SimulatorInput): SimulatorFrame[] {
@@ -20,6 +20,6 @@ export function simulateRide(input: SimulatorInput): SimulatorFrame[] {
   return [...times].sort((a,b)=>a-b).map(officialElapsed => {
     const state = road.roadSnapshot(officialElapsed)
     const live = state.livePrescription
-    return { officialElapsed, officialRemaining: state.stageRemaining, courseDistance: state.courseDistance, courseProgress: state.courseProgress, elevation: state.elevation, currentGradient: state.gradient, activeClimbId: state.activeClimbId, climbProgress: state.climbProgress, distanceToSummit: state.distanceToSummit, power: live.power, resistance: live.resistance, cadence: live.cadence, courseComplete: state.courseComplete, officialWorkoutComplete: state.officialWorkoutComplete, stageComplete: state.stageComplete }
+    return { officialElapsed, officialRemaining: state.stageRemaining, courseDistance: state.courseDistance, courseProgress: state.courseProgress, elevation: state.elevation, currentGradient: state.gradient, canonicalGradient:live.manualRoadFeel.canonicalGradient,effectiveGradient:live.manualRoadFeel.effectiveGradient,bikeProfile:live.manualRoadFeel.bikeProfile,calibrationConfidence:live.manualRoadFeel.calibrationConfidence,manualResistanceTarget:live.manualResistanceTarget, activeClimbId: state.activeClimbId, climbProgress: state.climbProgress, distanceToSummit: state.distanceToSummit, power: live.power,powerRange:live.powerRange, resistance: live.resistance, cadence: live.cadence,cadenceRange:live.cadenceRange, courseComplete: state.courseComplete, officialWorkoutComplete: state.officialWorkoutComplete, stageComplete: state.stageComplete }
   })
 }

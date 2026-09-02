@@ -1,0 +1,1402 @@
+{
+  "race": "La Vuelta 2026",
+  "stage": 6,
+  "route": "Alcossebre → Castelló",
+  "ftp": 208,
+  "strategy": "Balanced",
+  "roadFeel": "full-road",
+  "audits": [
+    {
+      "mode": "STANDARD",
+      "durationSeconds": 4800,
+      "frames": [
+        {
+          "label": "summit-1-before",
+          "officialElapsed": 1369.9470000000001,
+          "courseDistance": 12.999,
+          "elevation": 649.9855452993031,
+          "sector": "First Coastal Climb",
+          "canonicalGradient": 1.4,
+          "effectiveGradient": 1.4,
+          "activeClimbId": "6-geo-0-13",
+          "climbProgress": 0.9999230769230769,
+          "distanceToSummit": 0.0009999999999994458,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 42,
+          "cadenceRange": {
+            "min": 72,
+            "max": 84
+          },
+          "powerRange": {
+            "min": 184.77669902912623,
+            "max": 214.05825242718444
+          }
+        },
+        {
+          "label": "summit-1",
+          "officialElapsed": 1370,
+          "courseDistance": 13,
+          "elevation": 650,
+          "sector": "First Descent Reset",
+          "canonicalGradient": 1.4,
+          "effectiveGradient": 1.4,
+          "activeClimbId": "6-geo-0-13",
+          "climbProgress": 1,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 42,
+          "cadenceRange": {
+            "min": 88,
+            "max": 100
+          },
+          "powerRange": {
+            "min": 94.91262135922331,
+            "max": 142.36893203883494
+          }
+        },
+        {
+          "label": "summit-1-after",
+          "officialElapsed": 1370.0254285714286,
+          "courseDistance": 13.001,
+          "elevation": 649.9860313718767,
+          "sector": "First Descent Reset",
+          "canonicalGradient": -1.4,
+          "effectiveGradient": -1.4,
+          "activeClimbId": null,
+          "climbProgress": 0,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 35,
+          "cadenceRange": {
+            "min": 88,
+            "max": 100
+          },
+          "powerRange": {
+            "min": 94.91262135922331,
+            "max": 142.36893203883494
+          }
+        },
+        {
+          "label": "descent-1-midpoint",
+          "officialElapsed": 1548,
+          "courseDistance": 20,
+          "elevation": 430,
+          "sector": "First Descent Reset",
+          "canonicalGradient": -4.5,
+          "effectiveGradient": -4.5,
+          "activeClimbId": null,
+          "climbProgress": 0,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 29,
+          "cadenceRange": {
+            "min": 90,
+            "max": 105
+          },
+          "powerRange": {
+            "min": 94.91262135922331,
+            "max": 142.36893203883494
+          }
+        },
+        {
+          "label": "climb-2-entry",
+          "officialElapsed": 1726,
+          "courseDistance": 27,
+          "elevation": 210,
+          "sector": "Middle Mountain Chain",
+          "canonicalGradient": 2.4,
+          "effectiveGradient": 2.4,
+          "activeClimbId": "6-geo-26.999999999999996-40",
+          "climbProgress": 2.7328566760003845e-16,
+          "distanceToSummit": 13,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 44,
+          "cadenceRange": {
+            "min": 79.5,
+            "max": 93.5
+          },
+          "powerRange": {
+            "min": 177.03182912621355,
+            "max": 210.01941747572815
+          }
+        },
+        {
+          "label": "summit-2-before",
+          "officialElapsed": 2045.7754,
+          "courseDistance": 39.999,
+          "elevation": 919.975726681128,
+          "sector": "Middle Mountain Chain",
+          "canonicalGradient": 2.4,
+          "effectiveGradient": 2.4,
+          "activeClimbId": "6-geo-26.999999999999996-40",
+          "climbProgress": 0.9999230769230771,
+          "distanceToSummit": 0.0009999999999976694,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 44,
+          "cadenceRange": {
+            "min": 79.5,
+            "max": 93.5
+          },
+          "powerRange": {
+            "min": 177.03182912621355,
+            "max": 210.01941747572815
+          }
+        },
+        {
+          "label": "summit-2",
+          "officialElapsed": 2045.8,
+          "courseDistance": 40,
+          "elevation": 920,
+          "sector": "Middle Mountain Chain",
+          "canonicalGradient": 2.4,
+          "effectiveGradient": 2.4,
+          "activeClimbId": "6-geo-26.999999999999996-40",
+          "climbProgress": 1,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 44,
+          "cadenceRange": {
+            "min": 79.5,
+            "max": 93.5
+          },
+          "powerRange": {
+            "min": 177.03182912621355,
+            "max": 210.01941747572815
+          }
+        },
+        {
+          "label": "summit-2-after",
+          "officialElapsed": 2045.8246,
+          "courseDistance": 40.001,
+          "elevation": 919.9828568979557,
+          "sector": "Middle Mountain Chain",
+          "canonicalGradient": -1.7,
+          "effectiveGradient": -1.7,
+          "activeClimbId": null,
+          "climbProgress": 0,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 35,
+          "cadenceRange": {
+            "min": 86,
+            "max": 100
+          },
+          "powerRange": {
+            "min": 176.69902912621356,
+            "max": 210.01941747572815
+          }
+        },
+        {
+          "label": "descent-2-midpoint",
+          "officialElapsed": 2218,
+          "courseDistance": 47,
+          "elevation": 650,
+          "sector": "Middle Mountain Chain",
+          "canonicalGradient": -5.6,
+          "effectiveGradient": -5.6,
+          "activeClimbId": null,
+          "climbProgress": 0,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 28,
+          "cadenceRange": {
+            "min": 90,
+            "max": 105
+          },
+          "powerRange": {
+            "min": 176.69902912621356,
+            "max": 210.01941747572815
+          }
+        },
+        {
+          "label": "climb-3-entry",
+          "officialElapsed": 2390.2,
+          "courseDistance": 54,
+          "elevation": 380,
+          "sector": "Middle Mountain Chain",
+          "canonicalGradient": 2.5,
+          "effectiveGradient": 2.5,
+          "activeClimbId": "6-geo-53.99999999999999-67",
+          "climbProgress": 5.465713352000768e-16,
+          "distanceToSummit": 13,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 44,
+          "cadenceRange": {
+            "min": 79.375,
+            "max": 93.375
+          },
+          "powerRange": {
+            "min": 177.11502912621356,
+            "max": 210.01941747572815
+          }
+        },
+        {
+          "label": "summit-3-before",
+          "officialElapsed": 2709.9754,
+          "courseDistance": 66.999,
+          "elevation": 1099.9753851479206,
+          "sector": "Middle Mountain Chain",
+          "canonicalGradient": 2.5,
+          "effectiveGradient": 2.5,
+          "activeClimbId": "6-geo-53.99999999999999-67",
+          "climbProgress": 0.9999230769230766,
+          "distanceToSummit": 0.0010000000000047748,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 44,
+          "cadenceRange": {
+            "min": 79.375,
+            "max": 93.375
+          },
+          "powerRange": {
+            "min": 177.11502912621356,
+            "max": 210.01941747572815
+          }
+        },
+        {
+          "label": "summit-3",
+          "officialElapsed": 2710,
+          "courseDistance": 67,
+          "elevation": 1100,
+          "sector": "Deep Valley Reset",
+          "canonicalGradient": 2.5,
+          "effectiveGradient": 2.5,
+          "activeClimbId": "6-geo-53.99999999999999-67",
+          "climbProgress": 1,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 44,
+          "cadenceRange": {
+            "min": 87.375,
+            "max": 99.375
+          },
+          "powerRange": {
+            "min": 95.3286213592233,
+            "max": 142.36893203883494
+          }
+        },
+        {
+          "label": "summit-3-after",
+          "officialElapsed": 2710.017592592593,
+          "courseDistance": 67.001,
+          "elevation": 1099.9822642728573,
+          "sector": "Deep Valley Reset",
+          "canonicalGradient": -1.8,
+          "effectiveGradient": -1.8,
+          "activeClimbId": null,
+          "climbProgress": 0,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 34,
+          "cadenceRange": {
+            "min": 88,
+            "max": 100
+          },
+          "powerRange": {
+            "min": 94.91262135922331,
+            "max": 142.36893203883494
+          }
+        },
+        {
+          "label": "descent-3-midpoint",
+          "officialElapsed": 2824.3518518518517,
+          "courseDistance": 73.5,
+          "elevation": 826.488,
+          "sector": "Deep Valley Reset",
+          "canonicalGradient": -6.9,
+          "effectiveGradient": -6.9,
+          "activeClimbId": null,
+          "climbProgress": 0,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 26,
+          "cadenceRange": {
+            "min": 90,
+            "max": 105
+          },
+          "powerRange": {
+            "min": 94.91262135922331,
+            "max": 142.36893203883494
+          }
+        },
+        {
+          "label": "climb-4-entry",
+          "officialElapsed": 2938.7037037037035,
+          "courseDistance": 80,
+          "elevation": 440,
+          "sector": "Deep Valley Reset",
+          "canonicalGradient": -3.6,
+          "effectiveGradient": -3.6,
+          "activeClimbId": null,
+          "climbProgress": 0,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 31,
+          "cadenceRange": {
+            "min": 88,
+            "max": 100
+          },
+          "powerRange": {
+            "min": 94.91262135922331,
+            "max": 142.36893203883494
+          }
+        },
+        {
+          "label": "summit-4-before",
+          "officialElapsed": 3359.2097777777776,
+          "courseDistance": 107.999,
+          "elevation": 589.9834916213089,
+          "sector": "Final High Point",
+          "canonicalGradient": 1.7,
+          "effectiveGradient": 1.7,
+          "activeClimbId": "6-geo-93.99999999999999-107.99999999999999",
+          "climbProgress": 0.999928571428572,
+          "distanceToSummit": 0.000999999999990564,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 42,
+          "cadenceRange": {
+            "min": 66,
+            "max": 80
+          },
+          "powerRange": {
+            "min": 205.98058252427185,
+            "max": 235.2621359223301
+          }
+        },
+        {
+          "label": "summit-4",
+          "officialElapsed": 3359.222222222222,
+          "courseDistance": 108,
+          "elevation": 590,
+          "sector": "Final High Point",
+          "canonicalGradient": 1.7,
+          "effectiveGradient": 1.7,
+          "activeClimbId": "6-geo-93.99999999999999-107.99999999999999",
+          "climbProgress": 1,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 42,
+          "cadenceRange": {
+            "min": 66,
+            "max": 80
+          },
+          "powerRange": {
+            "min": 205.98058252427185,
+            "max": 235.2621359223301
+          }
+        },
+        {
+          "label": "summit-4-after",
+          "officialElapsed": 3359.2346666666667,
+          "courseDistance": 108.001,
+          "elevation": 589.9839317856646,
+          "sector": "Final High Point",
+          "canonicalGradient": -1.6,
+          "effectiveGradient": -1.6,
+          "activeClimbId": null,
+          "climbProgress": 0,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 35,
+          "cadenceRange": {
+            "min": 86,
+            "max": 100
+          },
+          "powerRange": {
+            "min": 205.98058252427185,
+            "max": 235.2621359223301
+          }
+        },
+        {
+          "label": "descent-4-midpoint",
+          "officialElapsed": 3440.1111111111113,
+          "courseDistance": 114.5,
+          "elevation": 355,
+          "sector": "Final High Point",
+          "canonicalGradient": -5.2,
+          "effectiveGradient": -5.2,
+          "activeClimbId": null,
+          "climbProgress": 0,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 29,
+          "cadenceRange": {
+            "min": 90,
+            "max": 105
+          },
+          "powerRange": {
+            "min": 205.98058252427185,
+            "max": 235.2621359223301
+          }
+        },
+        {
+          "label": "climb-5-entry",
+          "officialElapsed": 3521,
+          "courseDistance": 121,
+          "elevation": 120,
+          "sector": "Final High Point",
+          "canonicalGradient": 1.8,
+          "effectiveGradient": 1.8,
+          "activeClimbId": "6-geo-121.00000000000001-135",
+          "climbProgress": 0,
+          "distanceToSummit": 14,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 43,
+          "cadenceRange": {
+            "min": 66,
+            "max": 80
+          },
+          "powerRange": {
+            "min": 205.98058252427185,
+            "max": 235.2621359223301
+          }
+        },
+        {
+          "label": "summit-5-before",
+          "officialElapsed": 3695.2097777777776,
+          "courseDistance": 134.999,
+          "elevation": 679.9822221746022,
+          "sector": "Final High Point",
+          "canonicalGradient": 1.8,
+          "effectiveGradient": 1.8,
+          "activeClimbId": "6-geo-121.00000000000001-135",
+          "climbProgress": 0.9999285714285711,
+          "distanceToSummit": 0.0010000000000047748,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 43,
+          "cadenceRange": {
+            "min": 66,
+            "max": 80
+          },
+          "powerRange": {
+            "min": 205.98058252427185,
+            "max": 235.2621359223301
+          }
+        },
+        {
+          "label": "summit-5",
+          "officialElapsed": 3695.222222222222,
+          "courseDistance": 135,
+          "elevation": 680,
+          "sector": "Final High Point",
+          "canonicalGradient": 1.8,
+          "effectiveGradient": 1.8,
+          "activeClimbId": "6-geo-121.00000000000001-135",
+          "climbProgress": 1,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 43,
+          "cadenceRange": {
+            "min": 66,
+            "max": 80
+          },
+          "powerRange": {
+            "min": 205.98058252427185,
+            "max": 235.2621359223301
+          }
+        },
+        {
+          "label": "summit-5-after",
+          "officialElapsed": 3695.2346666666667,
+          "courseDistance": 135.001,
+          "elevation": 679.9802018218513,
+          "sector": "Final High Point",
+          "canonicalGradient": -2,
+          "effectiveGradient": -2,
+          "activeClimbId": null,
+          "climbProgress": 0,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 34,
+          "cadenceRange": {
+            "min": 86,
+            "max": 100
+          },
+          "powerRange": {
+            "min": 205.98058252427185,
+            "max": 235.2621359223301
+          }
+        },
+        {
+          "label": "descent-5-midpoint",
+          "officialElapsed": 3763.666666666667,
+          "courseDistance": 140.5,
+          "elevation": 435,
+          "sector": "Final High Point",
+          "canonicalGradient": -6.4,
+          "effectiveGradient": -6.4,
+          "activeClimbId": null,
+          "climbProgress": 0,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 27,
+          "cadenceRange": {
+            "min": 90,
+            "max": 105
+          },
+          "powerRange": {
+            "min": 205.98058252427185,
+            "max": 235.2621359223301
+          }
+        },
+        {
+          "label": "climb-6-entry",
+          "officialElapsed": 3832.1111111111113,
+          "courseDistance": 146,
+          "elevation": 190,
+          "sector": "Final High Point",
+          "canonicalGradient": 3.5,
+          "effectiveGradient": 3.5,
+          "activeClimbId": "6-geo-146-157",
+          "climbProgress": 0,
+          "distanceToSummit": 11,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 46,
+          "cadenceRange": {
+            "min": 65,
+            "max": 78.125
+          },
+          "powerRange": {
+            "min": 207.22858252427184,
+            "max": 235.2621359223301
+          }
+        },
+        {
+          "label": "summit-6-before",
+          "officialElapsed": 3968.9875555555554,
+          "courseDistance": 156.999,
+          "elevation": 1049.965251731849,
+          "sector": "Final High Point",
+          "canonicalGradient": 3.5,
+          "effectiveGradient": 3.5,
+          "activeClimbId": "6-geo-146-157",
+          "climbProgress": 0.9999090909090905,
+          "distanceToSummit": 0.0010000000000047748,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 46,
+          "cadenceRange": {
+            "min": 65,
+            "max": 78.125
+          },
+          "powerRange": {
+            "min": 207.22858252427184,
+            "max": 235.2621359223301
+          }
+        },
+        {
+          "label": "summit-6",
+          "officialElapsed": 3969,
+          "courseDistance": 157,
+          "elevation": 1050,
+          "sector": "Castelló Descent Drive",
+          "canonicalGradient": 3.5,
+          "effectiveGradient": 3.5,
+          "activeClimbId": "6-geo-146-157",
+          "climbProgress": 1,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 46,
+          "cadenceRange": {
+            "min": 92.125,
+            "max": 110.125
+          },
+          "powerRange": {
+            "min": 0,
+            "max": 0
+          }
+        },
+        {
+          "label": "summit-6-after",
+          "officialElapsed": 3969.0174509803924,
+          "courseDistance": 157.0005,
+          "elevation": 1049.987321333334,
+          "sector": "Castelló Descent Drive",
+          "canonicalGradient": -2.5,
+          "effectiveGradient": -2.5,
+          "activeClimbId": null,
+          "climbProgress": 0,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 33,
+          "cadenceRange": {
+            "min": 94,
+            "max": 112
+          },
+          "powerRange": {
+            "min": 0,
+            "max": 0
+          }
+        },
+        {
+          "label": "descent-6-midpoint",
+          "officialElapsed": 4047.529411764706,
+          "courseDistance": 159.25,
+          "elevation": 963.013,
+          "sector": "Castelló Descent Drive",
+          "canonicalGradient": -6.5,
+          "effectiveGradient": -6.5,
+          "activeClimbId": null,
+          "climbProgress": 0,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 27,
+          "cadenceRange": {
+            "min": 94,
+            "max": 112
+          },
+          "powerRange": {
+            "min": 0,
+            "max": 0
+          }
+        },
+        {
+          "label": "climb-7-entry",
+          "officialElapsed": 4126.058823529412,
+          "courseDistance": 161.5,
+          "elevation": 780.604,
+          "sector": "Castelló Descent Drive",
+          "canonicalGradient": -9.6,
+          "effectiveGradient": -9.6,
+          "activeClimbId": null,
+          "climbProgress": 0,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 24,
+          "cadenceRange": {
+            "min": 94,
+            "max": 112
+          },
+          "powerRange": {
+            "min": 0,
+            "max": 0
+          }
+        }
+      ]
+    },
+    {
+      "mode": "RECOMMENDED",
+      "durationSeconds": 6300,
+      "frames": [
+        {
+          "label": "summit-1-before",
+          "officialElapsed": 1811.931923076923,
+          "courseDistance": 12.999,
+          "elevation": 649.9855452993031,
+          "sector": "First Coastal Climb",
+          "canonicalGradient": 1.4,
+          "effectiveGradient": 1.4,
+          "activeClimbId": "6-geo-0-13",
+          "climbProgress": 0.9999230769230769,
+          "distanceToSummit": 0.0009999999999994458,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 42,
+          "cadenceRange": {
+            "min": 72,
+            "max": 84
+          },
+          "powerRange": {
+            "min": 184.77669902912623,
+            "max": 214.05825242718444
+          }
+        },
+        {
+          "label": "summit-1",
+          "officialElapsed": 1812,
+          "courseDistance": 13,
+          "elevation": 650,
+          "sector": "First Descent Reset",
+          "canonicalGradient": 1.4,
+          "effectiveGradient": 1.4,
+          "activeClimbId": "6-geo-0-13",
+          "climbProgress": 1,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 42,
+          "cadenceRange": {
+            "min": 88,
+            "max": 100
+          },
+          "powerRange": {
+            "min": 94.91262135922331,
+            "max": 142.36893203883494
+          }
+        },
+        {
+          "label": "summit-1-after",
+          "officialElapsed": 1812.034642857143,
+          "courseDistance": 13.001,
+          "elevation": 649.9860313718767,
+          "sector": "First Descent Reset",
+          "canonicalGradient": -1.4,
+          "effectiveGradient": -1.4,
+          "activeClimbId": null,
+          "climbProgress": 0,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 35,
+          "cadenceRange": {
+            "min": 88,
+            "max": 100
+          },
+          "powerRange": {
+            "min": 94.91262135922331,
+            "max": 142.36893203883494
+          }
+        },
+        {
+          "label": "descent-1-midpoint",
+          "officialElapsed": 2054.5,
+          "courseDistance": 20,
+          "elevation": 430,
+          "sector": "First Descent Reset",
+          "canonicalGradient": -4.5,
+          "effectiveGradient": -4.5,
+          "activeClimbId": null,
+          "climbProgress": 0,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 29,
+          "cadenceRange": {
+            "min": 90,
+            "max": 105
+          },
+          "powerRange": {
+            "min": 94.91262135922331,
+            "max": 142.36893203883494
+          }
+        },
+        {
+          "label": "climb-2-entry",
+          "officialElapsed": 2297,
+          "courseDistance": 27,
+          "elevation": 210,
+          "sector": "Middle Mountain Chain",
+          "canonicalGradient": 2.4,
+          "effectiveGradient": 2.4,
+          "activeClimbId": "6-geo-26.999999999999996-40",
+          "climbProgress": 2.7328566760003845e-16,
+          "distanceToSummit": 13,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 44,
+          "cadenceRange": {
+            "min": 79.5,
+            "max": 93.5
+          },
+          "powerRange": {
+            "min": 177.03182912621355,
+            "max": 210.01941747572815
+          }
+        },
+        {
+          "label": "summit-2-before",
+          "officialElapsed": 2707.7684,
+          "courseDistance": 39.999,
+          "elevation": 919.975726681128,
+          "sector": "Middle Mountain Chain",
+          "canonicalGradient": 2.4,
+          "effectiveGradient": 2.4,
+          "activeClimbId": "6-geo-26.999999999999996-40",
+          "climbProgress": 0.9999230769230771,
+          "distanceToSummit": 0.0009999999999976694,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 44,
+          "cadenceRange": {
+            "min": 79.5,
+            "max": 93.5
+          },
+          "powerRange": {
+            "min": 177.03182912621355,
+            "max": 210.01941747572815
+          }
+        },
+        {
+          "label": "summit-2",
+          "officialElapsed": 2707.8,
+          "courseDistance": 40,
+          "elevation": 920,
+          "sector": "Middle Mountain Chain",
+          "canonicalGradient": 2.4,
+          "effectiveGradient": 2.4,
+          "activeClimbId": "6-geo-26.999999999999996-40",
+          "climbProgress": 1,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 44,
+          "cadenceRange": {
+            "min": 79.5,
+            "max": 93.5
+          },
+          "powerRange": {
+            "min": 177.03182912621355,
+            "max": 210.01941747572815
+          }
+        },
+        {
+          "label": "summit-2-after",
+          "officialElapsed": 2707.8316,
+          "courseDistance": 40.001,
+          "elevation": 919.9828568979557,
+          "sector": "Middle Mountain Chain",
+          "canonicalGradient": -1.7,
+          "effectiveGradient": -1.7,
+          "activeClimbId": null,
+          "climbProgress": 0,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 35,
+          "cadenceRange": {
+            "min": 86,
+            "max": 100
+          },
+          "powerRange": {
+            "min": 176.69902912621356,
+            "max": 210.01941747572815
+          }
+        },
+        {
+          "label": "descent-2-midpoint",
+          "officialElapsed": 2929,
+          "courseDistance": 47,
+          "elevation": 650,
+          "sector": "Middle Mountain Chain",
+          "canonicalGradient": -5.6,
+          "effectiveGradient": -5.6,
+          "activeClimbId": null,
+          "climbProgress": 0,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 28,
+          "cadenceRange": {
+            "min": 90,
+            "max": 105
+          },
+          "powerRange": {
+            "min": 176.69902912621356,
+            "max": 210.01941747572815
+          }
+        },
+        {
+          "label": "climb-3-entry",
+          "officialElapsed": 3150.2,
+          "courseDistance": 54,
+          "elevation": 380,
+          "sector": "Middle Mountain Chain",
+          "canonicalGradient": 2.5,
+          "effectiveGradient": 2.5,
+          "activeClimbId": "6-geo-53.99999999999999-67",
+          "climbProgress": 5.465713352000768e-16,
+          "distanceToSummit": 13,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 44,
+          "cadenceRange": {
+            "min": 79.375,
+            "max": 93.375
+          },
+          "powerRange": {
+            "min": 177.11502912621356,
+            "max": 210.01941747572815
+          }
+        },
+        {
+          "label": "summit-3-before",
+          "officialElapsed": 3560.9683999999997,
+          "courseDistance": 66.999,
+          "elevation": 1099.9753851479206,
+          "sector": "Middle Mountain Chain",
+          "canonicalGradient": 2.5,
+          "effectiveGradient": 2.5,
+          "activeClimbId": "6-geo-53.99999999999999-67",
+          "climbProgress": 0.9999230769230766,
+          "distanceToSummit": 0.0010000000000047748,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 44,
+          "cadenceRange": {
+            "min": 79.375,
+            "max": 93.375
+          },
+          "powerRange": {
+            "min": 177.11502912621356,
+            "max": 210.01941747572815
+          }
+        },
+        {
+          "label": "summit-3",
+          "officialElapsed": 3561,
+          "courseDistance": 67,
+          "elevation": 1100,
+          "sector": "Deep Valley Reset",
+          "canonicalGradient": 2.5,
+          "effectiveGradient": 2.5,
+          "activeClimbId": "6-geo-53.99999999999999-67",
+          "climbProgress": 1,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 44,
+          "cadenceRange": {
+            "min": 87.375,
+            "max": 99.375
+          },
+          "powerRange": {
+            "min": 95.3286213592233,
+            "max": 142.36893203883494
+          }
+        },
+        {
+          "label": "summit-3-after",
+          "officialElapsed": 3561.023925925926,
+          "courseDistance": 67.001,
+          "elevation": 1099.9822642728573,
+          "sector": "Deep Valley Reset",
+          "canonicalGradient": -1.8,
+          "effectiveGradient": -1.8,
+          "activeClimbId": null,
+          "climbProgress": 0,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 34,
+          "cadenceRange": {
+            "min": 88,
+            "max": 100
+          },
+          "powerRange": {
+            "min": 94.91262135922331,
+            "max": 142.36893203883494
+          }
+        },
+        {
+          "label": "descent-3-midpoint",
+          "officialElapsed": 3716.5185185185187,
+          "courseDistance": 73.5,
+          "elevation": 826.488,
+          "sector": "Deep Valley Reset",
+          "canonicalGradient": -6.9,
+          "effectiveGradient": -6.9,
+          "activeClimbId": null,
+          "climbProgress": 0,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 26,
+          "cadenceRange": {
+            "min": 90,
+            "max": 105
+          },
+          "powerRange": {
+            "min": 94.91262135922331,
+            "max": 142.36893203883494
+          }
+        },
+        {
+          "label": "climb-4-entry",
+          "officialElapsed": 3872.037037037037,
+          "courseDistance": 80,
+          "elevation": 440,
+          "sector": "Deep Valley Reset",
+          "canonicalGradient": -3.6,
+          "effectiveGradient": -3.6,
+          "activeClimbId": null,
+          "climbProgress": 0,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 31,
+          "cadenceRange": {
+            "min": 88,
+            "max": 100
+          },
+          "powerRange": {
+            "min": 94.91262135922331,
+            "max": 142.36893203883494
+          }
+        },
+        {
+          "label": "summit-4-before",
+          "officialElapsed": 4420.762507936508,
+          "courseDistance": 107.999,
+          "elevation": 589.9834916213089,
+          "sector": "Final High Point",
+          "canonicalGradient": 1.7,
+          "effectiveGradient": 1.7,
+          "activeClimbId": "6-geo-93.99999999999999-107.99999999999999",
+          "climbProgress": 0.999928571428572,
+          "distanceToSummit": 0.000999999999990564,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 42,
+          "cadenceRange": {
+            "min": 66,
+            "max": 80
+          },
+          "powerRange": {
+            "min": 205.98058252427185,
+            "max": 235.2621359223301
+          }
+        },
+        {
+          "label": "summit-4",
+          "officialElapsed": 4420.777777777777,
+          "courseDistance": 108,
+          "elevation": 590,
+          "sector": "Final High Point",
+          "canonicalGradient": 1.7,
+          "effectiveGradient": 1.7,
+          "activeClimbId": "6-geo-93.99999999999999-107.99999999999999",
+          "climbProgress": 1,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 42,
+          "cadenceRange": {
+            "min": 66,
+            "max": 80
+          },
+          "powerRange": {
+            "min": 205.98058252427185,
+            "max": 235.2621359223301
+          }
+        },
+        {
+          "label": "summit-4-after",
+          "officialElapsed": 4420.793047619048,
+          "courseDistance": 108.001,
+          "elevation": 589.9839317856646,
+          "sector": "Final High Point",
+          "canonicalGradient": -1.6,
+          "effectiveGradient": -1.6,
+          "activeClimbId": null,
+          "climbProgress": 0,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 35,
+          "cadenceRange": {
+            "min": 86,
+            "max": 100
+          },
+          "powerRange": {
+            "min": 205.98058252427185,
+            "max": 235.2621359223301
+          }
+        },
+        {
+          "label": "descent-4-midpoint",
+          "officialElapsed": 4520.031746031746,
+          "courseDistance": 114.5,
+          "elevation": 355,
+          "sector": "Final High Point",
+          "canonicalGradient": -5.2,
+          "effectiveGradient": -5.2,
+          "activeClimbId": null,
+          "climbProgress": 0,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 29,
+          "cadenceRange": {
+            "min": 90,
+            "max": 105
+          },
+          "powerRange": {
+            "min": 205.98058252427185,
+            "max": 235.2621359223301
+          }
+        },
+        {
+          "label": "climb-5-entry",
+          "officialElapsed": 4619.285714285715,
+          "courseDistance": 121,
+          "elevation": 120,
+          "sector": "Final High Point",
+          "canonicalGradient": 1.8,
+          "effectiveGradient": 1.8,
+          "activeClimbId": "6-geo-121.00000000000001-135",
+          "climbProgress": 0,
+          "distanceToSummit": 14,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 43,
+          "cadenceRange": {
+            "min": 66,
+            "max": 80
+          },
+          "powerRange": {
+            "min": 205.98058252427185,
+            "max": 235.2621359223301
+          }
+        },
+        {
+          "label": "summit-5-before",
+          "officialElapsed": 4833.048222222222,
+          "courseDistance": 134.999,
+          "elevation": 679.9822221746022,
+          "sector": "Final High Point",
+          "canonicalGradient": 1.8,
+          "effectiveGradient": 1.8,
+          "activeClimbId": "6-geo-121.00000000000001-135",
+          "climbProgress": 0.9999285714285711,
+          "distanceToSummit": 0.0010000000000047748,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 43,
+          "cadenceRange": {
+            "min": 66,
+            "max": 80
+          },
+          "powerRange": {
+            "min": 205.98058252427185,
+            "max": 235.2621359223301
+          }
+        },
+        {
+          "label": "summit-5",
+          "officialElapsed": 4833.063492063492,
+          "courseDistance": 135,
+          "elevation": 680,
+          "sector": "Final High Point",
+          "canonicalGradient": 1.8,
+          "effectiveGradient": 1.8,
+          "activeClimbId": "6-geo-121.00000000000001-135",
+          "climbProgress": 1,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 43,
+          "cadenceRange": {
+            "min": 66,
+            "max": 80
+          },
+          "powerRange": {
+            "min": 205.98058252427185,
+            "max": 235.2621359223301
+          }
+        },
+        {
+          "label": "summit-5-after",
+          "officialElapsed": 4833.078761904762,
+          "courseDistance": 135.001,
+          "elevation": 679.9802018218513,
+          "sector": "Final High Point",
+          "canonicalGradient": -2,
+          "effectiveGradient": -2,
+          "activeClimbId": null,
+          "climbProgress": 0,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 34,
+          "cadenceRange": {
+            "min": 86,
+            "max": 100
+          },
+          "powerRange": {
+            "min": 205.98058252427185,
+            "max": 235.2621359223301
+          }
+        },
+        {
+          "label": "descent-5-midpoint",
+          "officialElapsed": 4917.047619047619,
+          "courseDistance": 140.5,
+          "elevation": 435,
+          "sector": "Final High Point",
+          "canonicalGradient": -6.4,
+          "effectiveGradient": -6.4,
+          "activeClimbId": null,
+          "climbProgress": 0,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 27,
+          "cadenceRange": {
+            "min": 90,
+            "max": 105
+          },
+          "powerRange": {
+            "min": 205.98058252427185,
+            "max": 235.2621359223301
+          }
+        },
+        {
+          "label": "climb-6-entry",
+          "officialElapsed": 5001.031746031746,
+          "courseDistance": 146,
+          "elevation": 190,
+          "sector": "Final High Point",
+          "canonicalGradient": 3.5,
+          "effectiveGradient": 3.5,
+          "activeClimbId": "6-geo-146-157",
+          "climbProgress": 0,
+          "distanceToSummit": 11,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 46,
+          "cadenceRange": {
+            "min": 65,
+            "max": 78.125
+          },
+          "powerRange": {
+            "min": 207.22858252427184,
+            "max": 235.2621359223301
+          }
+        },
+        {
+          "label": "summit-6-before",
+          "officialElapsed": 5168.98473015873,
+          "courseDistance": 156.999,
+          "elevation": 1049.965251731849,
+          "sector": "Final High Point",
+          "canonicalGradient": 3.5,
+          "effectiveGradient": 3.5,
+          "activeClimbId": "6-geo-146-157",
+          "climbProgress": 0.9999090909090905,
+          "distanceToSummit": 0.0010000000000047748,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 46,
+          "cadenceRange": {
+            "min": 65,
+            "max": 78.125
+          },
+          "powerRange": {
+            "min": 207.22858252427184,
+            "max": 235.2621359223301
+          }
+        },
+        {
+          "label": "summit-6",
+          "officialElapsed": 5169,
+          "courseDistance": 157,
+          "elevation": 1050,
+          "sector": "Castelló Descent Drive",
+          "canonicalGradient": 3.5,
+          "effectiveGradient": 3.5,
+          "activeClimbId": "6-geo-146-157",
+          "climbProgress": 1,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 46,
+          "cadenceRange": {
+            "min": 92.125,
+            "max": 110.125
+          },
+          "powerRange": {
+            "min": 0,
+            "max": 0
+          }
+        },
+        {
+          "label": "summit-6-after",
+          "officialElapsed": 5169.023774509804,
+          "courseDistance": 157.0005,
+          "elevation": 1049.987321333334,
+          "sector": "Castelló Descent Drive",
+          "canonicalGradient": -2.5,
+          "effectiveGradient": -2.5,
+          "activeClimbId": null,
+          "climbProgress": 0,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 33,
+          "cadenceRange": {
+            "min": 94,
+            "max": 112
+          },
+          "powerRange": {
+            "min": 0,
+            "max": 0
+          }
+        },
+        {
+          "label": "descent-6-midpoint",
+          "officialElapsed": 5275.985294117647,
+          "courseDistance": 159.25,
+          "elevation": 963.013,
+          "sector": "Castelló Descent Drive",
+          "canonicalGradient": -6.5,
+          "effectiveGradient": -6.5,
+          "activeClimbId": null,
+          "climbProgress": 0,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 27,
+          "cadenceRange": {
+            "min": 94,
+            "max": 112
+          },
+          "powerRange": {
+            "min": 0,
+            "max": 0
+          }
+        },
+        {
+          "label": "climb-7-entry",
+          "officialElapsed": 5382.970588235294,
+          "courseDistance": 161.5,
+          "elevation": 780.604,
+          "sector": "Castelló Descent Drive",
+          "canonicalGradient": -9.6,
+          "effectiveGradient": -9.6,
+          "activeClimbId": null,
+          "climbProgress": 0,
+          "distanceToSummit": 0,
+          "bikeProfile": "peloton-bike-manual-reference",
+          "calibrationConfidence": "BASELINE",
+          "manualResistanceTarget": 24,
+          "cadenceRange": {
+            "min": 94,
+            "max": 112
+          },
+          "powerRange": {
+            "min": 0,
+            "max": 0
+          }
+        }
+      ]
+    }
+  ]
+}
