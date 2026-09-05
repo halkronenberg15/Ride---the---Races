@@ -80,7 +80,7 @@ function RideScreen({
   const [showSegmentCard, setShowSegmentCard] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const [wakeLockStatus, setWakeLockStatus] = useState<
-    'inactive' | 'requesting' | 'active' | 'unsupported' | 'blocked'
+    'inactive' | 'requesting' | 'active' | 'unsupported' | 'blocked' | 'released'
   >('inactive')
 
   const lastSpokenCue = useRef('')
@@ -243,7 +243,7 @@ function RideScreen({
         wakeLockRef.current = null
 
         if (isRunningRef.current) {
-          setWakeLockStatus('inactive')
+          setWakeLockStatus('released')
         }
       })
     } catch {
@@ -268,8 +268,8 @@ function RideScreen({
 
   useEffect(() => {
     isRunningRef.current = isRunning
-    if(isRunning&&document.visibilityState==='visible')void requestWakeLock()
-    else if(!isRunning)void releaseWakeLock()
+    if(isRunning&&document.visibilityState==='visible')queueMicrotask(()=>void requestWakeLock())
+    else if(!isRunning)queueMicrotask(()=>void releaseWakeLock())
   }, [isRunning])
 
   useEffect(() => {
@@ -514,10 +514,12 @@ function RideScreen({
       : wakeLockStatus === 'requesting'
         ? 'Requesting screen wake lock'
       : wakeLockStatus === 'unsupported'
-        ? 'Wake lock unsupported · keep Auto-Lock off'
+        ? 'Wake lock unsupported · Keep Auto-Lock disabled'
         : wakeLockStatus === 'blocked'
-          ? 'Wake lock unavailable'
-          : 'Screen sleep allowed'
+          ? 'Wake lock unavailable · Keep Auto-Lock disabled'
+          : wakeLockStatus === 'released'
+            ? 'Wake lock released · Keep Auto-Lock disabled'
+            : 'Screen sleep allowed · Keep Auto-Lock disabled'
 
   return (
     <section className="ride-screen ride-cockpit">

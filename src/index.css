@@ -34,6 +34,13 @@
   }
 }
 
+/* Full Safari tabs can report a zero top inset even while browser chrome/status
+   overlays the visual viewport. Phones therefore retain one compact fallback;
+   the cockpit owns it once rather than stacking per-control offsets. */
+@media (max-width: 700px) {
+  :root { --safe-top: max(env(safe-area-inset-top, 0px), 48px); }
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --text: #9ca3af;
