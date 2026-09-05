@@ -5,19 +5,21 @@ import type { CareerState, HealthEntry, MeasurementSystem, RideMetricEntry } fro
 const STORAGE_KEY = 'ride-the-races-v2-career'
 
 export const initialCareer: CareerState = {
+  schemaVersion:3,
   onboardingComplete: false,
   rider: {
-    name: 'Hal Kronenberg',
-    number: 15,
-    nationality: 'USA',
+    name: '',
+    number: 0,
+    nationality: '',
     team: 'Équipe Loriot',
     archetype: 'GC Contender',
-    ftp: 206,
-    ftpKnown: true,
+    ftp: 0,
+    ftpKnown: false,
     experience: 'Recreational',
     seasonGoal: 'Improve fitness',
-    devices: ['Peloton'],
+    devices: [],
   },
+  equipment:{activeEquipmentId:null,instances:[]},
   season: {
     year: 2026,
     currentRace: 'Tour de France',
@@ -55,8 +57,10 @@ export function migrateCareer(saved: Partial<CareerState>): CareerState {
   return {
     ...initialCareer,
     ...saved,
+    schemaVersion:3,
     onboardingComplete: saved.onboardingComplete ?? true,
     rider: { ...initialCareer.rider, ...saved.rider },
+    equipment:{...initialCareer.equipment,...saved.equipment,activeEquipmentId:saved.equipment?.activeEquipmentId??(saved.rider?.devices?.includes('Peloton')?'peloton-baseline-bike':null),instances:saved.equipment?.instances??legacyEquipment(saved)},
     season: { ...initialCareer.season, ...saved.season },
     races: { tour: { ...legacyTour, ...saved.races?.tour }, vuelta: { ...initialCareer.races.vuelta, ...saved.races?.vuelta } },
     trainingHistory: saved.trainingHistory ?? [],
@@ -64,6 +68,11 @@ export function migrateCareer(saved: Partial<CareerState>): CareerState {
     rideHistory: saved.rideHistory ?? [],
     settings: { ...initialCareer.settings, ...saved.settings },
   }
+}
+
+function legacyEquipment(saved:Partial<CareerState>){
+  if(!saved.rider?.devices?.includes('Peloton'))return []
+  return [{id:'peloton-baseline-bike',name:'Peloton manual bike',manufacturer:'Peloton',modelFamily:'Bike',resistanceControl:'manual' as const,powerAvailable:true,cadenceAvailable:true,resistanceAvailable:true,calibrationProfileId:'peloton-bike-manual-reference',calibrationConfidence:'BASELINE' as const}]
 }
 
 type CareerContextValue = {

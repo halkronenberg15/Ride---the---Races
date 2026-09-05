@@ -13,7 +13,7 @@ test('Stage 7 has one exact road coordinate at every sector boundary', () => {
     const at = road.roadSnapshot(boundary)
     assert.equal(at.segmentIndex, index)
     if (index === stage.segments.length - 1 && stage.segments[index].routeKm >= stage.distanceKm) assert.ok(at.roadPosition < 1)
-    else assert.equal(at.roadPosition, stage.segments[index].routeKm / stage.distanceKm)
+    else assert.equal(at.roadPosition, at.sectionStartCourseDistance / stage.distanceKm)
     assert.equal(at.riderPosition, at.courseProgress)
     assert.equal(at.profileY, road.elevationAt(at.roadPosition))
     if (index > 0) assert.equal(road.roadSnapshot(boundary - 0.001).segmentIndex, index - 1)

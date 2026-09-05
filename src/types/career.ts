@@ -47,6 +47,7 @@ export type HealthEntry = {
 }
 
 export type CareerState = {
+  schemaVersion: 3
   onboardingComplete: boolean
   rider: {
     name: string
@@ -61,6 +62,11 @@ export type CareerState = {
     weightKg?: number
     seasonGoal: SeasonGoal
     devices: DeviceSource[]
+    cadencePreferences?: { comfortableFlatCadence?:number;seatedClimbingCadence?:number;safeMinimumCadence?:number;safeMaximumCadence?:number }
+  }
+  equipment: {
+    activeEquipmentId:string|null
+    instances:Array<{id:string;name:string;manufacturer:string;modelFamily:string;resistanceControl:'manual'|'controllable';powerAvailable:boolean;cadenceAvailable:boolean;resistanceAvailable:boolean;calibrationProfileId?:string;calibrationConfidence:'UNAVAILABLE'|'BASELINE'|'PERSONALIZED'|'CALIBRATED'}>
   }
   season: {
     year: number

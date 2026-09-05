@@ -1,12 +1,28 @@
 # Ride the Races Architecture Contract
 
 **Status:** Governing product and engineering specification
-**Release baseline:** Alpha 4.0.18
+**Release baseline:** Alpha 4.0.19
 **Change rule:** New features extend these canonical boundaries; they must not create parallel geography, prescription, tactical, or event engines. Engine correctness precedes Alpha 4.1 graphics.
 
 ## Product definition
 
 Ride the Races is an indoor and outdoor cycling race simulation platform that translates real and historic professional races to the rider's fitness, available time, equipment, riding environment, and local terrain.
+
+## Alpha 4.0.19 lifecycle and equipment contract
+
+The engine exposes `NEUTRAL_ROLLOUT → KILOMETRE_ZERO → OFFICIAL_RACING → FINISHED → OPTIONAL_COOLDOWN`. Segment purpose is classified once when authored content is loaded; duration, road, prescription, cockpit, Jean, tactics, completion, and recovery consume lifecycle state rather than repeatedly guessing from display names.
+
+Neutral rollout is one briefing section with deterministic duration-relative `OPENING`, `DEVELOPMENT`, and `PREPARATION` phases. It progresses monotonically from Z1 to upper Z2, keeps official distance and current gradient at zero, and exposes opening terrain only as a preview. Kilometre Zero is protected at its authored 30–45 seconds (45 seconds for Vuelta Stage 6) and all remaining selected time is allocated to eligible rollout/racing sectors.
+
+The selected course duration means official stage time. Canonical geography reaches its finish at exactly that duration, then the result is captured and the lifecycle becomes `FINISHED`. Authored cooldown content is retained but allocated zero official seconds; `OPTIONAL_COOLDOWN` is explicit additional time, cannot add race distance or alter the captured result, and awaits a dedicated interactive offer/skip UI.
+
+**Canonical geography defines the road. Rider profile defines physiological demand. Equipment and calibration define achievable bike instructions. The final cockpit prescription must reconcile all three before reaching the rider.**
+
+The manual-bike resolver applies this priority: rider safety limits, physiological power objective, terrain character, optional cadence preference, then exact preferred road resistance. It checks predicted power across the resolved cadence range. A compatible road target is `EXACT`; a reconciled knob/cadence target is `ADJUSTED`; safe but incomplete overlap is `LIMITED`; missing compatible calibration is `UNAVAILABLE`. Current and Up Next both use this resolver, with Up Next explicitly displaying an opening setting rather than an authored range.
+
+Rider/equipment persistence is schema version 3. Equipment instances own capabilities, calibration reference/confidence, and active selection. The Peloton-family reference is a low-confidence `BASELINE`, separate from Hal's historical aggregate evidence; it is not personalized or calibrated. Unsupported manual bikes retain FTP-based power and cadence but receive no Peloton-native resistance. Smart equipment records capability without claiming a control adapter. New careers have no borrowed identity and an unknown, unverified FTP; migration retains existing careers, including Hal's stored career.
+
+Calibration confidence means: `BASELINE` is a device-family reference, `PERSONALIZED` is rider-specific evidence not yet validated, and `CALIBRATED` is reviewed structured calibration. Deferred work is the complete multi-rider UI, structured calibration capture and promotion workflow, Peloton Bike+ validation, additional manual-bike profiles, smart-trainer control adapters, and the interactive optional-cooldown UI.
 
 > **Core promise:** “Ride the race, not just the workout.”
 > **North Star:** “What would it feel like if I were in that race?”

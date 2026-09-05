@@ -37,7 +37,8 @@ function TacticsScreen({ stageNumber, stageData, onBack, onStartRide }: TacticsS
       <header className="compact-page-header">
         <p className="eyebrow">TEAM LORIOT • {stage.isTraining ? 'TODAY’S SESSION' : `STAGE ${stage.number}`}</p>
         <h1>{stage.isTraining ? 'Training Ride Briefing' : 'Race Briefing'}</h1>
-        <p>{stage.route} • {stage.distanceKm.toFixed(1)} km / {kmToMi(stage.distanceKm).toFixed(1)} mi • {minutes} min</p>
+        <p>{stage.route} • {stage.distanceKm.toFixed(1)} km / {kmToMi(stage.distanceKm).toFixed(1)} mi</p>
+        <strong>SELECTED COURSE DURATION: {minutes} MIN</strong>
       </header>
 
       <section className="briefing-board">
