@@ -12,6 +12,7 @@ export type SeasonGoal = 'Improve fitness' | 'Increase FTP' | 'Ride longer' | 'L
 export type MeasurementSystem = 'metric' | 'imperial'
 export type ThemePreference = 'dark' | 'light' | 'system'
 export type DeviceSource = 'Garmin' | 'Peloton' | 'WHOOP' | 'Strava' | 'Wahoo' | 'Zwift' | 'Apple Health' | 'Manual only'
+export type ConnectionMethod = 'manual-guidance'|'post-ride-import'
 export type PreferredRideDurationMode = 'RECOMMENDED'|'QUICK'|'STANDARD'|'EXTENDED'|'EPIC'
 
 export type RideMetricEntry = {
@@ -62,10 +63,12 @@ export type CareerState = {
     weightKg?: number
     seasonGoal: SeasonGoal
     devices: DeviceSource[]
+    connectionMethod?:ConnectionMethod
     cadencePreferences?: { comfortableFlatCadence?:number;seatedClimbingCadence?:number;safeMinimumCadence?:number;safeMaximumCadence?:number }
   }
   equipment: {
     activeEquipmentId:string|null
+    connectionMethod:ConnectionMethod
     instances:Array<{id:string;name:string;manufacturer:string;modelFamily:string;resistanceControl:'manual'|'controllable';powerAvailable:boolean;cadenceAvailable:boolean;resistanceAvailable:boolean;calibrationProfileId?:string;calibrationConfidence:'UNAVAILABLE'|'BASELINE'|'PERSONALIZED'|'CALIBRATED'}>
   }
   season: {

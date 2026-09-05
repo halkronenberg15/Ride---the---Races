@@ -22,6 +22,8 @@ The manual-bike resolver applies this priority: rider safety limits, physiologic
 
 Rider/equipment persistence is schema version 3. Equipment instances own capabilities, calibration reference/confidence, and active selection. The Peloton-family reference is a low-confidence `BASELINE`, separate from Hal's historical aggregate evidence; it is not personalized or calibrated. Unsupported manual bikes retain FTP-based power and cadence but receive no Peloton-native resistance. Smart equipment records capability without claiming a control adapter. New careers have no borrowed identity and an unknown, unverified FTP; migration retains existing careers, including Hal's stored career.
 
+Equipment type and connection method are separate. Equipment selects the translation capability; connection records whether the rider follows live manual guidance or imports an activity afterward. Peloton Bike/Bike+ uses manual rider adjustment with the Peloton `BASELINE` and no direct telemetry connection. Other manual bikes never receive Peloton-native resistance. Smart equipment remains guidance-only until control and telemetry adapters are implemented; connected sensors and connected smart equipment are labeled planned rather than selectable connections.
+
 Calibration confidence means: `BASELINE` is a device-family reference, `PERSONALIZED` is rider-specific evidence not yet validated, and `CALIBRATED` is reviewed structured calibration. Deferred work is the complete multi-rider UI, structured calibration capture and promotion workflow, Peloton Bike+ validation, additional manual-bike profiles, smart-trainer control adapters, and the interactive optional-cooldown UI.
 
 > **Core promise:** “Ride the race, not just the workout.”

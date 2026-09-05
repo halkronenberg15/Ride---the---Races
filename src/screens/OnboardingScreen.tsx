@@ -1,13 +1,21 @@
 import { useState } from 'react'
 import { useCareer } from '../state/CareerContext'
-import type { CareerState, DeviceSource, ExperienceLevel, MeasurementSystem, RiderArchetype, SeasonGoal } from '../types/career'
+import type { CareerState, ConnectionMethod, DeviceSource, ExperienceLevel, MeasurementSystem, RiderArchetype, SeasonGoal } from '../types/career'
 import { cmToIn, inToCm, kgToLb, lbToKg } from '../utils/units'
 import { advanceOnboarding, canAdvanceOnboarding } from '../engine/onboardingFlow'
 
 const archetypes: RiderArchetype[] = ['GC Contender', 'Sprinter', 'Climber', 'Puncheur', 'Time Trial Specialist', 'All-Rounder', 'Domestique']
 const experiences: ExperienceLevel[] = ['Beginner', 'Recreational', 'Intermediate', 'Advanced', 'Competitive']
 const goals: SeasonGoal[] = ['Improve fitness', 'Increase FTP', 'Ride longer', 'Lose weight', 'Complete a Gran Fondo', 'Race stronger', 'Win the Tour']
-const devices: DeviceSource[] = ['Garmin', 'Peloton', 'WHOOP', 'Strava', 'Wahoo', 'Zwift', 'Apple Health', 'Manual only']
+const equipmentChoices:Array<{label:string;device:DeviceSource;description:string}>=[
+  {label:'Peloton Bike / Bike+',device:'Peloton',description:'Live power, cadence, and Peloton resistance instructions. You adjust resistance manually; direct Peloton telemetry is not connected. Activates the Peloton BASELINE profile.'},
+  {label:'Other manual bike',device:'Manual only',description:'Power and cadence guidance where available. Peloton-native resistance is hidden; exact resistance requires a supported bike-specific profile.'},
+  {label:'Smart trainer / smart bike',device:'Wahoo',description:'Guidance is available, but automatic resistance control and a direct smart-equipment connection are planned—not currently operational.'},
+]
+const connectionChoices:Array<{id:ConnectionMethod;label:string;description:string}>=[
+  {id:'manual-guidance',label:'Manual guidance',description:'Available now. Follow RtR targets and adjust the bike yourself.'},
+  {id:'post-ride-import',label:'Post-ride import',description:'Available now. Record elsewhere and import the completed activity afterward.'},
+]
 const stepTitles = ['Meet the rider', 'Your engine', 'Season objective', 'Connected kit', 'Rider identity', 'Welcome to the team']
 
 export default function OnboardingScreen() {
@@ -46,11 +54,9 @@ export default function OnboardingScreen() {
     })
   }
 
-  function toggleDevice(device: DeviceSource) {
-    if (device === 'Manual only') return patch({ devices: ['Manual only'] })
-    const withoutManual = rider.devices.filter((item) => item !== 'Manual only')
-    patch({ devices: withoutManual.includes(device) ? withoutManual.filter((item) => item !== device) : [...withoutManual, device] })
-  }
+  function selectEquipment(device:DeviceSource){patch({devices:[device]})}
+  const selectedEquipment=equipmentChoices.find(choice=>rider.devices.includes(choice.device))
+  const connectionMethod=rider.connectionMethod??'manual-guidance'
 
   const numbers={numberText,heightText,weightText,ftpText}
   const canContinue=canAdvanceOnboarding(step,rider,numbers)
@@ -95,7 +101,7 @@ export default function OnboardingScreen() {
             </div>
           </>}
           {step === 2 && <><h2>What would make this season meaningful?</h2><div className="choice-grid goals">{goals.map((goal) => <button type="button" className={rider.seasonGoal === goal ? 'selected' : ''} onClick={() => patch({ seasonGoal: goal })} key={goal}>{goal}</button>)}</div></>}
-          {step === 3 && <><h2>How will your rides reach the team car?</h2><div className="choice-grid devices">{devices.map((device) => <button type="button" className={rider.devices.includes(device) ? 'selected' : ''} onClick={() => toggleDevice(device)} key={device}>{device}</button>)}</div><p className="wizard-note">Connections are recorded now. Manual entry remains available to every rider.</p></>}
+          {step === 3 && <><h2>Choose your equipment</h2><p className="wizard-note">Equipment determines which live bike instructions RtR can provide. It is separate from how ride data reaches RtR.</p><div className="archetype-grid">{equipmentChoices.map(choice=><button type="button" className={rider.devices.includes(choice.device)?'selected':''} onClick={()=>selectEquipment(choice.device)} key={choice.label}><strong>{choice.label}</strong><span>{choice.description}</span></button>)}</div><h3>Connection method</h3><div className="choice-grid">{connectionChoices.map(choice=><button type="button" className={connectionMethod===choice.id?'selected':''} onClick={()=>patch({connectionMethod:choice.id})} key={choice.id}><strong>{choice.label}</strong><small>{choice.description}</small></button>)}</div><div className="wizard-note"><strong>Connected sensors:</strong> Coming later · <strong>Connected smart equipment:</strong> Coming later</div>{selectedEquipment&&<div className="rider-summary" aria-label="Your setup"><strong>Your setup:</strong><span>{selectedEquipment.label}</span><span>{selectedEquipment.device==='Peloton'?'Manual resistance control':selectedEquipment.device==='Manual only'?'Manual resistance control':'Automatic control: Not connected'}</span><span>{selectedEquipment.device==='Peloton'?'Peloton BASELINE calibration':selectedEquipment.device==='Manual only'?'Bike-specific calibration: Unavailable':'Smart control adapter: Planned'}</span><span>Live bike telemetry: Not connected</span><span>Connection: {connectionChoices.find(choice=>choice.id===connectionMethod)?.label}</span></div>}</>}
           {step === 4 && <><h2>Choose your role in the peloton</h2><div className="archetype-grid">{archetypes.map((archetype) => <button type="button" className={rider.archetype === archetype ? 'selected' : ''} onClick={() => patch({ archetype })} key={archetype}><strong>{archetype}</strong><span>{archetype === 'GC Contender' ? 'Climb, recover, and protect time across the whole race.' : archetype === 'Sprinter' ? 'Survive the road, then detonate in the final meters.' : archetype === 'Climber' ? 'Make steep roads your hunting ground.' : archetype === 'Puncheur' ? 'Attack short climbs and chaotic finales.' : archetype === 'Time Trial Specialist' ? 'Turn pacing and aerodynamics into seconds gained.' : archetype === 'Domestique' ? 'Serve the team and earn leadership through execution.' : 'Adapt to terrain and seize the day’s opportunity.'}</span></button>)}</div></>}
           {step === 5 && <div className="welcome-panel"><p className="eyebrow">JEAN MOREAU • DIRECTEUR SPORTIF</p><blockquote>“Welcome to Équipe Loriot, {rider.name.split(' ')[0]}. You are Rider #{numberText}. We will train at your level, race with purpose, and ask for a little more when the road allows.”</blockquote><div className="rider-summary"><span>{rider.archetype}</span><span>{rider.experience}</span><span>{rider.ftpKnown ? `${ftpText} W FTP` : 'FTP assessment pending'}</span><span>{rider.seasonGoal}</span></div></div>}
         </div>

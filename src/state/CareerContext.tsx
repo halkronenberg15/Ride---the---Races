@@ -71,7 +71,7 @@ export function CareerProvider({ children }: { children: React.ReactNode }) {
       setCareer((current) => ({ ...current, rider: { ...current.rider, ...rider } }))
     },
     completeOnboarding(rider) {
-      setCareer((current) => ({ ...current, schemaVersion:3, onboardingComplete: true, rider, equipment:equipmentForDevices(rider.devices) }))
+      setCareer((current) => ({ ...current, schemaVersion:3, onboardingComplete: true, rider, equipment:equipmentForDevices(rider.devices,rider.connectionMethod) }))
     },
     restartOnboarding() {
       setCareer((current) => ({ ...current, onboardingComplete: false }))
