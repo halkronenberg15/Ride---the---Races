@@ -1,4 +1,8 @@
 :root {
+  --safe-top: max(env(safe-area-inset-top, 0px), 12px);
+  --safe-right: max(env(safe-area-inset-right, 0px), 10px);
+  --safe-bottom: max(env(safe-area-inset-bottom, 0px), 10px);
+  --safe-left: max(env(safe-area-inset-left, 0px), 10px);
   --text: #6b6375;
   --text-h: #08060d;
   --bg: #fff;
@@ -60,10 +64,15 @@
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }
 
 body {
   margin: 0;
+  min-height: 100svh;
+  overflow-x: hidden;
+  background: var(--bg);
 }
 
 h1,

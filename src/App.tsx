@@ -101,7 +101,7 @@ function RideTheRacesApp() {
 
       {screen === 'season' && getSeason(selectedSeason) && <SeasonCalendarScreen season={getSeason(selectedSeason)!} currentRace={career.season.currentRace} onBack={() => setScreen('teamBus')} onOpenRace={(raceId) => { setSelectedRace(raceId); setScreen('race') }} />}
       {screen === 'race' && <RaceOverviewScreen library={selectedRace} actionable={selectedRace==='vuelta-2026'?vueltaActionable:tourActionable} onBack={() => setScreen('season')} onOpenStage={(stage)=>{setSelectedStageNumber(stage);setScreen('stageDetail')}} />}
-      {screen === 'stageDetail' && <StageDetailScreen library={selectedRace} stageNumber={selectedStageNumber} onBack={()=>setScreen('race')} onBriefing={()=>{selectRaceStage(selectedRace==='vuelta-2026'?'vuelta':'tour',selectedStageNumber);setScreen('tactics')}} />}
+      {screen === 'stageDetail' && <StageDetailScreen library={selectedRace} stageNumber={selectedStageNumber} durationSelection={ride?.stageNumber===selectedStageNumber?{mode:ride.durationMode,customMinutes:ride.customDurationMinutes,targetMinutes:ride.targetDurationMinutes}:undefined} onBack={()=>setScreen('race')} onBriefing={()=>{selectRaceStage(selectedRace==='vuelta-2026'?'vuelta':'tour',selectedStageNumber);setScreen('tactics')}} />}
       {screen === 'training' && <RaceLibraryScreen library="training" selectedStageNumber={tourActionable} onSelectStage={()=>{}} onSelectWorkout={setSelectedWorkout} onBack={() => setScreen('teamBus')} onContinue={() => setScreen('tactics')} onOpenRestDay={() => setScreen('restDay')} />}
       {screen === 'roster' && <TeamRosterScreen onBack={() => setScreen('teamBus')} />}
 

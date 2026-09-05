@@ -519,7 +519,7 @@ function RideScreen({
         .ride-cockpit {
           max-width: 1000px;
           margin: 0 auto;
-          padding: calc(18px + env(safe-area-inset-top, 0px)) 18px calc(56px + env(safe-area-inset-bottom, 0px));
+          padding: 18px 18px calc(56px + var(--safe-bottom));
           position: relative;
         }
 
@@ -541,7 +541,7 @@ function RideScreen({
 
         .master-stage-profile {
           position: sticky;
-          top: calc(8px + env(safe-area-inset-top, 0px));
+          top: var(--safe-top);
           z-index: 30;
           background: rgba(13,13,13,.96);
           backdrop-filter: blur(16px);
@@ -817,7 +817,8 @@ function RideScreen({
 
         @media (max-width: 700px) {
           .ride-cockpit {
-            padding: 10px 10px 28px;
+            padding: var(--safe-top) 10px calc(28px + var(--safe-bottom));
+            scroll-padding-top: var(--safe-top);
           }
 
           .ride-stage-header {
