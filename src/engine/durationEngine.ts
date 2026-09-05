@@ -1,4 +1,5 @@
 import type { RideSegment } from '../data/raceStages.ts'
+import { segmentPurposes } from './raceLifecycle.ts'
 
 export const DURATION_MODES = ['QUICK', 'STANDARD', 'EXTENDED', 'EPIC', 'CUSTOM', 'RECOMMENDED'] as const
 export type DurationMode = typeof DURATION_MODES[number]
@@ -52,20 +53,22 @@ export function courseDurationOptions(stage:Parameters<typeof stageDurationPlan>
 
 /** Builds a weighted time map; route kilometres and segment order are copied unchanged. */
 export function createTimeCompressionMap(segments: RideSegment[], selection: DurationSelection): TimeCompressionMap {
-  const original = segments.reduce((sum, segment) => sum + segment.sec, 0)
+  const purposes=segmentPurposes(segments)
+  const official=segments.filter((_,index)=>purposes[index]!=='post-finish-cooldown')
+  const original = official.reduce((sum, segment) => sum + segment.sec, 0)
   const requested = selection.targetMinutes ? selection.targetMinutes*60 : selection.mode === 'CUSTOM' ? (selection.customMinutes ?? original / 60) * 60
     : selection.mode === 'RECOMMENDED' ? (selection.recommendedMinutes ?? original / 60) * 60
     : original * defaultFactor[selection.mode]
-  const weights = segments.map(segment => decisive(segment) ? .6 : important(segment) ? .85 : 1.3)
+  const weights = segments.map((segment,index) => purposes[index]==='kilometre-zero'||purposes[index]==='post-finish-cooldown'?0:decisive(segment) ? .6 : important(segment) ? .85 : 1.3)
   const delta = requested - original
   const capacity = segments.reduce((sum, segment, index) => sum + segment.sec * weights[index], 0)
   const sections = segments.map((segment, index) => {
     const preservation = decisive(segment) ? 'decisive' : important(segment) ? 'important' : 'transition'
-    const simulatedSeconds = Math.max(20, Math.round(segment.sec + delta * segment.sec * weights[index] / capacity))
+    const simulatedSeconds = purposes[index]==='post-finish-cooldown'?0:purposes[index]==='kilometre-zero'?Math.min(45,Math.max(30,segment.sec)):Math.max(20, Math.round(segment.sec + delta * segment.sec * weights[index] / capacity))
     return { segmentIndex: index, originalSeconds: segment.sec, simulatedSeconds, preservation } satisfies CompressionSection
   })
   let remainder=Math.round(requested)-sections.reduce((sum,section)=>sum+section.simulatedSeconds,0)
-  for(const section of [...sections].sort((a,b)=>b.preservation.localeCompare(a.preservation))){
+  for(const section of [...sections].filter(section=>weights[section.segmentIndex]>0).sort((a,b)=>b.preservation.localeCompare(a.preservation))){
     if(!remainder)break
     const adjustment=remainder<0?Math.max(remainder,20-section.simulatedSeconds):remainder
     section.simulatedSeconds+=adjustment; remainder-=adjustment

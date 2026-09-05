@@ -8,6 +8,8 @@ import { resolvePrescriptionAtState, type PrescriptionState } from './prescripti
 import { markerPosition, resolveOfficialCourseMarkers, type OfficialCourseMarker } from '../data/courseMarkers.ts'
 import type { LivePrescription } from './terrainModifier.ts'
 import { applyTerrainModifier } from './terrainModifier.ts'
+import { bikeProfileForEquipment, PELOTON_BASELINE_EQUIPMENT, PELOTON_MANUAL_PROFILE, type CadencePreferences, type EquipmentInstance } from './manualBike.ts'
+import { rolloutProgress, segmentPurposes } from './raceLifecycle.ts'
 
 export type RaceMarkerType = 'kilometre-zero' | 'sprint' | 'kom' | 'time-check' | 'finish'
 export const COURSE_MARKER_HEIGHT = 28
@@ -41,6 +43,7 @@ export type ActionTarget = {
   power: string
   cadence: string
   resistance: string
+  openingResistance: number|null
   at: number
   remaining?: number
   gradient?: number
@@ -77,7 +80,7 @@ export function markerLabelOffset(position:number, nearbyPositions:number[]=[]){
   const collisionIndex=nearbyPositions.filter(value=>value<position&&position-value<.055).length
   return { translateX:edgeOffset, translateY:collisionIndex%2?-11:0 }
 }
-export function createRoadModel(stageNumber: number, segments: RideSegment[], distanceKm: number, identity?:RaceIdentity, explicitProfile?:Array<string|{distanceKm:number;elevationM:number}>, officialCourseMarkers?:OfficialCourseMarker[], raceName=identity?.shortName??'Professional race', riderFtp=206): RoadModel {
+export function createRoadModel(stageNumber: number, segments: RideSegment[], distanceKm: number, identity?:RaceIdentity, explicitProfile?:Array<string|{distanceKm:number;elevationM:number}>, officialCourseMarkers?:OfficialCourseMarker[], raceName=identity?.shortName??'Professional race', riderFtp=150,equipment:EquipmentInstance=PELOTON_BASELINE_EQUIPMENT,cadencePreferences?:CadencePreferences): RoadModel {
   const timeline = createStageTimeline(segments, distanceKm)
   const sectionGradients = segments.map((segment, index) => isClimb(segment)
     ? buildGradientSections(`${stageNumber}-${index}-${segment.name}-${segment.type}`, segment.sec, segment.zone)
@@ -165,17 +168,19 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
     const target=Math.min(distanceKm,Math.max(0,courseDistance))
     if(target>=distanceKm)return timeline.duration
     for(let index=0;index<segments.length;index+=1){
-      const start=Math.min(distanceKm,Math.max(0,segments[index].routeKm))
-      const end=Math.min(distanceKm,Math.max(start,segments[index+1]?.routeKm??distanceKm))
+      const start=timeline.snapshot(timeline.segmentStarts[index]).sectionStartCourseDistance
+      const end=timeline.snapshot(timeline.segmentStarts[index]).sectionEndCourseDistance
       if(target<=end&&end>start)return timeline.segmentStarts[index]+((target-start)/(end-start))*segments[index].sec
     }
     return timeline.duration
   }
   const markerType = (type:OfficialCourseMarker['type']):RaceMarkerType => type==='km-zero'||type==='start'?'kilometre-zero':type==='tt-check'?'time-check':type==='bonus'?'sprint':type
   const markerColor = (type:RaceMarkerType) => type==='kilometre-zero'?'#ffd400':type==='sprint'?identity?.pointsColor??'#38a852':type==='kom'?identity?.komColor??'#ef3340':type==='time-check'?identity?.timeCheckColor??'#55dff7':identity?.finishColor??'#ffffff'
+  const kilometreZeroIndex=segmentPurposes(segments).indexOf('kilometre-zero')
   const markers:RaceMarker[]=resolveOfficialCourseMarkers(officialCourseMarkers,{race:raceName,stageNumber,officialDistanceKm:distanceKm}).map(marker=>{
     const position=markerPosition(marker,distanceKm)
-    return {key:marker.id,type:markerType(marker.type),label:marker.label,position,at:elapsedAtCourseDistance(marker.routeKm),...markerGeometry(profileYAt(position)),color:markerColor(markerType(marker.type))}
+    const type=markerType(marker.type)
+    return {key:marker.id,type,label:marker.label,position,at:type==='kilometre-zero'&&kilometreZeroIndex>=0?timeline.segmentStarts[kilometreZeroIndex]:elapsedAtCourseDistance(marker.routeKm),...markerGeometry(profileYAt(position)),color:markerColor(type)}
   })
 
   return {
@@ -192,8 +197,8 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
       const current = prescriptions.currentPrescription
       const next = prescriptions.nextPrescription
       return {
-        current: { name: snapshot.segment.name, type: 'section' as const, ...current, at: timeline.segmentStarts[snapshot.segmentIndex], remaining: prescriptions.currentRemaining },
-        next: next ? { name: segments[snapshot.segmentIndex + 1].name, type: 'section' as const, ...next, at: timeline.segmentStarts[snapshot.segmentIndex + 1], remaining: prescriptions.nextPrescriptionDuration ?? 0 } : null,
+        current: { name: snapshot.segment.name, type: 'section' as const, ...current, openingResistance:this.roadSnapshot(timeline.segmentStarts[snapshot.segmentIndex]+.001).livePrescription.manualTarget.resolvedExactResistance, at: timeline.segmentStarts[snapshot.segmentIndex], remaining: prescriptions.currentRemaining },
+        next: next ? { name: segments[snapshot.segmentIndex + 1].name, type: 'section' as const, ...next, openingResistance:this.roadSnapshot(timeline.segmentStarts[snapshot.segmentIndex+1]+.001).livePrescription.manualTarget.resolvedExactResistance, at: timeline.segmentStarts[snapshot.segmentIndex + 1], remaining: prescriptions.nextPrescriptionDuration ?? 0 } : null,
         timeUntilNext: prescriptions.timeUntilNextPrescription,
       }
     },
@@ -203,7 +208,8 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
       const authoredGradientSections = sectionGradients[base.segmentIndex]
       const sprintPhases = sectionSprints[base.segmentIndex]
       const sprintPhase = sprintSnapshot(sprintPhases, base.elapsedInSegment)
-      const geographicClimb=officialProfile?canonicalClimbs.find(climb=>base.courseDistance>=climb.start-1e-9&&base.courseDistance<=climb.summit+1e-9):undefined
+      const preRace=base.lifecycle==='NEUTRAL_ROLLOUT'||base.lifecycle==='KILOMETRE_ZERO'
+      const geographicClimb=preRace?undefined:officialProfile?canonicalClimbs.find(climb=>base.courseDistance>=climb.start-1e-9&&base.courseDistance<=climb.summit+1e-9):undefined
       const priorIndex=base.segmentIndex-1
       const atPriorSummit=!officialProfile&&priorIndex>=0&&isClimb(segments[priorIndex])&&Math.abs(base.elapsed-timeline.segmentStarts[base.segmentIndex])<1e-9
       const climbIndex=officialProfile?-1:atPriorSummit?priorIndex:(isClimb(base.segment)?base.segmentIndex:-1)
@@ -216,7 +222,7 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
       const geographicClimbProgress=climbActive&&summitDistance!>climbStartDistance!
         ? Math.min(1,Math.max(0,(base.courseDistance-climbStartDistance!)/(summitDistance!-climbStartDistance!))):0
       const gradientIndex=gradientSectionIndex(gradientSections,officialProfile?geographicClimbProgress:base.segmentProgress)
-      let gradient=geographicClimb&&gradientSections.length?gradientSections[gradientIndex].gradient:officialProfile?profileBucketGradientAt(base.courseDistance)
+      let gradient=preRace?0:geographicClimb&&gradientSections.length?gradientSections[gradientIndex].gradient:officialProfile?profileBucketGradientAt(base.courseDistance)
         :gradientSections[gradientIndex]?.gradient??(/descent/i.test(text(base.segment))?-3.2:0)
       const distanceToSummit=summitDistance===null?0:Math.max(0,summitDistance-base.courseDistance)
       const climbProgress=geographicClimbProgress
@@ -227,9 +233,15 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
       if(atSummit&&gradientSections.length)gradient=gradientSections.at(-1)!.gradient
       const nextGradient=climbActive&&!atSummit
         ? gradientSections.slice(gradientIndex+1).find(section=>section.gradient>0)?.gradient??null:null
-      const prescription=resolvePrescriptionAtState(segments,timeline.segmentStarts,elapsedSeconds).currentPrescription
+      let prescription=resolvePrescriptionAtState(segments,timeline.segmentStarts,elapsedSeconds).currentPrescription
+      if(base.lifecycle==='NEUTRAL_ROLLOUT'){
+        const rollout=rolloutProgress(base.elapsedInSegment,base.segment.sec),max=Math.min(72,rollout.intensityPercent+5)
+        prescription={...prescription,zone:rollout.phase==='OPENING'?'Z1':'Z1–Z2',ftpPercent:{min:rollout.intensityPercent,max},power:`${Math.round(riderFtp*rollout.intensityPercent/100)}–${Math.round(riderFtp*max/100)} W`}
+      }
+      if(base.lifecycle==='KILOMETRE_ZERO')prescription={...prescription,zone:'Z2',ftpPercent:{min:60,max:72},power:`${Math.round(riderFtp*.6)}–${Math.round(riderFtp*.72)} W`}
       const terrain=gradient<0?'descent':gradient>2?'climb':/rolling/i.test(text(base.segment))?'rolling':'flat'
-      const livePrescription=applyTerrainModifier(prescription,gradient,terrain,riderFtp)
+      const bikeProfile=bikeProfileForEquipment(equipment)??PELOTON_MANUAL_PROFILE
+      const livePrescription=applyTerrainModifier(prescription,gradient,terrain,riderFtp,bikeProfile,undefined,equipment,cadencePreferences)
       return {
         ...base,
         roadPosition: base.courseProgress,

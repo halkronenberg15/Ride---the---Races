@@ -2,7 +2,8 @@ import type { RideSegment } from '../data/raceStages'
 import type { RaceStrategy } from '../types/tactics'
 import { createPrescription, ftpIntensity } from './prescription.ts'
 
-const BASELINE_FTP = 206
+/** Legacy absolute-watt stages declare this authoring reference; it is not a rider default. */
+export const AUTHORED_REFERENCE_FTP = 206
 
 type NumberRange = { min: number; max: number; prefix?: string; suffix: string }
 
@@ -75,7 +76,7 @@ export function adaptSegment(
   strategy: RaceStrategy,
 ): RideSegment {
   const profile = strategyProfiles[strategy]
-  const riderScale = Math.max(0.45, Math.min(2.5, ftp / BASELINE_FTP))
+  const riderScale = Math.max(0.45, Math.min(2.5, ftp / AUTHORED_REFERENCE_FTP))
   const recovery = isRecovery(segment)
   const powerStrategy = recovery
     ? 1 + (profile.powerMultiplier - 1) * 0.35

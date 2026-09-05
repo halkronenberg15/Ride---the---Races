@@ -1,70 +1,13 @@
 /* eslint-disable react-refresh/only-export-components -- Provider and its typed hook form one public state module. */
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import type { CareerState, HealthEntry, MeasurementSystem, RideMetricEntry } from '../types/career'
+import { equipmentForDevices, initialCareer, migrateCareer } from './careerPersistence.ts'
+
+export { initialCareer, migrateCareer } from './careerPersistence.ts'
 
 const STORAGE_KEY = 'ride-the-races-v2-career'
 
-export const initialCareer: CareerState = {
-  onboardingComplete: false,
-  rider: {
-    name: 'Hal Kronenberg',
-    number: 15,
-    nationality: 'USA',
-    team: 'Équipe Loriot',
-    archetype: 'GC Contender',
-    ftp: 206,
-    ftpKnown: true,
-    experience: 'Recreational',
-    seasonGoal: 'Improve fitness',
-    devices: ['Peloton'],
-  },
-  season: {
-    year: 2026,
-    currentRace: 'Tour de France',
-    currentStage: 1,
-    completedStages: [1, 2],
-  },
-  races: {
-    tour: { currentStage: 1, completedStages: [1, 2] },
-    vuelta: { currentStage: 1, completedStages: [] },
-  },
-  trainingHistory: [],
-  health: {
-    date: new Date().toISOString().slice(0, 10),
-    sleepHours: 7.5,
-    recoveryScore: 82,
-    restingHeartRate: 58,
-    hrv: 52,
-    fatigue: 24,
-    mood: 'Good',
-  },
-  rideHistory: [],
-  settings: {
-    jeanVoiceEnabled: true,
-    measurementSystem: 'imperial',
-    jeanVoiceVolume: 1,
-    theme: 'dark',
-    reducedMotion: false,
-    dailyReminders: false,
-    preferredRideDurationMode: 'RECOMMENDED',
-  },
-}
-
-export function migrateCareer(saved: Partial<CareerState>): CareerState {
-  const legacyTour = { currentStage: saved.season?.currentStage ?? initialCareer.races.tour.currentStage, completedStages: saved.season?.completedStages ?? initialCareer.races.tour.completedStages }
-  return {
-    ...initialCareer,
-    ...saved,
-    onboardingComplete: saved.onboardingComplete ?? true,
-    rider: { ...initialCareer.rider, ...saved.rider },
-    season: { ...initialCareer.season, ...saved.season },
-    races: { tour: { ...legacyTour, ...saved.races?.tour }, vuelta: { ...initialCareer.races.vuelta, ...saved.races?.vuelta } },
-    trainingHistory: saved.trainingHistory ?? [],
-    health: { ...initialCareer.health, ...saved.health },
-    rideHistory: saved.rideHistory ?? [],
-    settings: { ...initialCareer.settings, ...saved.settings },
-  }
-}
+// Versioned defaults and migration are DOM-free for first-run regression coverage.
 
 type CareerContextValue = {
   career: CareerState
@@ -128,7 +71,7 @@ export function CareerProvider({ children }: { children: React.ReactNode }) {
       setCareer((current) => ({ ...current, rider: { ...current.rider, ...rider } }))
     },
     completeOnboarding(rider) {
-      setCareer((current) => ({ ...current, onboardingComplete: true, rider }))
+      setCareer((current) => ({ ...current, schemaVersion:3, onboardingComplete: true, rider, equipment:equipmentForDevices(rider.devices,rider.connectionMethod) }))
     },
     restartOnboarding() {
       setCareer((current) => ({ ...current, onboardingComplete: false }))

@@ -36,7 +36,7 @@ test('rider starts and ends with authoritative stage progress and changes sector
     const snapshot = timeline.snapshot(timeline.segmentStarts[index])
     assert.equal(snapshot.segmentIndex, index)
     if (index === stage.segments.length - 1 && stage.segments[index].routeKm >= stage.distanceKm) assert.ok(snapshot.riderPosition < 1)
-    else assert.equal(snapshot.riderPosition, stage.segments[index].routeKm / stage.distanceKm)
+    else assert.equal(snapshot.riderPosition, snapshot.sectionStartCourseDistance / stage.distanceKm)
   })
   const finish = timeline.snapshot(timeline.duration + 100)
   assert.equal(finish.riderPosition, 1)

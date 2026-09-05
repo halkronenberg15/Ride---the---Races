@@ -33,6 +33,7 @@ export function zoneForFtpRange(min: number, max: number) {
   return low === high ? low : `${low}–${high}`
 }
 
+const AUTHORED_REFERENCE_FTP=206
 function numericRange(value: string) {
   const match = value.replace(/[–—]/g, '-').match(/(\d+)\s*(?:-|to)\s*(\d+)/i)
   return match ? { min: Number(match[1]), max: Number(match[2]) } : null
@@ -81,9 +82,9 @@ export function ftpIntensity(segment: RideSegment) {
   const fromPercent = segment.power.match(/(?:from|to)\s*(\d+)%\s*FTP/i)
   if (fromPercent) return { min: Number(fromPercent[1]), max: Math.max(120, Number(fromPercent[1])) }
   const watts = numericRange(segment.power)
-  if (watts) return { min: watts.min / 206 * 100, max: watts.max / 206 * 100 }
+  if (watts) return { min: watts.min / AUTHORED_REFERENCE_FTP * 100, max: watts.max / AUTHORED_REFERENCE_FTP * 100 }
   const underWatts = segment.power.match(/Under\s+(\d+)\s*W/i)
-  if (underWatts) return { min: 45, max: Number(underWatts[1]) / 206 * 100 }
+  if (underWatts) return { min: 45, max: Number(underWatts[1]) / AUTHORED_REFERENCE_FTP * 100 }
   return null
 }
 

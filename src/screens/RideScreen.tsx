@@ -16,6 +16,8 @@ import { CLICK_IN_CUE, PRE_RIDE_COUNTDOWN } from '../engine/preRide'
 import { raceIdentities } from '../data/raceLibrary'
 import { isIndividualTimeTrial, officialSegments, ttStartSnapshot } from '../engine/startArchitecture'
 import { applyDurationSelection, durationSelectionForStage, type DurationSelection } from '../engine/durationEngine'
+import { GENERIC_MANUAL_EQUIPMENT, type EquipmentInstance } from '../engine/manualBike'
+import { competitiveEventsEligible, rolloutProgress } from '../engine/raceLifecycle'
 
 type RideScreenProps = {
   stageNumber: number
@@ -62,8 +64,9 @@ function RideScreen({
   const timedSegments=useMemo(()=>stage.isTraining?adaptedSegments:applyDurationSelection(adaptedSegments,resolvedDuration).segments,[stage.isTraining,adaptedSegments,resolvedDuration])
   const isTimeTrial = useMemo(() => isIndividualTimeTrial(timedSegments), [timedSegments])
   const segments = useMemo(() => officialSegments(timedSegments), [timedSegments])
+  const equipment=(career.equipment.instances.find(item=>item.id===career.equipment.activeEquipmentId)??GENERIC_MANUAL_EQUIPMENT) as EquipmentInstance
   const activeRide = useActiveRide()
-  const timeline = useMemo(() => createRoadModel(stage.number, segments, stage.distanceKm, raceIdentities[library as keyof typeof raceIdentities], stage.profilePoints, stage.officialCourseMarkers, stage.raceId, career.rider.ftp), [segments, stage, library, career.rider.ftp])
+  const timeline = useMemo(() => createRoadModel(stage.number, segments, stage.distanceKm, raceIdentities[library as keyof typeof raceIdentities], stage.profilePoints, stage.officialCourseMarkers, stage.raceId, career.rider.ftp||150,equipment,career.rider.cadencePreferences), [segments, stage, library, career.rider.ftp,equipment,career.rider.cadencePreferences])
   const profilePoints = timeline.profilePoints
   const rideElapsed = activeRide.ride?.stageNumber === stageNumber ? activeRide.elapsed : 0
   const ttStart = useMemo(() => ttStartSnapshot(timedSegments, rideElapsed), [timedSegments, rideElapsed])
@@ -77,7 +80,7 @@ function RideScreen({
   const [showSegmentCard, setShowSegmentCard] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const [wakeLockStatus, setWakeLockStatus] = useState<
-    'inactive' | 'active' | 'unsupported' | 'blocked'
+    'inactive' | 'requesting' | 'active' | 'unsupported' | 'blocked' | 'released'
   >('inactive')
 
   const lastSpokenCue = useRef('')
@@ -105,9 +108,9 @@ function RideScreen({
   const openingStatus = isTimeTrial && !ttStart.official
     ? ttStart.state === 'warm-up' ? 'WARM UP' : ttStart.state === 'start-gate' ? 'START GATE' : ttStart.state.replace('countdown-', '')
     : isTimeTrial && ttStart.state === 'go' ? 'GO'
-    : currentSegment.type.toLowerCase().includes('neutral')
-    ? 'NEUTRALIZED'
-    : currentSegment.name === 'Kilometre Zero'
+    : engine.lifecycle==='NEUTRAL_ROLLOUT'
+    ? `NEUTRALIZED · ${rolloutProgress(engine.elapsedInSegment,currentSegment.sec).phase}`
+    : engine.lifecycle==='KILOMETRE_ZERO'
       ? 'RACE START'
       : currentSegment.type.toLowerCase().includes('official time trial start')
         ? 'START RAMP'
@@ -120,8 +123,7 @@ function RideScreen({
   const displayCadence = activePrescription.cadence
   const displayResistance = activePrescription.resistance
   const displayZone = activePrescription.zone
-  const kmZeroAt = timeline.markers.find((marker) => marker.type === 'kilometre-zero')?.at ?? 0
-  const afterKmZero = elapsedSeconds > kmZeroAt
+  const afterKmZero = engine.lifecycle==='OFFICIAL_RACING'
 
   const progress = engine.courseProgress * 100
 
@@ -228,6 +230,7 @@ function RideScreen({
     }
 
     try {
+      setWakeLockStatus('requesting')
       const sentinel =
         await navigatorWithWakeLock.wakeLock.request(
           'screen',
@@ -240,7 +243,7 @@ function RideScreen({
         wakeLockRef.current = null
 
         if (isRunningRef.current) {
-          setWakeLockStatus('inactive')
+          setWakeLockStatus('released')
         }
       })
     } catch {
@@ -265,6 +268,8 @@ function RideScreen({
 
   useEffect(() => {
     isRunningRef.current = isRunning
+    if(isRunning&&document.visibilityState==='visible')queueMicrotask(()=>void requestWakeLock())
+    else if(!isRunning)queueMicrotask(()=>void releaseWakeLock())
   }, [isRunning])
 
   useEffect(() => {
@@ -323,7 +328,7 @@ function RideScreen({
 
   useEffect(() => {
     const name = sprintPhase?.name ?? null
-    if (!isRunning || !name || previousSprintPhase.current === name) return
+    if (!isRunning || !competitiveEventsEligible(engine.lifecycle) || !name || previousSprintPhase.current === name) return
     previousSprintPhase.current = name
     speak(jeanCue('sprint', undefined, [radioText], engine.segmentIndex + sprintPhase!.index, { afterKmZero, running: true, sprintPhase: name, critical: name === 'SPRINT' }))
   }, [sprintPhase?.name, isRunning])
@@ -345,6 +350,7 @@ function RideScreen({
     const previousDistance = timeline.roadSnapshot(previous).courseDistance
     const crossed = jeanCourseEventsCrossed(coachingTimeline, previousDistance, engine.courseDistance, previous, elapsedSeconds)
       .filter((event) => event.type !== 'sector-entry' && !spokenTimelineEvents.current.has(event.key))
+      .filter(event=>competitiveEventsEligible(engine.lifecycle)||['kilometre-zero','kilometre-zero-warning','finish'].includes(event.type))
     // Navigation/resume can cross historical cues. Only a fresh road event is eligible.
     const event = crossed.filter((item) => elapsedSeconds - item.at <= 5).at(-1)
     if (!event) return
@@ -417,7 +423,7 @@ function RideScreen({
         isRunningRef.current
       ) {
         void requestWakeLock()
-      }
+      } else if(document.visibilityState!=='visible')void releaseWakeLock()
     }
 
     document.addEventListener(
@@ -465,6 +471,7 @@ function RideScreen({
         window.clearInterval(timer)
         setCountdown(null)
         activeRide.resume()
+        void requestWakeLock()
         showCurrentSegmentCard()
         window.setTimeout(() => speak(`Stage ${stage.number}, ${stage.title}, ${stage.route}. We ride ${strategy.toLowerCase()} today. Team objective: ${stage.objective} Your mission is to execute the plan and finish strong.`), 1200)
       } else setCountdown(value)
@@ -504,11 +511,15 @@ function RideScreen({
   const wakeLockLabel =
     wakeLockStatus === 'active'
       ? 'Screen awake'
+      : wakeLockStatus === 'requesting'
+        ? 'Requesting screen wake lock'
       : wakeLockStatus === 'unsupported'
-        ? 'Use Auto-Lock: Never'
+        ? 'Wake lock unsupported · Keep Auto-Lock disabled'
         : wakeLockStatus === 'blocked'
-          ? 'Wake lock unavailable'
-          : 'Screen sleep allowed'
+          ? 'Wake lock unavailable · Keep Auto-Lock disabled'
+          : wakeLockStatus === 'released'
+            ? 'Wake lock released · Keep Auto-Lock disabled'
+            : 'Screen sleep allowed · Keep Auto-Lock disabled'
 
   return (
     <section className="ride-screen ride-cockpit">
@@ -516,7 +527,7 @@ function RideScreen({
         .ride-cockpit {
           max-width: 1000px;
           margin: 0 auto;
-          padding: 18px 18px 56px;
+          padding: 18px 18px calc(56px + var(--safe-bottom));
           position: relative;
         }
 
@@ -526,6 +537,9 @@ function RideScreen({
           align-items: center;
           gap: 10px;
         }
+
+        .leave-cockpit { min-width:44px; min-height:44px; }
+        .cockpit-badges { display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
 
         .live-profile-card {
           margin-top: 10px;
@@ -538,7 +552,7 @@ function RideScreen({
 
         .master-stage-profile {
           position: sticky;
-          top: 8px;
+          top: var(--safe-top);
           z-index: 30;
           background: rgba(13,13,13,.96);
           backdrop-filter: blur(16px);
@@ -814,12 +828,17 @@ function RideScreen({
 
         @media (max-width: 700px) {
           .ride-cockpit {
-            padding: 10px 10px 28px;
+            padding: var(--safe-top) 10px calc(28px + var(--safe-bottom));
+            scroll-padding-top: var(--safe-top);
           }
 
           .ride-stage-header {
             margin: 10px 0 8px !important;
           }
+
+          .ride-topbar { min-height:44px; position:relative; z-index:2; }
+          .cockpit-header { display:grid; grid-template-columns:minmax(0,1fr); }
+          .cockpit-badges { justify-content:flex-start; width:100%; margin-top:8px; }
 
           .ride-stage-header h1 {
             font-size: 1.85rem !important;
@@ -981,8 +1000,8 @@ function RideScreen({
         </div>
       )}
 
-      <div className="ride-topbar">
-        <button type="button" onClick={handleBack}>
+      <div className="ride-topbar" aria-label="Cockpit navigation">
+        <button type="button" className="leave-cockpit" onClick={handleBack}>
           ← Leave cockpit
         </button>
 
@@ -1119,6 +1138,7 @@ function RideScreen({
           </div>
 
           <div className="cockpit-card">
+            <p className="eyebrow">SELECTED COURSE DURATION: {Math.round(stageDuration/60)} MIN · {engine.lifecycle.replaceAll('_',' ')}</p>
             <div className="cockpit-header">
               <div>
                 <p className="eyebrow">CURRENT SECTOR</p>
@@ -1128,7 +1148,7 @@ function RideScreen({
                 </h2>
               </div>
 
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <div className="cockpit-badges">
                 {openingStatus && (
                   <strong
                     style={{
@@ -1182,10 +1202,11 @@ function RideScreen({
                 </strong>
               </div>
             </div>
+            <small className="calibration-confidence">{activePrescription.manualTarget.calibrationConfidence} CALIBRATION · {activePrescription.manualTarget.feasibility}</small>
 
             <div className="cockpit-sections" aria-label="Current and next actionable target">
               <div className="cockpit-section current"><small>CURRENT</small><strong>{actions.current.type === 'sprint' ? '⚡ ' : ''}{actions.current.name}</strong><div className="action-meta">{actions.current.zone} · {formatTime(actions.current.remaining ?? 0)} remaining</div></div>
-              <div className="cockpit-section"><small>UP NEXT</small>{actions.next ? <><strong>{actions.next.type === 'sprint' ? '⚡ ' : ''}{actions.next.name}</strong><div className="action-meta">{actions.next.zone} · Starts in {formatTime(actions.timeUntilNext ?? 0)} · Duration {formatTime(actions.next.remaining ?? 0)}</div><div className="action-targets"><span>POWER {actions.next.power}</span><span>CAD {actions.next.cadence}</span><span>RES {actions.next.resistance}</span></div></> : <strong>Stage complete · no upcoming target</strong>}</div>
+              <div className="cockpit-section"><small>UP NEXT</small>{actions.next ? <><strong>{actions.next.type === 'sprint' ? '⚡ ' : ''}{actions.next.name}</strong><div className="action-meta">{actions.next.zone} · Starts in {formatTime(actions.timeUntilNext ?? 0)} · Duration {formatTime(actions.next.remaining ?? 0)}</div><div className="action-targets"><span>POWER {actions.next.power}</span><span>CAD {actions.next.cadence}</span><span>OPENING RESISTANCE {actions.next.openingResistance===null?'UNAVAILABLE':`${actions.next.openingResistance}%`}</span></div></> : <strong>Stage complete · no upcoming target</strong>}</div>
             </div>
 
             <div className="radio-strip">

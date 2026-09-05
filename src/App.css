@@ -528,26 +528,30 @@ footer {
 @media (max-width: 700px) {
   .app:has(.ride-cockpit) {
     width: 100%;
-    padding-top: 8px;
+    padding-top: 0;
   }
 }
 .text-button { background: transparent !important; border: 0 !important; color: #999 !important; padding: 5px !important; font-size: .75rem; }
 
-.onboarding-screen { min-height: 100vh; padding: 28px 18px; display: grid; place-items: center; background: radial-gradient(circle at top, #2a160a 0, #101010 42%); }
+.onboarding-screen { min-height: 100svh; padding: calc(var(--safe-top) + 16px) max(18px,var(--safe-right)) calc(var(--safe-bottom) + 18px) max(18px,var(--safe-left)); display: grid; place-items: center; align-content:start; overflow-x:hidden; background: radial-gradient(circle at top, #2a160a 0, #101010 42%); }
 .onboarding-shell { width: min(920px, 100%); }
 .onboarding-progress { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 20px; }
 .onboarding-progress span { height: 5px; border-radius: 999px; background: #383838; }
 .onboarding-progress span.active { background: #ff7a16; }
 .onboarding-header { margin-bottom: 18px; text-align: left; }
-.onboarding-header h1 { margin: 6px 0 8px; font-size: clamp(2.1rem, 6vw, 4rem); }
+.onboarding-header h1 { margin: 6px 0 8px; font-size: clamp(2.1rem, 6vw, 4rem); color:#fff; }
 .onboarding-header > p:last-child { max-width: 680px; color: #aaa; line-height: 1.55; }
 .onboarding-card { min-height: 410px; padding: clamp(22px, 5vw, 42px); border: 1px solid #303030; border-radius: 26px; background: rgba(22,22,22,.94); box-shadow: 0 28px 80px rgba(0,0,0,.35); text-align: left; }
-.onboarding-card h2 { margin: 0 0 22px; }
+.onboarding-card h2,.onboarding-card h3 { margin: 0 0 22px; color:#fff; }
 .wizard-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
 .wizard-grid label, .ftp-panel label { display: grid; gap: 8px; color: #ddd; font-weight: 700; }
 .wizard-grid input, .ftp-panel input { padding: 14px; border: 1px solid #444; border-radius: 12px; background: #0d0d0d; color: #fff; font: inherit; }
 .choice-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .choice-grid button, .archetype-grid button { min-height: 70px; padding: 16px; border: 1px solid #393939; border-radius: 15px; background: #202020; color: #eee; text-align: left; }
+.connection-card { display:grid; align-content:start; gap:7px; }
+.connection-card strong,.connection-card small,.connection-card span { display:block; }
+.connection-card .connection-status { width:max-content; padding:3px 7px; border-radius:999px; background:#263b2b; color:#bff4ca; font-size:.68rem; font-weight:900; letter-spacing:.06em; text-transform:uppercase; }
+.connection-card .connection-description { color:#b8b8be; line-height:1.4; }
 .choice-grid button.selected, .archetype-grid button.selected { border-color: #ff7a16; background: #3a1d0a; box-shadow: inset 0 0 0 1px #ff7a16; }
 .choice-grid.goals { grid-template-columns: repeat(2, 1fr); }
 .choice-grid.devices { grid-template-columns: repeat(4, 1fr); }
@@ -604,7 +608,7 @@ footer {
   position: fixed;
   z-index: 1000;
   top: 14px;
-  right: 14px;
+  right: max(14px, var(--safe-right));
   display: inline-flex;
   gap: 4px;
   padding: 4px;
@@ -624,8 +628,10 @@ footer {
   font-size: .75rem;
 }
 .global-unit-toggle button.active { background: #ff6a00; color: #fff; }
+body:has(.onboarding-screen) .global-unit-toggle + .onboarding-screen,
+body:has(.onboarding-screen) .onboarding-screen:has(~ .global-unit-toggle) { padding-top:calc(var(--safe-top) + 58px); }
 @media (max-width: 620px) {
-  .global-unit-toggle { top: 8px; right: 8px; }
+  .global-unit-toggle { top: calc(var(--safe-top) + 4px); right: var(--safe-right); }
   .global-unit-toggle button { padding: 6px 8px; font-size: .68rem; }
 }
 
@@ -809,6 +815,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 .alpha38-team-bus,
 .race-briefing-screen { width: 100%; max-width: 980px; margin: 0 auto; padding: 22px 16px 44px; }
+.race-briefing-screen { scroll-padding-top:var(--safe-top); }
 .compact-page-header { text-align: center; margin: 18px 0 20px; }
 .compact-page-header h1 { margin: 2px 0 6px; font-size: clamp(2.4rem, 10vw, 4.5rem); line-height: .96; }
 .compact-page-header p:last-child { margin: 0; color: rgba(255,255,255,.7); }
@@ -951,7 +958,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .calendar-date button.current-race { box-shadow: 0 0 0 2px #ff6a00; }
 .race-shell { margin-top: 20px; }
 @media (max-width: 520px) {
-  .app { width: min(100% - 20px, 1100px); padding-top: max(20px, env(safe-area-inset-top)); }
+  .app { width: min(100% - 20px, 1100px); padding-top: var(--safe-top); padding-bottom:var(--safe-bottom); scroll-padding-top:var(--safe-top); }
   .hq-topbar { flex-direction: column; }
   .rider-badge { width: 100%; text-align: left; }
   .month-calendar { border-radius: 16px; }

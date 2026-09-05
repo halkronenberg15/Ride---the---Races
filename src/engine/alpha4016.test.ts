@@ -11,10 +11,10 @@ import { createStageTimeline } from './stageEngine.ts'
 const source = { organization: 'Test organiser', reference: 'Official roadbook fixture' }
 const marker = (id:string,type:OfficialCourseMarker['type'],routeKm:number,verified=true):OfficialCourseMarker => ({ id, type, routeKm, label:type.toUpperCase(), verified, source })
 
-test('A: release package metadata is exactly Alpha 4.0.18', () => {
+test('A: release package metadata is exactly Alpha 4.0.19', () => {
   const packageJson = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8'))
   const lock = JSON.parse(readFileSync(new URL('../../package-lock.json', import.meta.url), 'utf8'))
-  assert.equal(packageJson.version, '4.0.18'); assert.equal(lock.version, '4.0.18'); assert.equal(lock.packages[''].version, '4.0.18')
+  assert.equal(packageJson.version, '4.0.19'); assert.equal(lock.version, '4.0.19'); assert.equal(lock.packages[''].version, '4.0.19')
 })
 
 test('B-E/Q: marker types, finite bounds, provenance and exact finish validate', () => {
