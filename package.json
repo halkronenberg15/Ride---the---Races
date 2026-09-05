@@ -1,7 +1,7 @@
 {
   "name": "ride---the---races",
   "private": true,
-  "version": "4.0.18",
+  "version": "4.0.19",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,6 +9,7 @@
     "test": "node --experimental-strip-types --test src/**/*.test.ts",
     "audit:stage4": "node --experimental-strip-types scripts/generate-stage4-audit.ts",
     "audit:manual-road-feel": "node --experimental-strip-types scripts/generate-stage6-manual-audit.ts",
+    "audit:alpha4019": "node --experimental-strip-types scripts/audit-alpha4019.ts",
     "lint": "eslint .",
     "preview": "vite preview"
   },

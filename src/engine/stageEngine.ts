@@ -1,8 +1,10 @@
 import type { RideSegment } from '../data/raceStages'
+import { lifecycleForSegment, segmentPurposes, type RaceLifecycleState } from './raceLifecycle.ts'
 
 export type StagePhase = 'ready' | 'racing' | 'climbing' | 'cooldown' | 'complete'
 
 export type StageSnapshot = {
+  lifecycle: RaceLifecycleState
   phase: StagePhase
   segment: RideSegment
   segmentIndex: number
@@ -52,19 +54,20 @@ export function createStageTimeline(segments: RideSegment[], routeDistanceKm?: n
 
   const segmentStarts: number[] = []
   let duration = 0
+  const purposes=segmentPurposes(segments)
   segments.forEach((segment) => {
     segmentStarts.push(duration)
     duration += segment.sec
   })
   const totalDistance = routeDistanceKm ?? Math.max(...segments.map((item) => item.routeKm), 1)
   const routeStarts = segments.map(segment => Math.min(totalDistance, Math.max(0, segment.routeKm)))
-  // Some legacy workouts authored a cooldown at the finish coordinate. Keep it
-  // official, but map it over the final road interval so 100% is reached only
-  // at its final instant rather than at its first instant.
-  const finalIndex = routeStarts.length - 1
-  if (finalIndex > 0 && routeStarts[finalIndex] >= totalDistance) {
-    routeStarts[finalIndex] = routeStarts[finalIndex - 1] + (totalDistance - routeStarts[finalIndex - 1]) / 2
-  }
+  const firstRacing=purposes.findIndex(purpose=>purpose==='racing')
+  const finalRacing=purposes.reduce((found,purpose,index)=>purpose==='racing'?index:found,-1)
+  purposes.forEach((purpose,index)=>{if(purpose==='neutral-rollout'||purpose==='kilometre-zero')routeStarts[index]=0})
+  if(firstRacing>=0)routeStarts[firstRacing]=0
+  if(finalRacing>=0&&finalRacing<segments.length-1)routeStarts[finalRacing+1]=totalDistance
+  const finalIndex=segments.length-1
+  if(finalIndex>0&&purposes[finalIndex]==='post-finish-cooldown'&&segments[finalIndex].sec>0)routeStarts[finalIndex]=routeStarts[finalIndex-1]+(totalDistance-routeStarts[finalIndex-1])/2
 
   return {
     duration,
@@ -93,6 +96,7 @@ export function createStageTimeline(segments: RideSegment[], routeDistanceKm?: n
       if (elapsedInSegment < 1 && isClimb(segment)) events.push('climb-entry')
       if (elapsedInSegment < 1 && segmentIndex > 0 && isClimb(segments[segmentIndex - 1])) events.push('summit-exit')
       if (complete) events.push('finish')
+      const lifecycle:RaceLifecycleState=complete?'FINISHED':lifecycleForSegment(purposes[segmentIndex])
       const phase: StagePhase = complete
         ? 'complete'
         : isCooldown(segment)
@@ -104,6 +108,7 @@ export function createStageTimeline(segments: RideSegment[], routeDistanceKm?: n
               : 'racing'
 
       return {
+        lifecycle,
         phase,
         segment,
         segmentIndex,
