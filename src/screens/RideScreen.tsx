@@ -80,7 +80,7 @@ function RideScreen({
   const [showSegmentCard, setShowSegmentCard] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const [wakeLockStatus, setWakeLockStatus] = useState<
-    'inactive' | 'active' | 'unsupported' | 'blocked'
+    'inactive' | 'requesting' | 'active' | 'unsupported' | 'blocked'
   >('inactive')
 
   const lastSpokenCue = useRef('')
@@ -230,6 +230,7 @@ function RideScreen({
     }
 
     try {
+      setWakeLockStatus('requesting')
       const sentinel =
         await navigatorWithWakeLock.wakeLock.request(
           'screen',
@@ -267,6 +268,8 @@ function RideScreen({
 
   useEffect(() => {
     isRunningRef.current = isRunning
+    if(isRunning&&document.visibilityState==='visible')void requestWakeLock()
+    else if(!isRunning)void releaseWakeLock()
   }, [isRunning])
 
   useEffect(() => {
@@ -420,7 +423,7 @@ function RideScreen({
         isRunningRef.current
       ) {
         void requestWakeLock()
-      }
+      } else if(document.visibilityState!=='visible')void releaseWakeLock()
     }
 
     document.addEventListener(
@@ -468,6 +471,7 @@ function RideScreen({
         window.clearInterval(timer)
         setCountdown(null)
         activeRide.resume()
+        void requestWakeLock()
         showCurrentSegmentCard()
         window.setTimeout(() => speak(`Stage ${stage.number}, ${stage.title}, ${stage.route}. We ride ${strategy.toLowerCase()} today. Team objective: ${stage.objective} Your mission is to execute the plan and finish strong.`), 1200)
       } else setCountdown(value)
@@ -507,8 +511,10 @@ function RideScreen({
   const wakeLockLabel =
     wakeLockStatus === 'active'
       ? 'Screen awake'
+      : wakeLockStatus === 'requesting'
+        ? 'Requesting screen wake lock'
       : wakeLockStatus === 'unsupported'
-        ? 'Use Auto-Lock: Never'
+        ? 'Wake lock unsupported · keep Auto-Lock off'
         : wakeLockStatus === 'blocked'
           ? 'Wake lock unavailable'
           : 'Screen sleep allowed'
@@ -529,6 +535,9 @@ function RideScreen({
           align-items: center;
           gap: 10px;
         }
+
+        .leave-cockpit { min-width:44px; min-height:44px; }
+        .cockpit-badges { display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
 
         .live-profile-card {
           margin-top: 10px;
@@ -825,6 +834,10 @@ function RideScreen({
             margin: 10px 0 8px !important;
           }
 
+          .ride-topbar { min-height:44px; position:relative; z-index:2; }
+          .cockpit-header { display:grid; grid-template-columns:minmax(0,1fr); }
+          .cockpit-badges { justify-content:flex-start; width:100%; margin-top:8px; }
+
           .ride-stage-header h1 {
             font-size: 1.85rem !important;
             line-height: 1.05;
@@ -985,8 +998,8 @@ function RideScreen({
         </div>
       )}
 
-      <div className="ride-topbar">
-        <button type="button" onClick={handleBack}>
+      <div className="ride-topbar" aria-label="Cockpit navigation">
+        <button type="button" className="leave-cockpit" onClick={handleBack}>
           ← Leave cockpit
         </button>
 
@@ -1133,7 +1146,7 @@ function RideScreen({
                 </h2>
               </div>
 
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <div className="cockpit-badges">
                 {openingStatus && (
                   <strong
                     style={{
