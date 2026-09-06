@@ -5,7 +5,7 @@ export const DURATION_MODES = ['QUICK', 'STANDARD', 'EXTENDED', 'EPIC', 'CUSTOM'
 export type DurationMode = typeof DURATION_MODES[number]
 export type DurationSelection = { mode: DurationMode; customMinutes?: number; recommendedMinutes?: number; targetMinutes?: number }
 export type CompressionSection = { segmentIndex: number; originalSeconds: number; simulatedSeconds: number; preservation: 'decisive' | 'important' | 'transition' }
-export type TimeCompressionMap = { mode: DurationMode; officialDurationSeconds: number; sections: CompressionSection[] }
+export type TimeCompressionMap = { mode: DurationMode; totalDurationSeconds: number; raceDurationSeconds:number; cooldownSeconds:number; officialDurationSeconds: number; sections: CompressionSection[] }
 export type PersistedDurationMode = Exclude<DurationMode, 'CUSTOM'>
 export type StageDurationPlan = {
   classification: 'short-tt'|'long-tt'|'flat'|'rolling'|'hilly'|'medium-mountain'|'major-mountain'|'queen'
@@ -14,6 +14,9 @@ export type StageDurationPlan = {
   minutes: Record<PersistedDurationMode, number>
 }
 export type CourseDurationOption={minutes:number;mode:PersistedDurationMode;recommended:boolean}
+
+/** Cooldown is part of the selected workout, normally five minutes. */
+export function cooldownAllocation(totalSeconds:number){return Math.round(Math.min(300,Math.max(60,totalSeconds*.2)))}
 
 const decisive = (segment: RideSegment) => /summit|attack|sprint|kom|final|time trial/i.test(`${segment.name} ${segment.type}`)
 const important = (segment: RideSegment) => /climb|mountain|threshold|breakaway|chase/i.test(`${segment.name} ${segment.type}`)
@@ -59,12 +62,14 @@ export function createTimeCompressionMap(segments: RideSegment[], selection: Dur
   const requested = selection.targetMinutes ? selection.targetMinutes*60 : selection.mode === 'CUSTOM' ? (selection.customMinutes ?? original / 60) * 60
     : selection.mode === 'RECOMMENDED' ? (selection.recommendedMinutes ?? original / 60) * 60
     : original * defaultFactor[selection.mode]
+  const cooldownSeconds=purposes.includes('post-finish-cooldown')?cooldownAllocation(requested):0
+  const raceDurationSeconds=requested-cooldownSeconds
   const weights = segments.map((segment,index) => purposes[index]==='kilometre-zero'||purposes[index]==='post-finish-cooldown'?0:decisive(segment) ? .6 : important(segment) ? .85 : 1.3)
-  const delta = requested - original
+  const delta = raceDurationSeconds - original
   const capacity = segments.reduce((sum, segment, index) => sum + segment.sec * weights[index], 0)
   const sections = segments.map((segment, index) => {
     const preservation = decisive(segment) ? 'decisive' : important(segment) ? 'important' : 'transition'
-    const simulatedSeconds = purposes[index]==='post-finish-cooldown'?0:purposes[index]==='kilometre-zero'?Math.min(45,Math.max(30,segment.sec)):Math.max(20, Math.round(segment.sec + delta * segment.sec * weights[index] / capacity))
+    const simulatedSeconds = purposes[index]==='post-finish-cooldown'?cooldownSeconds:purposes[index]==='kilometre-zero'?Math.min(45,Math.max(30,segment.sec)):Math.max(20, Math.round(segment.sec + delta * segment.sec * weights[index] / capacity))
     return { segmentIndex: index, originalSeconds: segment.sec, simulatedSeconds, preservation } satisfies CompressionSection
   })
   let remainder=Math.round(requested)-sections.reduce((sum,section)=>sum+section.simulatedSeconds,0)
@@ -73,7 +78,7 @@ export function createTimeCompressionMap(segments: RideSegment[], selection: Dur
     const adjustment=remainder<0?Math.max(remainder,20-section.simulatedSeconds):remainder
     section.simulatedSeconds+=adjustment; remainder-=adjustment
   }
-  return { mode: selection.mode, officialDurationSeconds: sections.reduce((sum, section) => sum + section.simulatedSeconds, 0), sections }
+  return { mode: selection.mode, totalDurationSeconds:requested,raceDurationSeconds,cooldownSeconds,officialDurationSeconds: sections.reduce((sum, section) => sum + section.simulatedSeconds, 0), sections }
 }
 
 export function applyDurationSelection(segments: RideSegment[], selection: DurationSelection) {

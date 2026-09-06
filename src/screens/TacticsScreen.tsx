@@ -6,6 +6,7 @@ import type { RaceStrategy } from '../types/tactics'
 import { kmToMi } from '../utils/units'
 import StageSectionPreview from '../components/StageSectionPreview'
 import { applyDurationSelection, courseDurationOptions, durationSelectionForStage, stageDurationPlan, type DurationMode, type DurationSelection } from '../engine/durationEngine'
+import { segmentPurposes } from '../engine/raceLifecycle'
 
 type TacticsScreenProps = {
   stageNumber: number
@@ -25,7 +26,8 @@ function TacticsScreen({ stageNumber, stageData, onBack, onStartRide }: TacticsS
   const [customMinutes,setCustomMinutes]=useState(durationPlan.minutes.RECOMMENDED)
   const durationSelection=useMemo(()=>durationSelectionForStage(stage,durationMode==='CUSTOM'?{mode:'CUSTOM',customMinutes}:{mode:durationMode}),[stage,durationMode,customMinutes])
   const baseSegments = useMemo(() => stage.segments.map((segment) => adaptSegment(segment, career.rider.ftp, strategy)), [stage, career.rider.ftp, strategy])
-  const adaptedSegments = useMemo(() => stage.isTraining?baseSegments:applyDurationSelection(baseSegments,durationSelection).segments,[stage.isTraining,baseSegments,durationSelection])
+  const durationResult=useMemo(()=>stage.isTraining?null:applyDurationSelection(baseSegments,durationSelection),[stage.isTraining,baseSegments,durationSelection])
+  const adaptedSegments = durationResult?.segments??baseSegments
   const minutes = Math.round(adaptedSegments.reduce((sum, segment) => sum + segment.sec, 0) / 60)
   const decisiveSegment = adaptedSegments.find((segment) => /climb|finish|attack|sprint/i.test(`${segment.type} ${segment.name}`)) ?? adaptedSegments[0]
   const profile = strategyProfiles[strategy]
@@ -47,7 +49,8 @@ function TacticsScreen({ stageNumber, stageData, onBack, onStartRide }: TacticsS
           <h2>{stage.objective}</h2>
         </div>
 
-        <StageSectionPreview stageNumber={stage.number} segments={adaptedSegments} measurementSystem={career.settings.measurementSystem} />
+        {!stage.isTraining&&durationResult&&<div className="dashboard-card workout-allocation" aria-label="Selected workout allocation"><span><small>TOTAL WORKOUT</small><strong>{Math.round(durationResult.map.totalDurationSeconds/60)} min</strong></span><span><small>Rollout + KM0 + Race</small><strong>{Math.round(durationResult.map.raceDurationSeconds/60)} min</strong></span><span><small>Cooldown</small><strong>{Math.round(durationResult.map.cooldownSeconds/60)} min</strong></span></div>}
+        <StageSectionPreview stageNumber={stage.number} segments={adaptedSegments.filter((_,index)=>segmentPurposes(adaptedSegments)[index]!=='post-finish-cooldown')} measurementSystem={career.settings.measurementSystem} />
 
         <div className="strategy-selector" aria-label="Race strategy">
           {(['Conservative', 'Balanced', 'Aggressive'] as RaceStrategy[]).map((option) => (

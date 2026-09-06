@@ -252,6 +252,10 @@ export const raceStages: RaceStage[] = rawStages.map((raw) => ({
   profileSource: 'Official Tour de France 2026 stage route and published climb details',
   profileReference: `Tour de France 2026 official roadbook, stage ${raw.number}`,
   profileUpdatedAt: '2026-08-15',
+  officialCourseMarkers:raw.number===7?([
+    {id:'tour-2026-s7-sprint',type:'sprint',routeKm:100,label:'SPRINT',points:20,verified:true,source:{organization:'Tour de France',reference:'2026 official roadbook, stage 7'}},
+    {id:'tour-2026-s7-kom',type:'kom',routeKm:137.3,label:'KOM',category:'Cat 4',climbName:'Côte de Béguey',points:1,verified:true,source:{organization:'Tour de France',reference:'2026 official roadbook, stage 7'}},
+  ] satisfies OfficialCourseMarker[]):undefined,
   segments: expandStageToTarget(raw.number, buildOpeningSegments(raw)).map((segment) => ({
     ...segment, icon: iconFor(segment.type), description: segment.desc, terrainLabel: segment.type,
     objective: segment.type, secondaryObjective: 'Follow Jean’s pacing instructions',

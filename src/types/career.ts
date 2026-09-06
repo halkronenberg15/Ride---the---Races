@@ -35,6 +35,17 @@ export type RideMetricEntry = {
   tactic?: string
   ftp?: number
   recovery?: HealthEntry
+  terminatedEarly?: boolean
+  terminationReason?: string
+  completionPercentage?: number
+  lifecycleAtTermination?: string
+  sectorAtTermination?: string
+  completedSectors?: string[]
+  earnedMarkerIds?: string[]
+  tacticalState?: string
+  officialRaceDurationSeconds?:number
+  cooldownDurationSeconds?:number
+  cooldownSkipped?:boolean
 }
 
 export type HealthEntry = {
@@ -48,7 +59,7 @@ export type HealthEntry = {
 }
 
 export type CareerState = {
-  schemaVersion: 3
+  schemaVersion: 4
   onboardingComplete: boolean
   rider: {
     name: string
@@ -84,6 +95,7 @@ export type CareerState = {
   trainingHistory: { workoutId:string; durationMinutes:number; completedAt:string; completed:true }[]
   health: HealthEntry
   rideHistory: RideMetricEntry[]
+  alpha4020: { calendar:{month:number;scrollY:number}; earnedMarkerIds:string[] }
   settings: {
     jeanVoiceEnabled: boolean
     jeanVoiceVolume: number

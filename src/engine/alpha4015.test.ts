@@ -48,10 +48,9 @@ test('G-M: Stage 3 course, elevation, gradient, climb and finish share one state
     const state = road.roadSnapshot(elapsed); assert.ok(state.courseDistance >= prior); prior = state.courseDistance
     assert.equal(state.roadPosition, state.courseProgress)
     assert.equal(state.elevation, road.elevationAt(state.courseProgress))
-    if (state.gradientSections.length) assert.equal(state.gradient, state.gradientSections[state.gradientIndex].gradient)
-    assert.equal(state.stageComplete, state.courseComplete && state.officialWorkoutComplete)
-    assert.equal(state.courseProgress === 1, state.stageComplete)
-    if (state.courseComplete) assert.equal(state.stageRemaining, 0)
+    if (state.gradientSections.length&&state.lifecycle!=='OPTIONAL_COOLDOWN'&&state.lifecycle!=='FINISHED') assert.equal(state.gradient, state.gradientSections[state.gradientIndex].gradient)
+    assert.equal(state.courseComplete, state.officialWorkoutComplete)
+    if(state.stageComplete)assert.equal(state.courseProgress,1)
   }
   const summit = road.roadSnapshot(timeline.duration)
   assert.equal(summit.courseDistance, stage3.distanceKm); assert.equal(summit.courseProgress, 1)

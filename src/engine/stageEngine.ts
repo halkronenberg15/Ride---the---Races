@@ -28,12 +28,16 @@ export type StageSnapshot = {
   courseComplete: boolean
   officialWorkoutComplete: boolean
   stageComplete: boolean
+  raceFinished:boolean
+  officialRaceElapsed:number
+  cooldownElapsed:number
 }
 
 export type StageEvent = 'stage-halfway' | 'sector-halfway' | 'final-30' | 'final-10' | 'climb-entry' | 'summit-exit' | 'finish'
 
 export type StageTimeline = {
   duration: number
+  raceFinishTime:number
   segmentStarts: number[]
   snapshot: (elapsedSeconds: number) => StageSnapshot
 }
@@ -66,11 +70,13 @@ export function createStageTimeline(segments: RideSegment[], routeDistanceKm?: n
   purposes.forEach((purpose,index)=>{if(purpose==='neutral-rollout'||purpose==='kilometre-zero')routeStarts[index]=0})
   if(firstRacing>=0)routeStarts[firstRacing]=0
   if(finalRacing>=0&&finalRacing<segments.length-1)routeStarts[finalRacing+1]=totalDistance
-  const finalIndex=segments.length-1
-  if(finalIndex>0&&purposes[finalIndex]==='post-finish-cooldown'&&segments[finalIndex].sec>0)routeStarts[finalIndex]=routeStarts[finalIndex-1]+(totalDistance-routeStarts[finalIndex-1])/2
+  const cooldownIndex=purposes.indexOf('post-finish-cooldown')
+  const raceFinishTime=cooldownIndex>=0?segmentStarts[cooldownIndex]:duration
+  if(cooldownIndex>=0)routeStarts[cooldownIndex]=totalDistance
 
   return {
     duration,
+    raceFinishTime,
     segmentStarts,
     snapshot(elapsedSeconds) {
       const elapsed = Math.max(0, Math.min(duration, elapsedSeconds))
@@ -82,11 +88,12 @@ export function createStageTimeline(segments: RideSegment[], routeDistanceKm?: n
       const segment = segments[segmentIndex]
       const elapsedInSegment = Math.min(segment.sec, elapsed - segmentStarts[segmentIndex])
       const complete = elapsed >= duration
+      const raceFinished=elapsed>=raceFinishTime
       const sectionStartCourseDistance = routeStarts[segmentIndex]
       const sectionEndCourseDistance = Math.min(totalDistance, Math.max(sectionStartCourseDistance,
         routeStarts[segmentIndex + 1] ?? totalDistance))
       const sectionFraction = Math.min(1, Math.max(0, elapsedInSegment / Math.max(1, segment.sec)))
-      const distance = complete ? totalDistance : Number((sectionStartCourseDistance
+      const distance = raceFinished ? totalDistance : Number((sectionStartCourseDistance
         + (sectionEndCourseDistance - sectionStartCourseDistance) * sectionFraction).toFixed(9))
       const events: StageEvent[] = []
       if (Math.floor(elapsed) === Math.floor(duration / 2)) events.push('stage-halfway')
@@ -95,7 +102,7 @@ export function createStageTimeline(segments: RideSegment[], routeDistanceKm?: n
       if (Math.ceil(segment.sec - elapsedInSegment) === 10) events.push('final-10')
       if (elapsedInSegment < 1 && isClimb(segment)) events.push('climb-entry')
       if (elapsedInSegment < 1 && segmentIndex > 0 && isClimb(segments[segmentIndex - 1])) events.push('summit-exit')
-      if (complete) events.push('finish')
+      if (Math.abs(elapsed-raceFinishTime)<1) events.push('finish')
       const lifecycle:RaceLifecycleState=complete?'FINISHED':lifecycleForSegment(purposes[segmentIndex])
       const phase: StagePhase = complete
         ? 'complete'
@@ -130,9 +137,12 @@ export function createStageTimeline(segments: RideSegment[], routeDistanceKm?: n
         sectionStartCourseDistance,
         sectionEndCourseDistance,
         events,
-        courseComplete: complete,
-        officialWorkoutComplete: complete,
+        courseComplete: raceFinished,
+        officialWorkoutComplete: raceFinished,
         stageComplete: complete,
+        raceFinished,
+        officialRaceElapsed:Math.min(elapsed,raceFinishTime),
+        cooldownElapsed:Math.max(0,elapsed-raceFinishTime),
       }
     },
   }

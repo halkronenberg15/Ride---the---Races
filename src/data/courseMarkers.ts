@@ -9,6 +9,7 @@ export type OfficialCourseMarker = {
   label: string
   category?: string
   climbName?: string
+  points?:number
   verified: boolean
   source?: { organization: string; reference: string; verifiedAt?: string }
 }
@@ -42,14 +43,14 @@ export function validateOfficialCourseMarkers(markers: readonly OfficialCourseMa
   return errors
 }
 
-export function resolveOfficialCourseMarkers(markers: readonly OfficialCourseMarker[] | undefined, context: MarkerAuditContext) {
+export function resolveOfficialCourseMarkers(markers: readonly OfficialCourseMarker[] | undefined, context: MarkerAuditContext):OfficialCourseMarker[] {
   const endpointSource = { organization: context.race, reference: 'Official stage distance definition' }
   const supplied = markers ?? []
   const complete = [
     ...(supplied.some(marker => marker.type === 'km-zero') ? [] : [{ id: `${context.race.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-s${context.stageNumber}-km-zero`, type: 'km-zero' as const, routeKm: 0, label: 'KM 0', verified: true, source: endpointSource }]),
     ...supplied,
     ...(supplied.some(marker => marker.type === 'finish') ? [] : [{ id: `${context.race.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-s${context.stageNumber}-finish`, type: 'finish' as const, routeKm: context.officialDistanceKm, label: 'FINISH', verified: true, source: endpointSource }]),
-  ]
+  ] satisfies OfficialCourseMarker[]
   const errors = validateOfficialCourseMarkers(complete, context)
   if (errors.length) throw new Error(errors.join('\n'))
   return complete.filter(marker => marker.verified)
