@@ -990,3 +990,56 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .duration-picker label{display:grid;gap:.35rem}
 @media(max-width:430px){.duration-options{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .preview-target-values{display:contents}
+
+
+/* Alpha 4.0.20 phone field-test cleanup.
+   Keep the stage profile geometry untouched while preventing briefing and
+   browser-chrome collisions on narrow Safari viewports. */
+.stage-detail .dashboard-card {
+  min-height: 0;
+}
+
+@media (max-width: 700px) {
+  .section-preview-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+    padding-inline: 0;
+    scroll-snap-type: none;
+  }
+
+  .section-preview-button {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    min-height: 72px;
+    overflow-wrap: anywhere;
+  }
+
+  .section-preview-button strong {
+    white-space: normal;
+  }
+
+  .race-briefing-screen,
+  .stage-detail,
+  .ride-cockpit {
+    padding-bottom: max(
+      calc(var(--safe-bottom) + 104px),
+      132px
+    );
+    scroll-padding-bottom: max(
+      calc(var(--safe-bottom) + 104px),
+      132px
+    );
+  }
+
+  .ride-details {
+    padding-bottom: 12px;
+  }
+}
+
+@media (max-width: 370px) {
+  .section-preview-list {
+    grid-template-columns: 1fr;
+  }
+}
