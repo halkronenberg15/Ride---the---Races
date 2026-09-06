@@ -18,6 +18,9 @@ import { isIndividualTimeTrial, officialSegments, ttStartSnapshot } from '../eng
 import { applyDurationSelection, durationSelectionForStage, type DurationSelection } from '../engine/durationEngine'
 import { GENERIC_MANUAL_EQUIPMENT, type EquipmentInstance } from '../engine/manualBike'
 import { competitiveEventsEligible, rolloutProgress } from '../engine/raceLifecycle'
+import { applyTacticalAction, availableTacticalActions, resolveTacticalTransition, type TacticalAction } from '../engine/tacticalActions'
+import { captionDurationMs, type TeamRadioMessage } from '../engine/teamRadio'
+import { completeCooldown, type CooldownCompletion } from '../engine/rideCompletion'
 
 type RideScreenProps = {
   stageNumber: number
@@ -27,7 +30,8 @@ type RideScreenProps = {
   strategy: RaceStrategy
   durationSelection: DurationSelection
   onBack: () => void
-  onFinish: () => void
+  onFinish: (cooldown:CooldownCompletion) => void
+  onEndEarly: (reason:string,snapshot:{completionPercentage:number;distanceKm:number;lifecycle:string;sector:string;completedSectors:string[];earnedMarkerIds:string[];tacticalState:string}) => void
 }
 
 function formatTime(totalSeconds: number) {
@@ -55,6 +59,7 @@ function RideScreen({
   strategy, durationSelection,
   onBack,
   onFinish,
+  onEndEarly,
 }: RideScreenProps) {
   const { career } = useCareer()
   const measurementSystem = career.settings.measurementSystem
@@ -79,6 +84,8 @@ function RideScreen({
   )
   const [showSegmentCard, setShowSegmentCard] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
+  const [captionVisible,setCaptionVisible]=useState(true)
+  const [endingEarly,setEndingEarly]=useState(false)
   const [wakeLockStatus, setWakeLockStatus] = useState<
     'inactive' | 'requesting' | 'active' | 'unsupported' | 'blocked' | 'released'
   >('inactive')
@@ -97,9 +104,9 @@ function RideScreen({
   )
   const isRunningRef = useRef(false)
   const didLaunchMetrics = useRef(false)
+  const didFinalizeRace = useRef(false)
 
   const stageDuration = timeline.duration
-
   const engine = useMemo(() => timeline.roadSnapshot(elapsedSeconds), [elapsedSeconds, timeline])
   const coachingTimeline = useMemo(() => buildJeanTimeline(segments, stage.distanceKm), [segments, stage.distanceKm])
   const segmentData = { index: engine.segmentIndex, segment: engine.segment, elapsedInSegment: engine.elapsedInSegment }
@@ -150,6 +157,15 @@ function RideScreen({
   const summitDistanceKm = engine.distanceToSummit
   const mode = jeanMode(currentSegment, isFinished)
   const actions = useMemo(() => timeline.actionTargets(elapsedSeconds), [elapsedSeconds, timeline])
+  const tactical=resolveTacticalTransition(activeRide.ride?.tacticalState??'PELOTON',activeRide.ride?.tacticalTransition??null,elapsedSeconds)
+  const tacticalActions=availableTacticalActions(tactical.state,engine.lifecycle==='OFFICIAL_RACING')
+  const radioHistory=activeRide.ride?.radioHistory??[]
+  const nextCompetitionMarker=timeline.markers.find(marker=>(marker.type==='sprint'||marker.type==='kom')&&marker.position>engine.courseProgress)
+
+  useEffect(()=>{if(tactical.state!==activeRide.ride?.tacticalState||tactical.transition?.progress!==activeRide.ride?.tacticalTransition?.progress)activeRide.updateRide({tacticalState:tactical.state,tacticalTransition:tactical.transition})},[tactical.state,tactical.transition?.progress])
+  useEffect(()=>{if(!radioText)return;const timer=setTimeout(()=>setCaptionVisible(false),captionDurationMs(radioText));return()=>clearTimeout(timer)},[radioText])
+  useEffect(()=>{if(engine.lifecycle!=='OFFICIAL_RACING'||!activeRide.ride)return;const crossed=timeline.markers.filter(marker=>(marker.type==='sprint'||marker.type==='kom')&&marker.position<=engine.courseProgress&&!activeRide.ride!.earnedMarkerIds.includes(marker.key));if(crossed.length){activeRide.updateRide({earnedMarkerIds:[...activeRide.ride.earnedMarkerIds,...crossed.map(marker=>marker.key)]});const marker=crossed.at(-1)!;speak(`${marker.type==='kom'?`KOM ${marker.category??''}`:'Intermediate sprint'} crossed. ${marker.points??0} points earned.`,`marker-${marker.key}`)}},[engine.courseProgress,engine.lifecycle])
+  useEffect(()=>{if(!engine.raceFinished||didFinalizeRace.current)return;didFinalizeRace.current=true;activeRide.updateRide({tacticalState:'PELOTON',tacticalTransition:null});speak('Across the line. Results and points are final. Begin your recovery cooldown.')},[engine.raceFinished])
 
   useEffect(() => {
     if (!isRunning || !isTimeTrial || ttStart.official) return
@@ -182,7 +198,7 @@ function RideScreen({
 
   function speak(text: string, eventId = `ride-${stage.number}-${segmentData.index}-${text}`) {
     jeanEventBus.current.dispatch(createJeanEvent(eventId, 'coaching', text),
-      event => setRadioText(event.message),
+      event => {setRadioText(event.message);setCaptionVisible(true);const message:TeamRadioMessage={id:event.id,text:event.message,priority:'coaching',createdAt:new Date().toISOString()};if(activeRide.ride&&!activeRide.ride.radioHistory.some(item=>item.id===message.id))activeRide.updateRide({radioHistory:[...activeRide.ride.radioHistory,message].slice(-50)})},
       event => {
         if (!canUseJeanVoice()) { console.info(`[Jean] speech unavailable: ${event.id}`); return false }
         speakAsJean(event.message, undefined, career.settings.jeanVoiceVolume)
@@ -409,7 +425,7 @@ function RideScreen({
       )
       if (!didLaunchMetrics.current) {
         didLaunchMetrics.current = true
-        window.setTimeout(onFinish, 1200)
+        window.setTimeout(()=>onFinish(completeCooldown(timeline.raceFinishTime,timeline.duration,elapsedSeconds,false)), 1200)
       }
     }, 0)
 
@@ -508,6 +524,10 @@ function RideScreen({
     onBack()
   }
 
+  function chooseTactic(action:TacticalAction){const next=applyTacticalAction(tactical.state,action,elapsedSeconds);activeRide.updateRide({tacticalState:next.state,tacticalTransition:next.transition});speak(action==='RETURN_TO_PELOTON'?'Ease progressively. We return to peloton intensity safely.':`${action.replaceAll('_',' ')}. Commit to the effort.`)}
+  function confirmEndEarly(reason:string){activeRide.pause();onEndEarly(reason,{completionPercentage:progress,distanceKm:routeKm,lifecycle:engine.lifecycle,sector:currentSegment.name,completedSectors:segments.slice(0,engine.segmentIndex).map(item=>item.name),earnedMarkerIds:activeRide.ride?.earnedMarkerIds??[],tacticalState:tactical.state})}
+  function finishCooldown(skipped:boolean){activeRide.pause();onFinish(completeCooldown(timeline.raceFinishTime,timeline.duration,elapsedSeconds,skipped))}
+
   const wakeLockLabel =
     wakeLockStatus === 'active'
       ? 'Screen awake'
@@ -529,6 +549,7 @@ function RideScreen({
           margin: 0 auto;
           padding: 18px 18px calc(56px + var(--safe-bottom));
           position: relative;
+          scroll-padding-block: var(--protected-top) calc(96px + var(--safe-bottom));
         }
 
         .ride-topbar {
@@ -743,6 +764,7 @@ function RideScreen({
           border-left: 4px solid #f46a00;
           background: rgba(255,255,255,0.05);
         }
+        .profile-caption{min-height:48px;margin-top:8px;padding:9px 44px 9px 12px;position:relative;border-radius:10px;background:rgba(0,0,0,.84);color:#fff}.profile-caption button{position:absolute;right:3px;top:2px;min-width:44px;min-height:44px}.tactical-actions{display:flex;gap:8px;overflow-x:auto;margin-top:8px}.tactical-actions button{min-height:44px;white-space:nowrap}.next-line{margin-top:8px;font-size:.78rem;font-weight:800}.resistance-start{display:block;font-size:.68rem;color:#ffd0ad}
 
         .radio-strip blockquote {
           margin: 5px 0 0;
@@ -793,7 +815,8 @@ function RideScreen({
           margin-top: 10px;
         }
 
-        .ride-detail-stat { padding: 12px !important; min-height: 0 !important; }
+        .ride-detail-stat { padding: 12px !important; min-height: 0 !important; overflow-wrap:anywhere; }
+        .ride-detail-stat > small,.ride-detail-stat > strong{display:block}.ride-detail-stat > strong{margin-top:5px}.ride-detail-stat button{min-height:44px;max-width:100%;white-space:normal}.ride-details{padding-bottom:calc(72px + var(--safe-bottom))}.ride-details > button:last-child{scroll-margin-bottom:calc(80px + var(--safe-bottom))}
         .ride-detail-objectives { padding: 14px !important; }
         .ride-detail-objectives p { margin-bottom: 7px; }
 
@@ -828,8 +851,8 @@ function RideScreen({
 
         @media (max-width: 700px) {
           .ride-cockpit {
-            padding: var(--safe-top) 10px calc(28px + var(--safe-bottom));
-            scroll-padding-top: var(--safe-top);
+            padding: calc(var(--protected-top) + 8px) 10px calc(28px + var(--safe-bottom));
+            scroll-padding-top: var(--protected-top);
           }
 
           .ride-stage-header {
@@ -941,6 +964,7 @@ function RideScreen({
             padding: 26px 18px !important;
           }
         }
+        @media (orientation:landscape) and (max-height:600px){.ride-cockpit{max-width:1100px;display:grid;grid-template-columns:minmax(420px,1.1fr) minmax(360px,.9fr);gap:10px;padding-top:calc(var(--protected-top) + 8px)}.ride-topbar,.ride-stage-header{grid-column:1/-1}.live-profile-card{grid-column:1}.cockpit-card,.ride-primary-control,.ride-details-toggle,.ride-details{grid-column:2}.cockpit-card{grid-row:3/span 2;margin-top:10px}.segment-clock strong{font-size:3.6rem}}
       `}</style>
 
       {countdown !== null && <div className="ride-countdown" aria-live="polite"><strong>{countdown}</strong><span>START DEVICES · COUNTDOWN SILENT</span></div>}
@@ -1048,6 +1072,7 @@ function RideScreen({
                 {!stage.isTraining && timeline.markers.map((marker) => <span key={marker.key} className={`race-marker ${marker.type}`} style={{ left: `${marker.position * 100}%`, top:`${marker.localY}%`, color:marker.color }} title={marker.label}><b style={{ transform:`translate(${markerLabelOffset(marker.position,timeline.markers.map(item=>item.position)).translateX}%, ${markerLabelOffset(marker.position,timeline.markers.map(item=>item.position)).translateY}px)` }}>{marker.label}</b><i /></span>)}
                 <div style={{ position: 'absolute', left: `${riderMarkerX}%`, top: `${riderMarkerY}%`, transform: 'translate(-50%, -80%)', zIndex: 5, fontSize: '1.35rem', transition: 'left .25s linear, top .25s linear' }}>🚴</div>
               </div>
+              {captionVisible&&<div className="profile-caption" role="status" aria-live="polite">📻 JEAN: “{radioText}”<button type="button" aria-label="Dismiss Team Radio caption" onClick={()=>setCaptionVisible(false)}>×</button></div>}
             </div>
           )}
           <div className="live-profile-card" aria-label={currentSegmentIsClimb ? "Live climb gradient profile" : "Live stage profile"}>
@@ -1135,13 +1160,12 @@ function RideScreen({
                 </div>
               </>
             )}
+            {!currentSegmentIsClimb&&captionVisible&&<div className="profile-caption" role="status" aria-live="polite">📻 JEAN: “{radioText}”<button type="button" aria-label="Dismiss Team Radio caption" onClick={()=>setCaptionVisible(false)}>×</button></div>}
           </div>
 
           <div className="cockpit-card">
-            <p className="eyebrow">SELECTED COURSE DURATION: {Math.round(stageDuration/60)} MIN · {engine.lifecycle.replaceAll('_',' ')}</p>
             <div className="cockpit-header">
               <div>
-                <p className="eyebrow">CURRENT SECTOR</p>
                 <h2 className="cockpit-title">
                   {currentSegment.icon}{' '}
                   {currentSegment.name}
@@ -1196,23 +1220,15 @@ function RideScreen({
               </div>
 
               <div className="target-tile">
-                <small>SET RESISTANCE</small>
+                <small>RESISTANCE</small>
                 <strong>
                   {displayResistance}
                 </strong>
               </div>
             </div>
-            <small className="calibration-confidence">{activePrescription.manualTarget.calibrationConfidence} CALIBRATION · {activePrescription.manualTarget.feasibility}</small>
-
-            <div className="cockpit-sections" aria-label="Current and next actionable target">
-              <div className="cockpit-section current"><small>CURRENT</small><strong>{actions.current.type === 'sprint' ? '⚡ ' : ''}{actions.current.name}</strong><div className="action-meta">{actions.current.zone} · {formatTime(actions.current.remaining ?? 0)} remaining</div></div>
-              <div className="cockpit-section"><small>UP NEXT</small>{actions.next ? <><strong>{actions.next.type === 'sprint' ? '⚡ ' : ''}{actions.next.name}</strong><div className="action-meta">{actions.next.zone} · Starts in {formatTime(actions.timeUntilNext ?? 0)} · Duration {formatTime(actions.next.remaining ?? 0)}</div><div className="action-targets"><span>POWER {actions.next.power}</span><span>CAD {actions.next.cadence}</span><span>OPENING RESISTANCE {actions.next.openingResistance===null?'UNAVAILABLE':`${actions.next.openingResistance}%`}</span></div></> : <strong>Stage complete · no upcoming target</strong>}</div>
-            </div>
-
-            <div className="radio-strip">
-              <small>📻 JEAN MOREAU</small>
-              <blockquote>“{radioText}”</blockquote>
-            </div>
+            <div className="next-line">NEXT: {actions.next?`${actions.next.name} · ${formatTime(actions.timeUntilNext??0)} · ${actions.next.power} · ${actions.next.cadence} · ${actions.next.openingResistance===null?'Resistance unavailable':`${Math.max(0,actions.next.openingResistance-1)}–${actions.next.openingResistance+2}%`}`:'Stage finish'}</div>
+            {nextCompetitionMarker&&<div className="next-line" aria-label="Next points marker">{nextCompetitionMarker.type==='kom'?`KOM ${nextCompetitionMarker.category??''}`:'SPRINT'} · {nextCompetitionMarker.points??0} pts · {formatTime(Math.max(0,nextCompetitionMarker.at-elapsedSeconds))} · {formatDistance(Math.max(0,nextCompetitionMarker.routeKm-routeKm),measurementSystem)}</div>}
+            <div className="tactical-actions" aria-label={`Tactical state ${tactical.state}`}>{tacticalActions.map(action=><button type="button" key={action} onClick={()=>chooseTactic(action)}>{action.replaceAll('_',' ')}</button>)}</div>
 
             <div className="progress-track">
               <div
@@ -1250,6 +1266,8 @@ function RideScreen({
             </button>
           )}
 
+          {engine.lifecycle==='OPTIONAL_COOLDOWN'&&<div className="tactical-actions" aria-label="Cooldown controls"><button type="button" onClick={()=>finishCooldown(true)}>Skip cooldown</button><button type="button" onClick={()=>finishCooldown(false)}>End cooldown</button><span>{formatTime(stageRemaining)} recovery remaining</span></div>}
+
           <button
             type="button"
             className="ride-details-toggle"
@@ -1264,6 +1282,8 @@ function RideScreen({
             <div className="ride-details">
 
               <div className="detail-grid">
+                <div className="dashboard-card ride-detail-stat"><small>RESOLVER</small><strong>{activePrescription.manualTarget.feasibility}</strong><p>{activePrescription.manualTarget.adjustmentReason}</p></div>
+                <div className="dashboard-card ride-detail-stat"><small>TEAM RADIO HISTORY</small>{radioHistory.slice().reverse().map(message=><p key={message.id}>📻 {message.text}</p>)}<button type="button" disabled={!radioText} onClick={()=>setCaptionVisible(true)}>Replay latest</button></div>
                 <div
                   className="dashboard-card ride-detail-stat"
                   style={{ textAlign: 'center' }}
@@ -1304,6 +1324,7 @@ function RideScreen({
               >
                 Restart Stage
               </button>
+              {!endingEarly?<button type="button" onClick={()=>setEndingEarly(true)} style={{width:'100%',marginTop:10}}>End Ride Early</button>:<div className="dashboard-card"><strong>Why are you ending?</strong>{['Fatigue','Time constraint','Equipment issue','Pain or discomfort','Recovery/readiness','Other'].map(reason=><button type="button" key={reason} style={{minHeight:44,margin:4}} onClick={()=>window.confirm(`End ride early: ${reason}?`)&&confirmEndEarly(reason)}>{reason}</button>)}<button type="button" onClick={()=>setEndingEarly(false)}>Cancel</button></div>}
             </div>
           )}
         </>

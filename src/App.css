@@ -939,6 +939,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .destination-heading { grid-column: 1 / -1; margin-top: 12px; }
 .season-calendar-screen { width: min(760px, 100%); margin: 0 auto; }
 .season-months { display: grid; gap: 32px; margin-top: 28px; }
+.calendar-month-section{display:grid;gap:12px}.calendar-team-bus{display:flex;align-items:center;justify-content:center;width:100%;min-height:48px;margin:0 0 20px;border:2px solid #f46a00;background:#24170f;color:#fff;font-weight:900}
 .month-calendar { scroll-margin-top: 12px; padding: clamp(12px, 3vw, 22px); overflow: hidden; border: 1px solid #303033; border-radius: 22px; background: rgba(20,20,22,.96); box-shadow: 0 18px 45px rgba(0,0,0,.25); }
 .month-calendar > header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; }
 .month-calendar h2 { margin: 0; color:#fff; text-transform: uppercase; letter-spacing: .04em; }
@@ -948,6 +949,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .training-ride-card h3,.training-ride-card strong { color:#fff; }
 .team-bus-jean { margin:18px 0 24px; color:#f4f4f5; background:#18181b; }
 .month-calendar > header strong { color: #ff7a1a; }
+.workout-allocation{display:grid;gap:0;padding:8px 14px!important}.workout-allocation span{display:grid;grid-template-columns:minmax(0,1fr) max-content;align-items:center;gap:16px;min-height:38px;border-bottom:1px solid #343438}.workout-allocation span:last-child{border-bottom:0}.workout-allocation small,.workout-allocation strong{display:block;margin:0}.workout-allocation small{color:#d1d1d6;text-transform:none;letter-spacing:0}.workout-allocation strong{color:#fff;white-space:nowrap}
 .calendar-weekdays, .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
 .calendar-weekdays span { padding-bottom: 9px; color: #aaaab0; font-size: clamp(.58rem, 2vw, .72rem); font-weight: 800; text-align: center; text-transform: uppercase; }
 .calendar-date, .calendar-blank { min-width: 0; min-height: clamp(52px, 12vw, 78px); padding: 5px 3px; border-top: 1px solid #303033; border-right: 1px solid #27272a; color: #d4d4d8; font-size: .75rem; }
@@ -987,3 +989,57 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .duration-options button.selected{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
 .duration-picker label{display:grid;gap:.35rem}
 @media(max-width:430px){.duration-options{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.preview-target-values{display:contents}
+
+
+/* Alpha 4.0.20 phone field-test cleanup.
+   Keep the stage profile geometry untouched while preventing briefing and
+   browser-chrome collisions on narrow Safari viewports. */
+.stage-detail .dashboard-card {
+  min-height: 0;
+}
+
+@media (max-width: 700px) {
+  .section-preview-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+    padding-inline: 0;
+    scroll-snap-type: none;
+  }
+
+  .section-preview-button {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    min-height: 72px;
+    overflow-wrap: anywhere;
+  }
+
+  .section-preview-button strong {
+    white-space: normal;
+  }
+
+  .race-briefing-screen,
+  .stage-detail,
+  .ride-cockpit {
+    padding-bottom: max(
+      calc(var(--safe-bottom) + 104px),
+      132px
+    );
+    scroll-padding-bottom: max(
+      calc(var(--safe-bottom) + 104px),
+      132px
+    );
+  }
+
+  .ride-details {
+    padding-bottom: 12px;
+  }
+}
+
+@media (max-width: 370px) {
+  .section-preview-list {
+    grid-template-columns: 1fr;
+  }
+}

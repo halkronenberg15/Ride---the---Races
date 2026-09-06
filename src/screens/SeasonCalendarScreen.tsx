@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { getCalendarMonth, getInitialMonth, type RaceCalendarEntry, type Season } from '../data/seasonCalendar'
+import { CalendarTeamBusButton } from '../components/CalendarTeamBusButton'
 
 const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -18,13 +19,15 @@ export function MonthCalendar({ year, month, races, currentRace, onOpenRace }: {
     })}</div>
   </article>
 }
+export function CalendarMonthSection({year,month,races,currentRace,onOpenRace,onBack,setRef}:{year:number;month:number;races:RaceCalendarEntry[];currentRace?:string;onOpenRace:(raceId:string,month:number)=>void;onBack:()=>void;setRef:(node:HTMLDivElement|null)=>void}){return <div className="calendar-month-section" data-month-section={month} ref={setRef}><MonthCalendar year={year} month={month} races={races} currentRace={currentRace} onOpenRace={(id)=>onOpenRace(id,month)}/><CalendarTeamBusButton onBack={onBack}/></div>}
 
 export default function SeasonCalendarScreen({ season, currentRace, onBack, onOpenRace }: { season: Season; currentRace?: string; onBack: () => void; onOpenRace: (raceId: string) => void }) {
   const monthRefs = useRef<(HTMLElement | null)[]>([])
-  useEffect(() => { monthRefs.current[getInitialMonth(season, currentRace)]?.scrollIntoView({ block: 'start' }) }, [season, currentRace])
+  useEffect(() => { const saved=Number(sessionStorage.getItem('rtr-calendar-month')),savedScroll=Number(sessionStorage.getItem('rtr-calendar-scroll'));monthRefs.current[Number.isInteger(saved)?saved:getInitialMonth(season, currentRace)]?.scrollIntoView({ block: 'start' });if(Number.isFinite(savedScroll)&&savedScroll>0)requestAnimationFrame(()=>scrollTo({top:savedScroll,behavior:'auto'}));const remember=()=>{const month=monthRefs.current.reduce((best,node,index)=>node&&node.getBoundingClientRect().top<innerHeight/2?index:best,0);sessionStorage.setItem('rtr-calendar-month',String(month));sessionStorage.setItem('rtr-calendar-scroll',String(scrollY))};addEventListener('scroll',remember,{passive:true});return()=>removeEventListener('scroll',remember) }, [season, currentRace])
+  const openRace=(raceId:string,month:number)=>{sessionStorage.setItem('rtr-calendar-month',String(month));sessionStorage.setItem('rtr-calendar-scroll',String(scrollY));onOpenRace(raceId)}
   return <section className="season-calendar-screen">
     <button type="button" onClick={onBack}>← Team Bus</button>
     <header className="compact-page-header"><p className="eyebrow">TEAM LORIOT • SEASON</p><h1>{season.year}</h1><p>Professional race calendar. Select a race start to open its roadbook.</p></header>
-    <div className="season-months">{monthNames.map((_, month) => <div key={month} ref={(node) => { monthRefs.current[month] = node }}><MonthCalendar year={season.year} month={month} races={season.races} currentRace={currentRace} onOpenRace={onOpenRace} /></div>)}</div>
+    <div className="season-months">{monthNames.map((_, month) => <CalendarMonthSection key={month} year={season.year} month={month} races={season.races} currentRace={currentRace} onOpenRace={openRace} onBack={onBack} setRef={(node)=>{monthRefs.current[month]=node}}/>)}</div>
   </section>
 }

@@ -10,7 +10,8 @@ test('target stage adaptations and synchronized finish times', () => {
     const timeline = createStageTimeline(stage!.segments, stage!.distanceKm)
     assert.equal(timeline.duration, minutes * 60)
     assert.equal(timeline.snapshot(timeline.duration).stageRemaining, 0)
-    assert.ok(timeline.snapshot(timeline.duration).events.includes('finish'))
+    assert.ok(timeline.snapshot(timeline.raceFinishTime).events.includes('finish'))
+    assert.equal(timeline.snapshot(timeline.raceFinishTime).lifecycle,'OPTIONAL_COOLDOWN')
   }
 })
 
@@ -35,8 +36,7 @@ test('rider starts and ends with authoritative stage progress and changes sector
   stage.segments.forEach((_, index) => {
     const snapshot = timeline.snapshot(timeline.segmentStarts[index])
     assert.equal(snapshot.segmentIndex, index)
-    if (index === stage.segments.length - 1 && stage.segments[index].routeKm >= stage.distanceKm) assert.ok(snapshot.riderPosition < 1)
-    else assert.equal(snapshot.riderPosition, snapshot.sectionStartCourseDistance / stage.distanceKm)
+    assert.equal(snapshot.riderPosition, snapshot.sectionStartCourseDistance / stage.distanceKm)
   })
   const finish = timeline.snapshot(timeline.duration + 100)
   assert.equal(finish.riderPosition, 1)

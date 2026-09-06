@@ -48,7 +48,7 @@ export function applyTerrainModifier(
   const manualTarget=resolveManualBikeTarget({powerRange,cadenceRange,gradient,equipment,profile:equipment.calibrationProfileId===bikeProfile.id?bikeProfile:null,preferences})
   cadenceRange=manualTarget.resolvedCadenceRange
   const target=manualTarget.resolvedExactResistance
-  const resistanceRange=target===null?{min:0,max:0}:{min:target,max:target}
+  const resistanceRange=manualTarget.resolvedResistanceRange??{min:0,max:0}
   return {
     ...prescription,
     authoritativeGradient: gradient,
@@ -58,7 +58,7 @@ export function applyTerrainModifier(
     resistanceRange,
     cadenceRange,
     powerRange,
-    resistance: target===null?'UNAVAILABLE':`${target}%`,
+    resistance: target===null?'UNAVAILABLE':`${resistanceRange.min}–${resistanceRange.max}% · Start ${target}%`,
     cadence: print(cadenceRange, ' rpm'),
     power: print(powerRange, ' W'),
   }

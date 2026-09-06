@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import { advanceOnboarding, canAdvanceOnboarding } from './onboardingFlow.ts'
 import { createInitialCareer, equipmentForDevices, migrateCareer } from '../state/careerPersistence.ts'
 
-test('brand-new rider completes onboarding by Continue activation and persists schema v3',()=>{
+test('brand-new rider completes onboarding by Continue activation and persists schema v4',()=>{
  const fresh=createInitialCareer();assert.equal(fresh.onboardingComplete,false);assert.equal(fresh.rider.name,'');assert.equal(fresh.rider.ftpKnown,false)
  const rider={...fresh.rider,name:'hal',nationality:'USA',number:15,heightCm:177.8,weightKg:115.7}
  const numbers={numberText:'15',heightText:'70',weightText:'255',ftpText:''}
@@ -14,7 +14,7 @@ test('brand-new rider completes onboarding by Continue activation and persists s
  while(step<5)step=advanceOnboarding(step,rider,numbers)
  const completed={...fresh,onboardingComplete:true,rider:{...rider,devices:['Peloton'] as const},equipment:equipmentForDevices(['Peloton'])}
  const persisted=JSON.parse(JSON.stringify(completed));const restored=migrateCareer(persisted)
- assert.equal(restored.schemaVersion,3);assert.equal(restored.onboardingComplete,true);assert.equal(restored.rider.name,'hal');assert.equal(restored.rider.ftp,0);assert.equal(restored.rider.ftpKnown,false);assert.equal(restored.equipment.activeEquipmentId,'peloton-baseline-bike')
+ assert.equal(restored.schemaVersion,4);assert.equal(restored.onboardingComplete,true);assert.equal(restored.rider.name,'hal');assert.equal(restored.rider.ftp,0);assert.equal(restored.rider.ftpKnown,false);assert.equal(restored.equipment.activeEquipmentId,'peloton-baseline-bike')
  const screen=readFileSync(new URL('../screens/OnboardingScreen.tsx',import.meta.url),'utf8');assert.match(screen,/<form[^>]+onSubmit=/);assert.match(screen,/type="submit"/);assert.doesNotMatch(screen,/type="button" className="primary-button"[^>]*>Continue/)
  assert.match(screen,/Choose your equipment/);assert.match(screen,/Connection method/);assert.match(screen,/Live bike telemetry: Not connected/);assert.match(screen,/Connected smart equipment:<\/strong> Coming later/)
 })

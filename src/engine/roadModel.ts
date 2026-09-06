@@ -13,7 +13,7 @@ import { rolloutProgress, segmentPurposes } from './raceLifecycle.ts'
 
 export type RaceMarkerType = 'kilometre-zero' | 'sprint' | 'kom' | 'time-check' | 'finish'
 export const COURSE_MARKER_HEIGHT = 28
-export type RaceMarker = { key: string; type: RaceMarkerType; label: string; position: number; at: number; localY:number; topY:number; color:string }
+export type RaceMarker = { key: string; type: RaceMarkerType; label: string; category?:string;points?:number;routeKm:number; position: number; at: number; localY:number; topY:number; color:string }
 export type RoadPoint = { position: number; elevation: number }
 export type RoadSnapshot = StageSnapshot & {
   roadPosition: number
@@ -166,13 +166,13 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
   }
   const elapsedAtCourseDistance=(courseDistance:number)=>{
     const target=Math.min(distanceKm,Math.max(0,courseDistance))
-    if(target>=distanceKm)return timeline.duration
+    if(target>=distanceKm)return timeline.raceFinishTime
     for(let index=0;index<segments.length;index+=1){
       const start=timeline.snapshot(timeline.segmentStarts[index]).sectionStartCourseDistance
       const end=timeline.snapshot(timeline.segmentStarts[index]).sectionEndCourseDistance
       if(target<=end&&end>start)return timeline.segmentStarts[index]+((target-start)/(end-start))*segments[index].sec
     }
-    return timeline.duration
+    return timeline.raceFinishTime
   }
   const markerType = (type:OfficialCourseMarker['type']):RaceMarkerType => type==='km-zero'||type==='start'?'kilometre-zero':type==='tt-check'?'time-check':type==='bonus'?'sprint':type
   const markerColor = (type:RaceMarkerType) => type==='kilometre-zero'?'#ffd400':type==='sprint'?identity?.pointsColor??'#38a852':type==='kom'?identity?.komColor??'#ef3340':type==='time-check'?identity?.timeCheckColor??'#55dff7':identity?.finishColor??'#ffffff'
@@ -180,7 +180,7 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
   const markers:RaceMarker[]=resolveOfficialCourseMarkers(officialCourseMarkers,{race:raceName,stageNumber,officialDistanceKm:distanceKm}).map(marker=>{
     const position=markerPosition(marker,distanceKm)
     const type=markerType(marker.type)
-    return {key:marker.id,type,label:marker.label,position,at:type==='kilometre-zero'&&kilometreZeroIndex>=0?timeline.segmentStarts[kilometreZeroIndex]:elapsedAtCourseDistance(marker.routeKm),...markerGeometry(profileYAt(position)),color:markerColor(type)}
+    return {key:marker.id,type,label:marker.label,category:marker.category,points:marker.points,routeKm:marker.routeKm,position,at:type==='kilometre-zero'&&kilometreZeroIndex>=0?timeline.segmentStarts[kilometreZeroIndex]:elapsedAtCourseDistance(marker.routeKm),...markerGeometry(profileYAt(position)),color:markerColor(type)}
   })
 
   return {
@@ -209,10 +209,11 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
       const sprintPhases = sectionSprints[base.segmentIndex]
       const sprintPhase = sprintSnapshot(sprintPhases, base.elapsedInSegment)
       const preRace=base.lifecycle==='NEUTRAL_ROLLOUT'||base.lifecycle==='KILOMETRE_ZERO'
-      const geographicClimb=preRace?undefined:officialProfile?canonicalClimbs.find(climb=>base.courseDistance>=climb.start-1e-9&&base.courseDistance<=climb.summit+1e-9):undefined
+      const postRace=base.lifecycle==='OPTIONAL_COOLDOWN'||base.lifecycle==='FINISHED'
+      const geographicClimb=preRace||postRace?undefined:officialProfile?canonicalClimbs.find(climb=>base.courseDistance>=climb.start-1e-9&&base.courseDistance<=climb.summit+1e-9):undefined
       const priorIndex=base.segmentIndex-1
       const atPriorSummit=!officialProfile&&priorIndex>=0&&isClimb(segments[priorIndex])&&Math.abs(base.elapsed-timeline.segmentStarts[base.segmentIndex])<1e-9
-      const climbIndex=officialProfile?-1:atPriorSummit?priorIndex:(isClimb(base.segment)?base.segmentIndex:-1)
+      const climbIndex=postRace||officialProfile?-1:atPriorSummit?priorIndex:(isClimb(base.segment)?base.segmentIndex:-1)
       const climbActive=Boolean(geographicClimb)||climbIndex>=0
       const climbStartDistance=geographicClimb?.start??(climbIndex>=0?timeline.snapshot(timeline.segmentStarts[climbIndex]).courseDistance:null)
       const summitDistance=geographicClimb?.summit??(climbIndex>=0?timeline.snapshot(timeline.segmentStarts[climbIndex]+segments[climbIndex].sec).courseDistance:null)
@@ -222,7 +223,7 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
       const geographicClimbProgress=climbActive&&summitDistance!>climbStartDistance!
         ? Math.min(1,Math.max(0,(base.courseDistance-climbStartDistance!)/(summitDistance!-climbStartDistance!))):0
       const gradientIndex=gradientSectionIndex(gradientSections,officialProfile?geographicClimbProgress:base.segmentProgress)
-      let gradient=preRace?0:geographicClimb&&gradientSections.length?gradientSections[gradientIndex].gradient:officialProfile?profileBucketGradientAt(base.courseDistance)
+      let gradient=preRace||postRace?0:geographicClimb&&gradientSections.length?gradientSections[gradientIndex].gradient:officialProfile?profileBucketGradientAt(base.courseDistance)
         :gradientSections[gradientIndex]?.gradient??(/descent/i.test(text(base.segment))?-3.2:0)
       const distanceToSummit=summitDistance===null?0:Math.max(0,summitDistance-base.courseDistance)
       const climbProgress=geographicClimbProgress
@@ -239,6 +240,10 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
         prescription={...prescription,zone:rollout.phase==='OPENING'?'Z1':'Z1–Z2',ftpPercent:{min:rollout.intensityPercent,max},power:`${Math.round(riderFtp*rollout.intensityPercent/100)}–${Math.round(riderFtp*max/100)} W`}
       }
       if(base.lifecycle==='KILOMETRE_ZERO')prescription={...prescription,zone:'Z2',ftpPercent:{min:60,max:72},power:`${Math.round(riderFtp*.6)}–${Math.round(riderFtp*.72)} W`}
+      if(base.lifecycle==='OPTIONAL_COOLDOWN'){
+        const ceiling=55-20*base.segmentProgress,floor=Math.max(25,ceiling-10)
+        prescription={...prescription,zone:'RECOVERY',ftpPercent:{min:floor,max:ceiling},power:`${Math.round(riderFtp*floor/100)}–${Math.round(riderFtp*ceiling/100)} W`,cadence:`${Math.round(88-5*base.segmentProgress)}–${Math.round(98-5*base.segmentProgress)} rpm`}
+      }
       const terrain=gradient<0?'descent':gradient>2?'climb':/rolling/i.test(text(base.segment))?'rolling':'flat'
       const bikeProfile=bikeProfileForEquipment(equipment)??PELOTON_MANUAL_PROFILE
       const livePrescription=applyTerrainModifier(prescription,gradient,terrain,riderFtp,bikeProfile,undefined,equipment,cadencePreferences)
