@@ -50,6 +50,8 @@ function RideTheRacesApp() {
     root.dataset.motion = career.settings.reducedMotion ? 'reduced' : 'full'
   }, [career.settings.theme, career.settings.reducedMotion])
 
+  useEffect(()=>{const viewport=window.visualViewport;const sync=()=>document.documentElement.style.setProperty('--visual-viewport-top',`${Math.max(0,viewport?.offsetTop??0)}px`);sync();viewport?.addEventListener('resize',sync);viewport?.addEventListener('scroll',sync);return()=>{viewport?.removeEventListener('resize',sync);viewport?.removeEventListener('scroll',sync)}},[])
+
   useEffect(() => {
     if (['race','stageDetail','tactics','ride'].includes(screen)) window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
   }, [screen])

@@ -549,6 +549,7 @@ function RideScreen({
           margin: 0 auto;
           padding: 18px 18px calc(56px + var(--safe-bottom));
           position: relative;
+          scroll-padding-block: var(--protected-top) calc(96px + var(--safe-bottom));
         }
 
         .ride-topbar {
@@ -814,7 +815,8 @@ function RideScreen({
           margin-top: 10px;
         }
 
-        .ride-detail-stat { padding: 12px !important; min-height: 0 !important; }
+        .ride-detail-stat { padding: 12px !important; min-height: 0 !important; overflow-wrap:anywhere; }
+        .ride-detail-stat > small,.ride-detail-stat > strong{display:block}.ride-detail-stat > strong{margin-top:5px}.ride-detail-stat button{min-height:44px;max-width:100%;white-space:normal}.ride-details{padding-bottom:calc(72px + var(--safe-bottom))}.ride-details > button:last-child{scroll-margin-bottom:calc(80px + var(--safe-bottom))}
         .ride-detail-objectives { padding: 14px !important; }
         .ride-detail-objectives p { margin-bottom: 7px; }
 
@@ -849,8 +851,8 @@ function RideScreen({
 
         @media (max-width: 700px) {
           .ride-cockpit {
-            padding: var(--safe-top) 10px calc(28px + var(--safe-bottom));
-            scroll-padding-top: var(--safe-top);
+            padding: calc(var(--protected-top) + 8px) 10px calc(28px + var(--safe-bottom));
+            scroll-padding-top: var(--protected-top);
           }
 
           .ride-stage-header {
@@ -962,7 +964,7 @@ function RideScreen({
             padding: 26px 18px !important;
           }
         }
-        @media (orientation:landscape) and (max-height:600px){.ride-cockpit{max-width:1100px;display:grid;grid-template-columns:minmax(420px,1.1fr) minmax(360px,.9fr);gap:10px;padding-top:var(--safe-top)}.ride-topbar,.ride-stage-header{grid-column:1/-1}.live-profile-card{grid-column:1}.cockpit-card,.ride-primary-control,.ride-details-toggle,.ride-details{grid-column:2}.cockpit-card{grid-row:3/span 2;margin-top:10px}.segment-clock strong{font-size:3.6rem}}
+        @media (orientation:landscape) and (max-height:600px){.ride-cockpit{max-width:1100px;display:grid;grid-template-columns:minmax(420px,1.1fr) minmax(360px,.9fr);gap:10px;padding-top:calc(var(--protected-top) + 8px)}.ride-topbar,.ride-stage-header{grid-column:1/-1}.live-profile-card{grid-column:1}.cockpit-card,.ride-primary-control,.ride-details-toggle,.ride-details{grid-column:2}.cockpit-card{grid-row:3/span 2;margin-top:10px}.segment-clock strong{font-size:3.6rem}}
       `}</style>
 
       {countdown !== null && <div className="ride-countdown" aria-live="polite"><strong>{countdown}</strong><span>START DEVICES · COUNTDOWN SILENT</span></div>}

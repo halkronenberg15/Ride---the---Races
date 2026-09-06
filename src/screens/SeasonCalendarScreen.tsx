@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { getCalendarMonth, getInitialMonth, type RaceCalendarEntry, type Season } from '../data/seasonCalendar'
+import { CalendarTeamBusButton } from '../components/CalendarTeamBusButton'
 
 const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -18,6 +19,7 @@ export function MonthCalendar({ year, month, races, currentRace, onOpenRace }: {
     })}</div>
   </article>
 }
+export function CalendarMonthSection({year,month,races,currentRace,onOpenRace,onBack,setRef}:{year:number;month:number;races:RaceCalendarEntry[];currentRace?:string;onOpenRace:(raceId:string,month:number)=>void;onBack:()=>void;setRef:(node:HTMLDivElement|null)=>void}){return <div className="calendar-month-section" data-month-section={month} ref={setRef}><MonthCalendar year={year} month={month} races={races} currentRace={currentRace} onOpenRace={(id)=>onOpenRace(id,month)}/><CalendarTeamBusButton onBack={onBack}/></div>}
 
 export default function SeasonCalendarScreen({ season, currentRace, onBack, onOpenRace }: { season: Season; currentRace?: string; onBack: () => void; onOpenRace: (raceId: string) => void }) {
   const monthRefs = useRef<(HTMLElement | null)[]>([])
@@ -26,6 +28,6 @@ export default function SeasonCalendarScreen({ season, currentRace, onBack, onOp
   return <section className="season-calendar-screen">
     <button type="button" onClick={onBack}>← Team Bus</button>
     <header className="compact-page-header"><p className="eyebrow">TEAM LORIOT • SEASON</p><h1>{season.year}</h1><p>Professional race calendar. Select a race start to open its roadbook.</p></header>
-    <div className="season-months">{monthNames.map((_, month) => <div key={month} ref={(node) => { monthRefs.current[month] = node }}><MonthCalendar year={season.year} month={month} races={season.races} currentRace={currentRace} onOpenRace={(id)=>openRace(id,month)} /><button type="button" style={{width:'100%',minHeight:44,margin:'12px 0 20px'}} onClick={onBack}>← Back to Team Bus</button></div>)}</div>
+    <div className="season-months">{monthNames.map((_, month) => <CalendarMonthSection key={month} year={season.year} month={month} races={season.races} currentRace={currentRace} onOpenRace={openRace} onBack={onBack} setRef={(node)=>{monthRefs.current[month]=node}}/>)}</div>
   </section>
 }

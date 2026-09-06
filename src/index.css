@@ -3,6 +3,7 @@
   --safe-right: max(env(safe-area-inset-right, 0px), 10px);
   --safe-bottom: max(env(safe-area-inset-bottom, 0px), 10px);
   --safe-left: max(env(safe-area-inset-left, 0px), 10px);
+  --protected-top: var(--safe-top);
   --text: #6b6375;
   --text-h: #08060d;
   --bg: #fff;
@@ -38,8 +39,9 @@
    overlays the visual viewport. Phones therefore retain one compact fallback;
    the cockpit owns it once rather than stacking per-control offsets. */
 @media (max-width: 700px) {
-  :root { --safe-top: max(env(safe-area-inset-top, 0px), 48px); }
+  :root { --safe-top: max(env(safe-area-inset-top, 0px), 48px); --protected-top:max(env(safe-area-inset-top, 0px), var(--visual-viewport-top, 0px), 64px); }
 }
+@media (orientation:landscape) and (max-height:600px){:root{--protected-top:max(env(safe-area-inset-top, 0px),var(--visual-viewport-top, 0px),44px)}}
 
 @media (prefers-color-scheme: dark) {
   :root {

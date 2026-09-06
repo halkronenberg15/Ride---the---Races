@@ -7,6 +7,9 @@ import { kmToMi } from '../utils/units'
 import StageSectionPreview from '../components/StageSectionPreview'
 import { applyDurationSelection, courseDurationOptions, durationSelectionForStage, stageDurationPlan, type DurationMode, type DurationSelection } from '../engine/durationEngine'
 import { segmentPurposes } from '../engine/raceLifecycle'
+import { GENERIC_MANUAL_EQUIPMENT, type EquipmentInstance } from '../engine/manualBike'
+import { WorkoutAllocation } from '../components/WorkoutAllocation'
+import { resolvePreviewTarget } from '../engine/previewTargets'
 
 type TacticsScreenProps = {
   stageNumber: number
@@ -31,6 +34,8 @@ function TacticsScreen({ stageNumber, stageData, onBack, onStartRide }: TacticsS
   const minutes = Math.round(adaptedSegments.reduce((sum, segment) => sum + segment.sec, 0) / 60)
   const decisiveSegment = adaptedSegments.find((segment) => /climb|finish|attack|sprint/i.test(`${segment.type} ${segment.name}`)) ?? adaptedSegments[0]
   const profile = strategyProfiles[strategy]
+  const equipment=(career.equipment.instances.find(item=>item.id===career.equipment.activeEquipmentId)??GENERIC_MANUAL_EQUIPMENT) as EquipmentInstance
+  const decisiveTarget=resolvePreviewTarget(decisiveSegment,career.rider.ftp||150,equipment,career.rider.cadencePreferences)
 
   return (
     <section className="tactics-screen race-briefing-screen">
@@ -49,8 +54,8 @@ function TacticsScreen({ stageNumber, stageData, onBack, onStartRide }: TacticsS
           <h2>{stage.objective}</h2>
         </div>
 
-        {!stage.isTraining&&durationResult&&<div className="dashboard-card workout-allocation" aria-label="Selected workout allocation"><span><small>TOTAL WORKOUT</small><strong>{Math.round(durationResult.map.totalDurationSeconds/60)} min</strong></span><span><small>Rollout + KM0 + Race</small><strong>{Math.round(durationResult.map.raceDurationSeconds/60)} min</strong></span><span><small>Cooldown</small><strong>{Math.round(durationResult.map.cooldownSeconds/60)} min</strong></span></div>}
-        <StageSectionPreview stageNumber={stage.number} segments={adaptedSegments.filter((_,index)=>segmentPurposes(adaptedSegments)[index]!=='post-finish-cooldown')} measurementSystem={career.settings.measurementSystem} />
+        {!stage.isTraining&&durationResult&&<WorkoutAllocation totalSeconds={durationResult.map.totalDurationSeconds} raceSeconds={durationResult.map.raceDurationSeconds} cooldownSeconds={durationResult.map.cooldownSeconds}/>}
+        <StageSectionPreview stageNumber={stage.number} segments={adaptedSegments.filter((_,index)=>segmentPurposes(adaptedSegments)[index]!=='post-finish-cooldown')} measurementSystem={career.settings.measurementSystem} ftp={career.rider.ftp||150} equipment={equipment} cadencePreferences={career.rider.cadencePreferences} />
 
         <div className="strategy-selector" aria-label="Race strategy">
           {(['Conservative', 'Balanced', 'Aggressive'] as RaceStrategy[]).map((option) => (
@@ -80,9 +85,9 @@ function TacticsScreen({ stageNumber, stageData, onBack, onStartRide }: TacticsS
             <p className="eyebrow">LIVE WORKOUT IMPACT</p>
             <h3>{decisiveSegment.name}</h3>
             <div className="impact-grid">
-              <span><small>POWER</small><strong>{decisiveSegment.power}</strong></span>
-              <span><small>CADENCE</small><strong>{decisiveSegment.cadence}</strong></span>
-              <span><small>RESISTANCE</small><strong>{decisiveSegment.resistance}</strong></span>
+              <span><small>POWER</small><strong>{decisiveTarget.power}</strong></span>
+              <span><small>CADENCE</small><strong>{decisiveTarget.cadence}</strong></span>
+              <span><small>RESISTANCE</small><strong>{decisiveTarget.resistance}</strong></span>
               <span><small>TIME</small><strong>{minutes} min</strong></span>
             </div>
             <p>{profile.description}</p>
