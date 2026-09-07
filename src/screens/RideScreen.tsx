@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/exhaustive-deps -- radio and wake-lock callbacks intentionally read the live cockpit closure without restarting timed effects. */
+/* eslint-disable react-hooks/exhaustive-deps, react-hooks/immutability, react-hooks/purity -- radio and wake-lock callbacks intentionally read the live cockpit closure without restarting timed effects. */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { getRaceStage, type RaceStage } from '../data/raceStages'
 import type { RaceStrategy } from '../types/tactics'
@@ -16,11 +16,12 @@ import { CLICK_IN_CUE, PRE_RIDE_COUNTDOWN } from '../engine/preRide'
 import { raceIdentities } from '../data/raceLibrary'
 import { isIndividualTimeTrial, officialSegments, ttStartSnapshot } from '../engine/startArchitecture'
 import { applyDurationSelection, durationSelectionForStage, type DurationSelection } from '../engine/durationEngine'
-import { GENERIC_MANUAL_EQUIPMENT, type EquipmentInstance } from '../engine/manualBike'
+import { bikeProfileForEquipment, GENERIC_MANUAL_EQUIPMENT, type EquipmentInstance } from '../engine/manualBike'
 import { competitiveEventsEligible, rolloutProgress } from '../engine/raceLifecycle'
-import { applyTacticalAction, availableTacticalActions, resolveTacticalTransition, type TacticalAction } from '../engine/tacticalActions'
+import { applyTacticalAction, resolveTacticalTransition, type TacticalAction } from '../engine/tacticalActions'
 import { captionDurationMs, type TeamRadioMessage } from '../engine/teamRadio'
 import { completeCooldown, type CooldownCompletion } from '../engine/rideCompletion'
+import { shouldDisplayClimb, sprintTransitionCountdown, tacticalOpportunity, tacticalPrescription, trainingMarkerPositions } from '../engine/alpha4021'
 
 type RideScreenProps = {
   stageNumber: number
@@ -125,10 +126,12 @@ function RideScreen({
 
   const segmentRemaining = engine.segmentRemaining
   const sprintPhase = engine.sprintPhase
+  const tactical=resolveTacticalTransition(activeRide.ride?.tacticalState??'PELOTON',activeRide.ride?.tacticalTransition??null,elapsedSeconds)
   const activePrescription = engine.livePrescription
-  const displayPower = activePrescription.power
-  const displayCadence = activePrescription.cadence
-  const displayResistance = activePrescription.resistance
+  const displayedPrescription = tacticalPrescription(activePrescription,tactical.effortMultiplier,equipment,bikeProfileForEquipment(equipment),career.rider.cadencePreferences)
+  const displayPower = displayedPrescription.power
+  const displayCadence = displayedPrescription.cadence
+  const displayResistance = displayedPrescription.resistance
   const displayZone = activePrescription.zone
   const afterKmZero = engine.lifecycle==='OFFICIAL_RACING'
 
@@ -144,7 +147,7 @@ function RideScreen({
   // Verified-course climb UI follows the road coordinate, including the exact
   // summit sample; training fallback retains its authored workout semantics.
   const currentSegmentIsClimb = timeline.profileSourceKind === 'authoritative'
-    ? engine.activeClimbId !== null
+    ? engine.activeClimbId !== null&&shouldDisplayClimb({authoredClassified:/category|summit|mountain|climb/i.test(`${currentSegment.name} ${currentSegment.type}`),averageGradient:engine.climbAverageGradient,elevationGainM:Math.max(0,engine.climbAverageGradient*engine.distanceToSummit*10),distanceKm:engine.distanceToSummit})
     : isClimb(currentSegment)
 
   const gradientBlocks = engine.gradientSections
@@ -157,8 +160,7 @@ function RideScreen({
   const summitDistanceKm = engine.distanceToSummit
   const mode = jeanMode(currentSegment, isFinished)
   const actions = useMemo(() => timeline.actionTargets(elapsedSeconds), [elapsedSeconds, timeline])
-  const tactical=resolveTacticalTransition(activeRide.ride?.tacticalState??'PELOTON',activeRide.ride?.tacticalTransition??null,elapsedSeconds)
-  const tacticalActions=availableTacticalActions(tactical.state,engine.lifecycle==='OFFICIAL_RACING')
+  const opportunity=tacticalOpportunity(currentSegment,Boolean(stage.isTraining),Boolean(sprintPhase),engine.elapsedInSegment)
   const radioHistory=activeRide.ride?.radioHistory??[]
   const nextCompetitionMarker=timeline.markers.find(marker=>(marker.type==='sprint'||marker.type==='kom')&&marker.position>engine.courseProgress)
 
@@ -1036,7 +1038,7 @@ function RideScreen({
         style={{ margin: '16px 0 10px' }}
       >
         <p className="eyebrow">
-          STAGE {stage.number} • TEAM LORIOT
+          {stage.isTraining?(workoutId==='recovery-30'?'RECOVERY SESSION':'TRAINING RIDE'):`STAGE ${stage.number}`} • TEAM LORIOT
         </p>
 
         <h1
@@ -1050,8 +1052,7 @@ function RideScreen({
 
         <p style={{ opacity: 0.7 }}>
           {formatDistance(stage.distanceKm, measurementSystem)} •{' '}
-          {formatElevation(stage.elevationM, measurementSystem)} D+ •{' '}
-          {strategy}
+          {formatElevation(stage.elevationM, measurementSystem)} D+
         </p>
       </header>
 
@@ -1066,7 +1067,7 @@ function RideScreen({
                   <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="rgba(244,106,0,.34)" />
                   <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="rgba(105,105,105,.9)" clipPath="url(#climbStageClip)" />
                   <polyline points={profilePoints.join(' ')} fill="none" stroke="#ffae60" strokeWidth="2.4" vectorEffect="non-scaling-stroke" />
-                  {timeline.segmentStarts.slice(1).map((start) => { const x=timeline.roadSnapshot(start).courseProgress*100; return <line key={start} x1={x} x2={x} y1="88" y2="100" stroke="rgba(255,255,255,.5)" vectorEffect="non-scaling-stroke" /> })}
+                  {(stage.isTraining?trainingMarkerPositions(segments).slice(1,-1).map((position,index)=>({key:index,x:position*100})):timeline.segmentStarts.slice(1).map(start=>({key:start,x:timeline.roadSnapshot(start).courseProgress*100}))).map(marker => <line key={marker.key} x1={marker.x} x2={marker.x} y1="88" y2="100" stroke="rgba(255,255,255,.5)" vectorEffect="non-scaling-stroke" />)}
                   <line x1={riderMarkerX} x2={riderMarkerX} y1="2" y2="98" stroke="#fff" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
                 </svg>
                 {!stage.isTraining && timeline.markers.map((marker) => <span key={marker.key} className={`race-marker ${marker.type}`} style={{ left: `${marker.position * 100}%`, top:`${marker.localY}%`, color:marker.color }} title={marker.label}><b style={{ transform:`translate(${markerLabelOffset(marker.position,timeline.markers.map(item=>item.position)).translateX}%, ${markerLabelOffset(marker.position,timeline.markers.map(item=>item.position)).translateY}px)` }}>{marker.label}</b><i /></span>)}
@@ -1152,7 +1153,7 @@ function RideScreen({
                     <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="rgba(244,106,0,0.42)" />
                     <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="rgba(92,92,92,.88)" clipPath="url(#completedStageClip)" />
                     <polyline points={profilePoints.join(' ')} fill="none" stroke="rgba(255,174,96,0.98)" strokeWidth="2.4" vectorEffect="non-scaling-stroke" />
-                    {timeline.segmentStarts.slice(1).map((start) => { const x=timeline.roadSnapshot(start).courseProgress*100; return <line key={start} x1={x} x2={x} y1="88" y2="100" stroke="rgba(255,255,255,.5)" vectorEffect="non-scaling-stroke" /> })}
+                    {(stage.isTraining?trainingMarkerPositions(segments).slice(1,-1).map((position,index)=>({key:index,x:position*100})):timeline.segmentStarts.slice(1).map(start=>({key:start,x:timeline.roadSnapshot(start).courseProgress*100}))).map(marker => <line key={marker.key} x1={marker.x} x2={marker.x} y1="88" y2="100" stroke="rgba(255,255,255,.5)" vectorEffect="non-scaling-stroke" />)}
                     <line x1={riderMarkerX} x2={riderMarkerX} y1="2" y2="98" stroke="rgba(255,255,255,0.68)" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
                   </svg>
                   {!stage.isTraining && timeline.markers.map((marker) => <span key={marker.key} className={`race-marker ${marker.type}`} style={{ left: `${marker.position * 100}%`, top:`${marker.localY}%`, color:marker.color }} title={marker.label}><b style={{ transform:`translate(${markerLabelOffset(marker.position,timeline.markers.map(item=>item.position)).translateX}%, ${markerLabelOffset(marker.position,timeline.markers.map(item=>item.position)).translateY}px)` }}>{marker.label}</b><i /></span>)}
@@ -1204,9 +1205,12 @@ function RideScreen({
             </div>
 
             <div className="segment-clock">
+              {sprintPhase&&<strong className="sprint-command">{sprintPhase.name}</strong>}
               <strong>{formatTime(sprintPhase?.remaining ?? segmentRemaining)}</strong>
               <small>{sprintPhase ? `${sprintPhase.name} PHASE REMAINING` : 'SEGMENT REMAINING'}</small>
+              {sprintPhase&&sprintPhase.remaining<=10&&<b>NEXT IN {Math.ceil(sprintPhase.remaining)} SEC{sprintTransitionCountdown(sprintPhase.remaining)?` · ${sprintTransitionCountdown(sprintPhase.remaining)}`:''}</b>}
             </div>
+            {displayedPrescription.manualTarget.recommendedResistance!==null&&<div className="next-line">START {displayedPrescription.manualTarget.recommendedResistance}% @ {displayedPrescription.manualTarget.recommendedCadence} RPM · {displayedPrescription.manualTarget.adjustmentGuidance}</div>}
 
             <div className="target-grid">
               <div className="target-tile">
@@ -1227,8 +1231,9 @@ function RideScreen({
               </div>
             </div>
             <div className="next-line">NEXT: {actions.next?`${actions.next.name} · ${formatTime(actions.timeUntilNext??0)} · ${actions.next.power} · ${actions.next.cadence} · ${actions.next.openingResistance===null?'Resistance unavailable':`${Math.max(0,actions.next.openingResistance-1)}–${actions.next.openingResistance+2}%`}`:'Stage finish'}</div>
-            {nextCompetitionMarker&&<div className="next-line" aria-label="Next points marker">{nextCompetitionMarker.type==='kom'?`KOM ${nextCompetitionMarker.category??''}`:'SPRINT'} · {nextCompetitionMarker.points??0} pts · {formatTime(Math.max(0,nextCompetitionMarker.at-elapsedSeconds))} · {formatDistance(Math.max(0,nextCompetitionMarker.routeKm-routeKm),measurementSystem)}</div>}
-            <div className="tactical-actions" aria-label={`Tactical state ${tactical.state}`}>{tacticalActions.map(action=><button type="button" key={action} onClick={()=>chooseTactic(action)}>{action.replaceAll('_',' ')}</button>)}</div>
+            {!stage.isTraining&&nextCompetitionMarker&&<div className="next-line" aria-label="Next points marker">{nextCompetitionMarker.type==='kom'?`KOM ${nextCompetitionMarker.category??''}`:'SPRINT'} · {nextCompetitionMarker.points??0} pts · {formatTime(Math.max(0,nextCompetitionMarker.at-elapsedSeconds))} · {formatDistance(Math.max(0,nextCompetitionMarker.routeKm-routeKm),measurementSystem)}</div>}
+            {opportunity&&tactical.state==='PELOTON'&&!sprintPhase&&<div className="tactical-event-card"><strong>{opportunity.title}</strong><p>Jean: “{opportunity.prompt}”</p><small>{opportunity.durationSeconds} SEC · +{opportunity.powerDeltaPercent}% POWER · returns progressively to the current-road baseline</small><div><button type="button" onClick={()=>chooseTactic(opportunity.action)}>{opportunity.action.replaceAll('_',' ')}</button><button type="button">{opportunity.decline}</button></div></div>}
+            {tactical.state!=='PELOTON'&&<div className="tactical-event-card"><strong>{tactical.state==='RETURNING_TO_PELOTON'?'RETURNING TO PELOTON':tactical.state}</strong>{tactical.transition&&<b>{formatTime(45*(1-tactical.transition.progress))}</b>}{!sprintPhase&&tactical.state!=='RETURNING_TO_PELOTON'&&<button type="button" onClick={()=>chooseTactic('RETURN_TO_PELOTON')}>RETURN TO PELOTON</button>}</div>}
 
             <div className="progress-track">
               <div

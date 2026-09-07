@@ -7,12 +7,12 @@ import type { TacticalState, TacticalTransition } from '../engine/tacticalAction
 import type { TeamRadioMessage } from '../engine/teamRadio'
 
 const KEY = 'ride-the-races-active-ride-v4.0.1'
-export type ActiveRide = PersistedRideClock & { stageNumber: number; strategy: RaceStrategy; startedAt: string; library: string; workoutId?: string; durationMode:DurationMode; customDurationMinutes?:number; targetDurationMinutes?:number;tacticalState:TacticalState;tacticalTransition:TacticalTransition|null;radioHistory:TeamRadioMessage[];earnedMarkerIds:string[] }
+export type ActiveRide = PersistedRideClock & { stageNumber: number; strategy: RaceStrategy; startedAt: string; library: string; workoutId?: string; durationMode:DurationMode; customDurationMinutes?:number; targetDurationMinutes?:number;tacticalState:TacticalState;tacticalTransition:TacticalTransition|null;pendingTacticalEventId:string|null;tacticalEventHistory:Array<{id:string;decision:string;at:number}>;activeTacticalEffort:{eventId:string;startedAt:number;durationSeconds:number;powerDeltaPercent:number}|null;sprintPhaseState:{name:string;sectorIndex:number}|null;recommendedTargetPairing:{cadence:number;resistance:number}|null;radioHistory:TeamRadioMessage[];earnedMarkerIds:string[] }
 type Value = { ride: ActiveRide | null; elapsed: number; begin: (stage: number, strategy: RaceStrategy, library?:string, workoutId?:string, duration?:DurationSelection) => void; pause: () => void; resume: () => void; updateRide:(patch:Partial<ActiveRide>)=>void; end: () => void }
 const Context = createContext<Value | null>(null)
 
 function restore(): ActiveRide | null {
-  try { const ride=JSON.parse(localStorage.getItem(KEY) ?? 'null') as ActiveRide|null; return ride?{...ride,durationMode:ride.durationMode??'RECOMMENDED',tacticalState:ride.tacticalState??'PELOTON',tacticalTransition:ride.tacticalTransition??null,radioHistory:ride.radioHistory??[],earnedMarkerIds:ride.earnedMarkerIds??[]}:null } catch { return null }
+  try { const ride=JSON.parse(localStorage.getItem(KEY) ?? 'null') as ActiveRide|null; return ride?{...ride,strategy:'Balanced',durationMode:ride.durationMode??'RECOMMENDED',tacticalState:ride.tacticalState??'PELOTON',tacticalTransition:ride.tacticalTransition??null,pendingTacticalEventId:ride.pendingTacticalEventId??null,tacticalEventHistory:ride.tacticalEventHistory??[],activeTacticalEffort:ride.activeTacticalEffort??null,sprintPhaseState:ride.sprintPhaseState??null,recommendedTargetPairing:ride.recommendedTargetPairing??null,radioHistory:ride.radioHistory??[],earnedMarkerIds:ride.earnedMarkerIds??[]}:null } catch { return null }
 }
 
 export function ActiveRideProvider({ children }: { children: React.ReactNode }) {
@@ -27,7 +27,7 @@ export function ActiveRideProvider({ children }: { children: React.ReactNode }) 
   const value = useMemo<Value>(() => ({
     ride,
     elapsed: ride ? elapsedFromClock(ride, now) : 0,
-    begin(stageNumber, strategy, library='tour-2026', workoutId, duration={mode:'RECOMMENDED'}) { setRide({ stageNumber, strategy, library, workoutId, durationMode:duration.mode, customDurationMinutes:duration.customMinutes, targetDurationMinutes:duration.targetMinutes, accumulatedSeconds: 0, runningSince: null, paused: true, startedAt: new Date().toISOString(),tacticalState:'PELOTON',tacticalTransition:null,radioHistory:[],earnedMarkerIds:[] }) },
+    begin(stageNumber, _strategy, library='tour-2026', workoutId, duration={mode:'RECOMMENDED'}) { setRide({ stageNumber, strategy:'Balanced', library, workoutId, durationMode:duration.mode, customDurationMinutes:duration.customMinutes, targetDurationMinutes:duration.targetMinutes, accumulatedSeconds: 0, runningSince: null, paused: true, startedAt: new Date().toISOString(),tacticalState:'PELOTON',tacticalTransition:null,pendingTacticalEventId:null,tacticalEventHistory:[],activeTacticalEffort:null,sprintPhaseState:null,recommendedTargetPairing:null,radioHistory:[],earnedMarkerIds:[] }) },
     pause() { setRide((current) => current ? { ...current, ...pauseClock(current, Date.now()) } : null) },
     resume() { setRide((current) => current ? { ...current, ...resumeClock(current, Date.now()) } : null) },
     updateRide(patch){setRide(current=>current?{...current,...patch}:null)},

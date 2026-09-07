@@ -1043,3 +1043,5 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     grid-template-columns: 1fr;
   }
 }
+/* Alpha 4.0.21 sprint and authored tactical presentation. */
+.sprint-command{display:block!important;color:#ff7a21;font-size:clamp(2rem,10vw,4.5rem)!important;letter-spacing:.08em}.tactical-event-card{margin-top:10px;padding:14px;border:2px solid #ff7a21;border-radius:12px;background:#171719}.tactical-event-card>strong{display:block;font-size:1.15rem}.tactical-event-card div{display:flex;gap:8px;margin-top:10px}.tactical-event-card button{min-height:44px;min-width:44px;flex:1}.preview-target-values{display:contents}.preview-stat strong{overflow-wrap:anywhere}

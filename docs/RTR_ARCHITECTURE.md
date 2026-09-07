@@ -204,3 +204,17 @@ On negative canonical gradient, the manual resistance target must fall with road
 Future telemetry may feed a stable-sample detector. A sufficiently stable 10–20 second resistance/cadence/power window can produce a HIGH-confidence non-aggregate sample, which may improve the device profile. This API boundary does not imply unsupported Peloton connectivity.
 
 Jean may later announce materially useful resistance changes, but must use threshold/debounce behavior rather than chatter for every point. Alpha 4.0.18 prioritizes exact visual guidance and adds no fabricated resistance dialogue.
+
+## Alpha 4.0.21 overlays and training boundary
+
+The selected-duration timeline remains the sole source of elapsed time, distance, profile position, gradient, markers, sector boundaries, cooldown, and finish. `manualBike.ts` maps each physiological prescription to coupled cadence/resistance candidates through a monotonic, cadence-normalized interpolation of replaceable calibration samples. It emits a narrow resistance window, recommended start, feasible combinations, ±5 W tolerance, reason, and feasibility; UI surfaces call this same resolver.
+
+`alpha4021.ts` contains presentation-only policies. Authored/deterministic Jean opportunities create power overlays but cannot return geography. Decline is an identity transform; accepted efforts resolve through equipment targets; the 45-second Return to Peloton multiplier ends exactly at the current-road baseline. Sprint phases remain offsets inside the canonical sector and suppress tactical opportunities. Radio priority is safety/lifecycle, sprint, tactical decision, sector/marker, then ambient coaching.
+
+Training mode is an explicit product boundary: no race strategy, tactics, competition markers, or race copy. Training profile boundaries are cumulative workout-time fractions, while professional race profiles remain course-distance fractions. Detailed climb UI requires an authored classification or the deterministic gradient/gain/distance threshold; canonical road samples are untouched.
+
+Active-ride fields are additive and default on restore: pending tactical event, tactical event history, active effort, transition, sprint phase state, and recommended target pairing. Legacy strategy/history text remains readable but new prescriptions always start from Jean's authored baseline.
+
+Alpha 4.0.21 calibration pass 2 adds `pelotonCalibration.ts`: CSV workout evidence is parsed into equipment-scoped samples. Whole-workout averages are explicitly aggregate/LOW confidence; recent samples have greater fitting weight, while stable samples retain their higher confidence. `bikeProfileForEquipment` builds a personalized profile only for the selected equipment instance, leaving the reference curve immutable and avoiding a universal rider-named curve.
+
+At runtime, Peloton calibration is not importer-only: onboarding attaches the anonymous aggregate seed to the created Peloton equipment instance, and migration attaches it to legacy calibrated-family instances only when their sample list is empty. Existing personalized samples win by preservation. The active equipment lookup in briefings and the cockpit passes that instance through `bikeProfileForEquipment`, so both preview and live road prescriptions consume the equipment-scoped profile.

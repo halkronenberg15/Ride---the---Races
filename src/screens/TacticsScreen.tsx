@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { getRaceStage, type RaceStage } from '../data/raceStages'
-import { adaptSegment, strategyProfiles } from '../engine/adaptiveRide'
+import { adaptSegment } from '../engine/adaptiveRide'
 import { useCareer } from '../state/CareerContext'
 import type { RaceStrategy } from '../types/tactics'
 import { kmToMi } from '../utils/units'
@@ -21,19 +21,17 @@ type TacticsScreenProps = {
 
 function TacticsScreen({ stageNumber, stageData, onBack, onStartRide }: TacticsScreenProps) {
   const { career } = useCareer()
-  const [strategy, setStrategy] = useState<RaceStrategy>('Balanced')
   const [durationMode,setDurationMode]=useState<DurationMode>(career.settings.preferredRideDurationMode)
   const stage = useMemo(() => stageData ?? getRaceStage(stageNumber), [stageNumber, stageData])
   const durationPlan=useMemo(()=>stageDurationPlan(stage),[stage])
   const durationOptions=useMemo(()=>courseDurationOptions(stage),[stage])
   const [customMinutes,setCustomMinutes]=useState(durationPlan.minutes.RECOMMENDED)
   const durationSelection=useMemo(()=>durationSelectionForStage(stage,durationMode==='CUSTOM'?{mode:'CUSTOM',customMinutes}:{mode:durationMode}),[stage,durationMode,customMinutes])
-  const baseSegments = useMemo(() => stage.segments.map((segment) => adaptSegment(segment, career.rider.ftp, strategy)), [stage, career.rider.ftp, strategy])
+  const baseSegments = useMemo(() => stage.segments.map((segment) => adaptSegment(segment, career.rider.ftp, 'Balanced')), [stage, career.rider.ftp])
   const durationResult=useMemo(()=>stage.isTraining?null:applyDurationSelection(baseSegments,durationSelection),[stage.isTraining,baseSegments,durationSelection])
   const adaptedSegments = durationResult?.segments??baseSegments
   const minutes = Math.round(adaptedSegments.reduce((sum, segment) => sum + segment.sec, 0) / 60)
   const decisiveSegment = adaptedSegments.find((segment) => /climb|finish|attack|sprint/i.test(`${segment.type} ${segment.name}`)) ?? adaptedSegments[0]
-  const profile = strategyProfiles[strategy]
   const equipment=(career.equipment.instances.find(item=>item.id===career.equipment.activeEquipmentId)??GENERIC_MANUAL_EQUIPMENT) as EquipmentInstance
   const decisiveTarget=resolvePreviewTarget(decisiveSegment,career.rider.ftp||150,equipment,career.rider.cadencePreferences)
 
@@ -57,16 +55,6 @@ function TacticsScreen({ stageNumber, stageData, onBack, onStartRide }: TacticsS
         {!stage.isTraining&&durationResult&&<WorkoutAllocation totalSeconds={durationResult.map.totalDurationSeconds} raceSeconds={durationResult.map.raceDurationSeconds} cooldownSeconds={durationResult.map.cooldownSeconds}/>}
         <StageSectionPreview stageNumber={stage.number} segments={adaptedSegments.filter((_,index)=>segmentPurposes(adaptedSegments)[index]!=='post-finish-cooldown')} measurementSystem={career.settings.measurementSystem} ftp={career.rider.ftp||150} equipment={equipment} cadencePreferences={career.rider.cadencePreferences} />
 
-        <div className="strategy-selector" aria-label="Race strategy">
-          {(['Conservative', 'Balanced', 'Aggressive'] as RaceStrategy[]).map((option) => (
-            <button key={option} type="button" onClick={() => setStrategy(option)} aria-pressed={strategy === option} className={strategy === option ? 'selected' : ''}>
-              <span>{option === 'Conservative' ? '🟢' : option === 'Balanced' ? '🟡' : '🔴'}</span>
-              <strong>{option}</strong>
-              <small>{strategyProfiles[option].label}</small>
-            </button>
-          ))}
-        </div>
-
         {!stage.isTraining&&<div className="duration-picker" aria-label="Choose your ride duration"><div><p className="eyebrow">CHOOSE YOUR RIDE</p><small>How long do you want to ride this {durationPlan.classification.replaceAll('-',' ')} course?</small></div><div className="duration-options">
           {durationOptions.map(option=><button key={option.minutes} type="button" className={durationMode===option.mode?'selected':''} aria-pressed={durationMode===option.mode} onClick={()=>setDurationMode(option.mode)}><strong>{option.minutes} MIN</strong>{option.recommended&&<small>RECOMMENDED</small>}</button>)}
           <button type="button" className={durationMode==='CUSTOM'?'selected':''} aria-pressed={durationMode==='CUSTOM'} onClick={()=>setDurationMode('CUSTOM')}><strong>CUSTOM</strong><small>{Math.round(durationSelection.customMinutes??customMinutes)} MIN</small></button>
@@ -74,15 +62,15 @@ function TacticsScreen({ stageNumber, stageData, onBack, onStartRide }: TacticsS
 
         <div className="briefing-columns">
           <article className="team-plan-card">
-            <p className="eyebrow">TEAM OBJECTIVES & ORDERS</p>
+            <p className="eyebrow">{stage.isTraining?'SESSION GOALS':'JEAN’S TEAM PLAN'}</p>
             <ul>
               <li>{stage.objective}</li>
               {stage.teamOrders.map((order) => <li key={order}>{order}</li>)}
             </ul>
           </article>
 
-          <article className="workout-impact-card">
-            <p className="eyebrow">LIVE WORKOUT IMPACT</p>
+          {!stage.isTraining&&<article className="workout-impact-card">
+            <p className="eyebrow">KEY WORKOUT TARGET</p>
             <h3>{decisiveSegment.name}</h3>
             <div className="impact-grid">
               <span><small>POWER</small><strong>{decisiveTarget.power}</strong></span>
@@ -90,12 +78,10 @@ function TacticsScreen({ stageNumber, stageData, onBack, onStartRide }: TacticsS
               <span><small>RESISTANCE</small><strong>{decisiveTarget.resistance}</strong></span>
               <span><small>TIME</small><strong>{minutes} min</strong></span>
             </div>
-            <p>{profile.description}</p>
-            <small>{profile.tradeoff}</small>
-          </article>
+          </article>}
         </div>
 
-        <button type="button" className="primary-cta briefing-start" onClick={() => onStartRide(strategy,stage.isTraining?{mode:'STANDARD',targetMinutes:minutes}:durationSelection)}>🚩 {stage.isTraining ? 'Start Ride' : `Roll Out • Stage ${stage.number} • ${minutes} min`}</button>
+        <button type="button" className="primary-cta briefing-start" onClick={() => onStartRide('Balanced',stage.isTraining?{mode:'STANDARD',targetMinutes:minutes}:durationSelection)}>🚩 {stage.isTraining ? 'START RIDE' : `ROLL OUT • STAGE ${stage.number} • ${minutes} MIN`}</button>
       </section>
     </section>
   )
