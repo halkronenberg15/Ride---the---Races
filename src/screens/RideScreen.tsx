@@ -1258,7 +1258,7 @@ function RideScreen({
               onClick={handleStart}
             >
               {elapsedSeconds === 0
-                ? '🚩 Roll Out'
+                ? stage.isTraining ? '🚩 Start Ride' : '🚩 Roll Out'
                 : '▶ Resume Ride'}
             </button>
           ) : (

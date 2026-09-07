@@ -31,3 +31,7 @@ Workout CSV imports are attached to the selected equipment instance rather than 
 ### Release-review calibration lifecycle
 
 There is no user-facing upload step. When onboarding selects Peloton, `equipmentForDevices` copies the anonymous approved 88 rpm / 36% / 105 W aggregate seed onto `peloton-baseline-bike` and marks that equipment profile personalized. When an existing Alpha 4.0.20 career is restored, `migrateCareer` adds the same seed only to a Peloton instance that has no samples; existing samples and all unrelated saved state remain intact. Race and training briefings and the cockpit select that active equipment instance, and `bikeProfileForEquipment` merges its samples into the resolver profile used by the normal preview and road-model paths. No workout name, rider identity, or workout history is stored in the seed.
+
+### Incognito runtime correction
+
+The new-rider seed was present, but the personalized profile builder changed the profile ID by appending the equipment ID. `applyTerrainModifier` intentionally accepts calibration only when `equipment.calibrationProfileId === profile.id`, so the renamed profile was rejected and the rendered target became `UNAVAILABLE`. Personalized profiles now retain the registered calibration-profile ID; rider/bike scoping remains in the equipment instance and its sample records. Recovery cockpit start copy is also explicitly training-aware (`Start Ride`, never `Roll Out`).
