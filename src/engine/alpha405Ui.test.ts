@@ -8,7 +8,7 @@ test('full section preview lives in Race Briefing and not live cockpit', () => {
   const cockpit = source('../screens/RideScreen.tsx')
   assert.match(briefing, /StageSectionPreview/)
   assert.doesNotMatch(cockpit, /STAGE SECTION PREVIEW|SECTION PREVIEW · DOES NOT CHANGE/)
-  assert.ok(briefing.indexOf('StageSectionPreview') < briefing.indexOf('strategy-selector'))
+  assert.match(briefing,/StageSectionPreview/); assert.doesNotMatch(briefing,/strategy-selector/)
 })
 test('Team Bus is navigation-only and Tour calendar is dedicated', () => {
   const bus = source('../screens/TeamBusScreen.tsx')
