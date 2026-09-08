@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict'
+import test from 'node:test'
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { ProfileDetail4022, ProfileStatusHeader, ProfileViewControl, WorldsHeroTitle } from '../components/WorldsRaceLayer.ts'
+
+const detail={mode:'DETAIL' as const,activeRangeId:'terrain',autoConsumedIds:[]}
+test('fixed Detail renders one functional mode and compact terrain hierarchy at mobile widths',()=>{for(const width of [320,375,390,430]){const html=renderToStaticMarkup(createElement('div',{className:'live-profile-wrap',style:{width,height:92}},createElement(ProfileStatusHeader,{worlds:true,completion:0,remaining:'170.1 mi'}),createElement(ProfileDetail4022,{state:detail,progress:0,gradientBlocks:[{start:0,end:1,gradient:0}],gradientIndex:0,currentGradient:0,nextGradient:1.2,nextName:'Bridge',changeDistance:'2.1 mi',resistance:'38–41%'}),createElement('div',{className:'profile-mode-control'},createElement('span',{className:'mode-label-full'},'DETAIL · SOUTH SHORE'),createElement('span',{className:'mode-label-compact'},'DETAIL'),createElement(ProfileViewControl,{state:detail,onToggle:()=>{}})),createElement('div',{className:'profile-rider'},'🚴')));assert.match(html,/height:92px/);assert.equal((html.match(/DETAIL ·/g)??[]).length,1);assert.match(html,/SHOW OVERVIEW/);assert.match(html,/CURRENT/);assert.match(html,/NEXT/);assert.match(html,/CHANGE IN/);assert.match(html,/RESISTANCE/);assert.match(html,/profile-rider/)}})
+test('tracker status keeps completion and remaining distance in one protected row',()=>{const html=renderToStaticMarkup(createElement(ProfileStatusHeader,{worlds:true,completion:0,remaining:'170.1 mi'}));assert.match(html,/LIVE RACE TRACKER/);assert.match(html,/profile-progress-row/);assert.match(html,/0% COMPLETE/);assert.match(html,/170.1 mi left/)})
+
+test('all Worlds hero titles render with an explicit white foreground',()=>{for(const title of ['UCI Road World Championships','Montréal Worlds — Elite Men Road Race','Montréal Worlds — Elite Men ITT']){const html=renderToStaticMarkup(createElement(WorldsHeroTitle,null,title));assert.match(html,/class="worlds-hero-title"/);assert.match(html,/color:#fff/);assert.match(html,new RegExp(title))}})

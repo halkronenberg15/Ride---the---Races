@@ -96,6 +96,7 @@ export type CareerState = {
   health: HealthEntry
   rideHistory: RideMetricEntry[]
   alpha4020: { calendar:{month:number;scrollY:number}; earnedMarkerIds:string[] }
+  alpha4022: { worldsResults:Record<string,{completed:boolean;place?:number}>; ittSplits:Record<string,number>; raceEvents:Record<string,'accepted'|'declined'|'consumed'>; radioHistory:string[]; rainbowTitles:string[]; profileView:{mode:'OVERVIEW'|'DETAIL';activeRangeId:string|null;autoConsumedIds:string[]} }
   settings: {
     jeanVoiceEnabled: boolean
     jeanVoiceVolume: number

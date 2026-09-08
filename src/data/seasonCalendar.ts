@@ -22,7 +22,8 @@ export const seasons: Season[] = [{
     { id: 'dauphine-2026', name: 'Critérium du Dauphiné', shortName: 'Dauphiné', startDate: '2026-06-07', endDate: '2026-06-14', leaderColor: '#69aee7', raceType: 'stage-race', stageCount: 8, raceLibraryId: 'dauphine-2026', status: 'planned' },
     { id: 'tour-2026', name: 'Tour de France', shortName: 'Le Tour', startDate: '2026-07-04', endDate: '2026-07-26', leaderColor: '#f2d13d', raceType: 'stage-race', stageCount: 21, raceLibraryId: 'tour-2026', status: 'active' },
     { id: 'vuelta-2026', name: 'La Vuelta', shortName: 'La Vuelta', startDate: '2026-08-22', endDate: '2026-09-13', leaderColor: '#d62f38', raceType: 'stage-race', stageCount: 21, raceLibraryId: 'vuelta-2026', status: 'planned' },
-    { id: 'worlds-2026', name: 'UCI Road World Championships', shortName: 'Worlds', startDate: '2026-09-20', endDate: '2026-09-27', leaderColor: '#69bce8', raceType: 'championship', stageCount: 1, raceLibraryId: 'worlds-2026', status: 'planned' },
+    { id: 'worlds-2026-itt', name: 'Montréal Worlds — Elite Men ITT', shortName: 'Worlds ITT', startDate: '2026-09-20', endDate: '2026-09-20', leaderColor: '#2f5fa7', raceType: 'championship', stageCount: 1, raceLibraryId: 'worlds-2026', status: 'planned' },
+    { id: 'worlds-2026-road', name: 'Montréal Worlds — Elite Men Road Race', shortName: 'Worlds Road', startDate: '2026-09-27', endDate: '2026-09-27', leaderColor: '#ef3340', raceType: 'championship', stageCount: 1, raceLibraryId: 'worlds-2026', status: 'planned' },
     { id: 'lombardia-2026', name: 'Il Lombardia', shortName: 'Lombardia', startDate: '2026-10-10', endDate: '2026-10-10', leaderColor: '#8f5faa', raceType: 'one-day', stageCount: 1, raceLibraryId: 'lombardia-2026', status: 'planned' },
   ],
 }]

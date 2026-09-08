@@ -52,9 +52,9 @@ test('UCI Worlds registers distinct TT and reusable circuit courses without fabr
  assert.equal(uciWorlds2026.races.length,2)
  const tt=uciWorlds2026.races.find(race=>race.discipline==='individual-time-trial')!
  const road=uciWorlds2026.races.find(race=>race.discipline==='road-race')!
- assert.equal(tt.course.distanceKm,39.2); assert.equal(tt.course.verification.profile,false); assert.equal(tt.course.verification.map,true)
- assert.equal(tt.course.verification.markers,false); assert.equal(tt.course.verification.ascent,false); assert.equal(tt.course.workoutReady,false); assert.equal(tt.course.profile,undefined)
- assert.equal(road.course.courseKind,'circuit'); assert.equal(road.course.lapDistanceKm,13.4); assert.equal(road.course.lapCount,undefined); assert.equal(road.course.totalDistanceKm,undefined)
+ assert.equal(tt.course.distanceKm,39.2); assert.equal(tt.course.verification.profile,false); assert.equal(tt.course.verification.map,false)
+ assert.equal(tt.course.verification.markers,false); assert.equal(tt.course.verification.ascent,true); assert.equal(tt.course.workoutReady,true); assert.ok(tt.course.profile)
+ assert.equal(road.course.courseKind,'circuit'); assert.equal(road.course.lapDistanceKm,13.4); assert.equal(road.course.lapCount,12); assert.equal(road.course.totalDistanceKm,273.7)
  const repeated=repeatProfileForLaps(road.course.lapProfile!,road.course.lapDistanceKm!,2)
  assert.equal(repeated.at(-1)?.distanceKm,26.8)
  assert.equal(repeated.length,road.course.lapProfile!.length*2-1)

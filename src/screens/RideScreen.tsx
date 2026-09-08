@@ -22,6 +22,8 @@ import { applyTacticalAction, resolveTacticalTransition, type TacticalAction } f
 import { captionDurationMs, type TeamRadioMessage } from '../engine/teamRadio'
 import { completeCooldown, type CooldownCompletion } from '../engine/rideCompletion'
 import { shouldDisplayClimb, sprintTransitionCountdown, tacticalOpportunity, tacticalPrescription, trainingMarkerPositions } from '../engine/alpha4021'
+import { activeRaceSituation, circuitProgressToLap, meaningfulTerrainChange, mergeTerrainBlocks, nextMeaningfulBoundary, synchronizeProfileView, WORLDS_WARMUP_SECONDS, worldsStartGate } from '../engine/alpha4022'
+import { CalibrationHelper, ChaseDecisionCard, ProfileDetail4022, ProfileStatusHeader, ProfileViewControl, TacticalStatusStrip, WorldsGroupMarkers } from '../components/WorldsRaceLayer.ts'
 
 type RideScreenProps = {
   stageNumber: number
@@ -65,18 +67,20 @@ function RideScreen({
   const { career } = useCareer()
   const measurementSystem = career.settings.measurementSystem
   const stage = useMemo(() => stageData ?? getRaceStage(stageNumber), [stageNumber, stageData])
+  const isWorlds=stage.raceId==='worlds-2026'
   const adaptedSegments = useMemo(() => adaptSegments(stage.segments, career.rider.ftp, strategy), [stage, career.rider.ftp, strategy])
   const resolvedDuration=useMemo(()=>durationSelectionForStage(stage,durationSelection),[stage,durationSelection])
   const timedSegments=useMemo(()=>stage.isTraining?adaptedSegments:applyDurationSelection(adaptedSegments,resolvedDuration).segments,[stage.isTraining,adaptedSegments,resolvedDuration])
   const isTimeTrial = useMemo(() => isIndividualTimeTrial(timedSegments), [timedSegments])
-  const segments = useMemo(() => officialSegments(timedSegments), [timedSegments])
+  const segments = useMemo(() => isWorlds?timedSegments:officialSegments(timedSegments), [timedSegments,isWorlds])
   const equipment=(career.equipment.instances.find(item=>item.id===career.equipment.activeEquipmentId)??GENERIC_MANUAL_EQUIPMENT) as EquipmentInstance
   const activeRide = useActiveRide()
   const timeline = useMemo(() => createRoadModel(stage.number, segments, stage.distanceKm, raceIdentities[library as keyof typeof raceIdentities], stage.profilePoints, stage.officialCourseMarkers, stage.raceId, career.rider.ftp||150,equipment,career.rider.cadencePreferences), [segments, stage, library, career.rider.ftp,equipment,career.rider.cadencePreferences])
   const profilePoints = timeline.profilePoints
   const rideElapsed = activeRide.ride?.stageNumber === stageNumber ? activeRide.elapsed : 0
   const ttStart = useMemo(() => ttStartSnapshot(timedSegments, rideElapsed), [timedSegments, rideElapsed])
-  const elapsedSeconds = isTimeTrial ? ttStart.officialElapsed : rideElapsed
+  const worldsStart=worldsStartGate(rideElapsed,activeRide.ride?.worldsWarmupOffsetSeconds??0)
+  const elapsedSeconds = isWorlds ? worldsStart.officialElapsed : isTimeTrial ? ttStart.officialElapsed : rideElapsed
   const isRunning = activeRide.ride?.stageNumber === stageNumber && activeRide.ride.runningSince !== null
   const [countdown, setCountdown] = useState<number | null>(null)
   const [isFinished, setIsFinished] = useState(false)
@@ -113,7 +117,9 @@ function RideScreen({
   const segmentData = { index: engine.segmentIndex, segment: engine.segment, elapsedInSegment: engine.elapsedInSegment }
 
   const currentSegment = segmentData.segment
-  const openingStatus = isTimeTrial && !ttStart.official
+  const openingStatus = isWorlds&&worldsStart.phase!=='RACING'
+    ? worldsStart.phase==='WARMUP'?'PRE-RACE WARM-UP':`${worldsStart.countdown}`
+    : isTimeTrial && !ttStart.official
     ? ttStart.state === 'warm-up' ? 'WARM UP' : ttStart.state === 'start-gate' ? 'START GATE' : ttStart.state.replace('countdown-', '')
     : isTimeTrial && ttStart.state === 'go' ? 'GO'
     : engine.lifecycle==='NEUTRAL_ROLLOUT'
@@ -128,11 +134,12 @@ function RideScreen({
   const sprintPhase = engine.sprintPhase
   const tactical=resolveTacticalTransition(activeRide.ride?.tacticalState??'PELOTON',activeRide.ride?.tacticalTransition??null,elapsedSeconds)
   const activePrescription = engine.livePrescription
-  const displayedPrescription = tacticalPrescription(activePrescription,tactical.effortMultiplier,equipment,bikeProfileForEquipment(equipment),career.rider.cadencePreferences)
+  const warmupMultiplier=isWorlds&&worldsStart.phase==='WARMUP'?.78+.17*(1-worldsStart.warmupRemaining/WORLDS_WARMUP_SECONDS):1
+  const displayedPrescription = tacticalPrescription(activePrescription,warmupMultiplier*tactical.effortMultiplier,equipment,bikeProfileForEquipment(equipment),career.rider.cadencePreferences)
   const displayPower = displayedPrescription.power
   const displayCadence = displayedPrescription.cadence
-  const displayResistance = displayedPrescription.resistance
-  const displayZone = activePrescription.zone
+  const displayResistance = displayedPrescription.manualTarget.recommendedResistance===null?displayedPrescription.resistance:displayedPrescription.resistance.replace(/ · Start \d+%/,'')
+  const displayZone = isWorlds&&worldsStart.phase==='WARMUP'?'Z1–Z2':activePrescription.zone
   const afterKmZero = engine.lifecycle==='OFFICIAL_RACING'
 
   const progress = engine.courseProgress * 100
@@ -160,14 +167,43 @@ function RideScreen({
   const summitDistanceKm = engine.distanceToSummit
   const mode = jeanMode(currentSegment, isFinished)
   const actions = useMemo(() => timeline.actionTargets(elapsedSeconds), [elapsedSeconds, timeline])
-  const opportunity=tacticalOpportunity(currentSegment,Boolean(stage.isTraining),Boolean(sprintPhase),engine.elapsedInSegment)
+  const opportunity=tacticalOpportunity(currentSegment,Boolean(stage.isTraining)||Boolean(isWorlds&&isTimeTrial),Boolean(sprintPhase),engine.elapsedInSegment)
+  const raceSituation=isWorlds&&!isTimeTrial?activeRaceSituation(stage.raceId??'',engine.courseProgress):undefined
+  const worldsLap=isWorlds&&!isTimeTrial?circuitProgressToLap(engine.courseProgress):null
+  const profileView=activeRide.ride?.profileView??{mode:'OVERVIEW' as const,activeRangeId:null,autoConsumedIds:[]}
+  const eventDecision=raceSituation?activeRide.ride?.tacticalEventHistory.find(item=>item.id===raceSituation.id):undefined
+  const activeEffort=activeRide.ride?.activeTacticalEffort
+  const effortRemaining=activeEffort?Math.max(0,activeEffort.startedAt+activeEffort.durationSeconds-elapsedSeconds):0
+  const responseRemaining=raceSituation?Math.max(0,raceSituation.responseWindowSeconds-(elapsedSeconds-timeline.elapsedAtCourseDistance(raceSituation.trigger*stage.distanceKm))):0
+  const chaseOffered=Boolean(raceSituation?.actions.includes('CHASE')&&!eventDecision&&!activeEffort&&tactical.state==='PELOTON'&&responseRemaining>0)
+  const mergedGradientBlocks=mergeTerrainBlocks(gradientBlocks.map((block,index)=>({start:block.start,end:block.end,gradient:block.gradient,name:`Terrain ${index+1}`})))
+  const meaningfulGradient=mergedGradientBlocks.some((block,index)=>index>0&&meaningfulTerrainChange(mergedGradientBlocks[index-1].gradient,block.gradient))
+  const detailEligible=isWorlds&&!chaseOffered&&(Boolean(activeEffort)||Boolean(sprintPhase)||meaningfulGradient||/final drive|repeated|final sprint/i.test(currentSegment.name))
+  const detailEvent=raceSituation?.detailRangeId?raceSituation:detailEligible?{id:`terrain-${currentSegment.name}`,trigger:engine.sectionStartCourseDistance/stage.distanceKm,expiry:engine.sectionEndCourseDistance/stage.distanceKm,caption:'Terrain detail ahead.',groupState:'COURSE',simulatedGap:'AUTHORED',actions:[],responseWindowSeconds:20,effortDurationSeconds:60,preview:{powerMultiplier:1,cadence:90},accepted:{powerMultiplier:1,caption:''},decline:'BASE_PRESCRIPTION' as const,resolutionCaption:'',detailRangeId:`terrain-${engine.segmentIndex}`}:undefined
+  const detailStart=profileView.mode==='DETAIL'&&detailEvent?Math.max(0,detailEvent.trigger*100-2):0
+  const detailWidth=profileView.mode==='DETAIL'&&detailEvent?Math.max(4,Math.min(100-detailStart,(detailEvent.expiry-detailEvent.trigger)*100+4)):100
+  const profileViewBox=`${detailStart} 0 ${detailWidth} 100`
+  const displayX=(canonicalPercent:number)=>((canonicalPercent-detailStart)/detailWidth)*100
+  const localGradientProgress=Math.max(0,Math.min(1,engine.elapsedInSegment/Math.max(1,currentSegment.sec)))
+  const detailGradientIndex=Math.max(0,mergedGradientBlocks.findIndex(block=>localGradientProgress>=block.start&&localGradientProgress<block.end))
+  const gradientTransitionKm=mergedGradientBlocks[detailGradientIndex]?Math.max(0,(mergedGradientBlocks[detailGradientIndex].end-localGradientProgress)*(engine.sectionEndCourseDistance-engine.sectionStartCourseDistance)):0
+  const courseTerrainBlocks=segments.map((segment,index)=>({start:segment.routeKm,end:segments[index+1]?.routeKm??stage.distanceKm,gradient:timeline.roadSnapshot(timeline.segmentStarts[index]+1).gradient,name:segment.name}))
+  const upcomingBoundary=nextMeaningfulBoundary(courseTerrainBlocks,routeKm,stage.distanceKm)
+  const upcomingName=upcomingBoundary.finish&&actions.next?actions.next.name:upcomingBoundary.name
+  const chasePreview=raceSituation?.actions.includes('CHASE')?tacticalPrescription(activePrescription,raceSituation.preview.powerMultiplier,equipment,bikeProfileForEquipment(equipment),career.rider.cadencePreferences):null
   const radioHistory=activeRide.ride?.radioHistory??[]
   const nextCompetitionMarker=timeline.markers.find(marker=>(marker.type==='sprint'||marker.type==='kom')&&marker.position>engine.courseProgress)
+  const crossedSplits=timeline.markers.filter(marker=>marker.type==='time-check'&&marker.position<=engine.courseProgress)
+  const nextSplit=timeline.markers.find(marker=>marker.type==='time-check'&&marker.position>engine.courseProgress)
 
   useEffect(()=>{if(tactical.state!==activeRide.ride?.tacticalState||tactical.transition?.progress!==activeRide.ride?.tacticalTransition?.progress)activeRide.updateRide({tacticalState:tactical.state,tacticalTransition:tactical.transition})},[tactical.state,tactical.transition?.progress])
+  useEffect(()=>{if(!activeRide.ride)return;if(chaseOffered&&activeRide.ride.pendingTacticalEventId!==raceSituation?.id)activeRide.updateRide({pendingTacticalEventId:raceSituation?.id??null});else if(!chaseOffered&&activeRide.ride.pendingTacticalEventId&&activeRide.ride.pendingTacticalEventId!==activeEffort?.eventId)activeRide.updateRide({pendingTacticalEventId:null})},[chaseOffered,raceSituation?.id,activeEffort?.eventId])
+  useEffect(()=>{if(!activeRide.ride||!activeEffort||effortRemaining>0)return;activeRide.updateRide({activeTacticalEffort:null,tacticalState:'RETURNING_TO_PELOTON',tacticalTransition:{startedAt:activeEffort.startedAt+activeEffort.durationSeconds,durationSeconds:45,from:'CHASING',progress:0}});speak('Ease progressively. We return to peloton intensity safely.','chase-return')},[activeEffort?.eventId,effortRemaining])
+  useEffect(()=>{if(!activeRide.ride||!raceSituation?.actions.includes('CHASE')||eventDecision||responseRemaining>0)return;activeRide.updateRide({pendingTacticalEventId:null,tacticalEventHistory:[...activeRide.ride.tacticalEventHistory,{id:raceSituation.id,decision:'declined',at:elapsedSeconds}]})},[raceSituation?.id,responseRemaining,eventDecision?.decision])
+  useEffect(()=>{if(!activeRide.ride||!isWorlds)return;const next=synchronizeProfileView(profileView,chaseOffered?undefined:detailEvent,currentSegment.type==='Cooldown');if(next.mode!==profileView.mode||next.activeRangeId!==profileView.activeRangeId||next.autoConsumedIds.length!==profileView.autoConsumedIds.length)activeRide.updateRide({profileView:next})},[detailEvent?.id,currentSegment.type,isWorlds])
   useEffect(()=>{if(!radioText)return;const timer=setTimeout(()=>setCaptionVisible(false),captionDurationMs(radioText));return()=>clearTimeout(timer)},[radioText])
-  useEffect(()=>{if(engine.lifecycle!=='OFFICIAL_RACING'||!activeRide.ride)return;const crossed=timeline.markers.filter(marker=>(marker.type==='sprint'||marker.type==='kom')&&marker.position<=engine.courseProgress&&!activeRide.ride!.earnedMarkerIds.includes(marker.key));if(crossed.length){activeRide.updateRide({earnedMarkerIds:[...activeRide.ride.earnedMarkerIds,...crossed.map(marker=>marker.key)]});const marker=crossed.at(-1)!;speak(`${marker.type==='kom'?`KOM ${marker.category??''}`:'Intermediate sprint'} crossed. ${marker.points??0} points earned.`,`marker-${marker.key}`)}},[engine.courseProgress,engine.lifecycle])
-  useEffect(()=>{if(!engine.raceFinished||didFinalizeRace.current)return;didFinalizeRace.current=true;activeRide.updateRide({tacticalState:'PELOTON',tacticalTransition:null});speak('Across the line. Results and points are final. Begin your recovery cooldown.')},[engine.raceFinished])
+  useEffect(()=>{if(engine.lifecycle!=='OFFICIAL_RACING'||!activeRide.ride)return;const crossed=timeline.markers.filter(marker=>(marker.type==='sprint'||marker.type==='kom'||(isWorlds&&isTimeTrial&&marker.type==='time-check'))&&marker.position<=engine.courseProgress&&!activeRide.ride!.earnedMarkerIds.includes(marker.key));if(crossed.length){activeRide.updateRide({earnedMarkerIds:[...activeRide.ride.earnedMarkerIds,...crossed.map(marker=>marker.key)]});const marker=crossed.at(-1)!;speak(marker.type==='time-check'?`${marker.label} recorded.`:`${marker.type==='kom'?`KOM ${marker.category??''}`:'Intermediate sprint'} crossed. ${marker.points??0} points earned.`,`marker-${marker.key}`)}},[engine.courseProgress,engine.lifecycle,isWorlds,isTimeTrial])
+  useEffect(()=>{if(!engine.raceFinished||didFinalizeRace.current)return;didFinalizeRace.current=true;activeRide.updateRide({tacticalState:'PELOTON',tacticalTransition:null});speak(isWorlds?'Across the line. The race is finished. Begin your recovery cooldown.':'Across the line. Results and points are final. Begin your recovery cooldown.')},[engine.raceFinished,isWorlds])
 
   useEffect(() => {
     if (!isRunning || !isTimeTrial || ttStart.official) return
@@ -502,6 +538,12 @@ function RideScreen({
     speak('Stage paused. Keep the legs moving gently.')
   }
 
+  function skipWorldsWarmup(){
+    if(!activeRide.ride||worldsStart.phase!=='WARMUP'||!window.confirm('Skip the pre-race warm-up and move to the start countdown?'))return
+    activeRide.updateRide({worldsWarmupOffsetSeconds:Math.max(0,WORLDS_WARMUP_SECONDS-rideElapsed)})
+    speak(isTimeTrial?'Five seconds. Settle into the start and build smoothly.':'Five seconds. Stay composed through the Brossard rollout.')
+  }
+
 
   function handleRestart() {
     activeRide.end()
@@ -527,6 +569,12 @@ function RideScreen({
   }
 
   function chooseTactic(action:TacticalAction){const next=applyTacticalAction(tactical.state,action,elapsedSeconds);activeRide.updateRide({tacticalState:next.state,tacticalTransition:next.transition});speak(action==='RETURN_TO_PELOTON'?'Ease progressively. We return to peloton intensity safely.':`${action.replaceAll('_',' ')}. Commit to the effort.`)}
+  function decideSituation(decision:'accepted'|'declined'){
+    if(!raceSituation||!activeRide.ride||eventDecision)return
+    const tacticalPatch=decision==='accepted'?{tacticalState:'CHASING' as const,tacticalTransition:null,activeTacticalEffort:{eventId:raceSituation.id,startedAt:elapsedSeconds,durationSeconds:raceSituation.effortDurationSeconds,powerDeltaPercent:Math.round((raceSituation.preview.powerMultiplier-1)*100)}}:{}
+    activeRide.updateRide({pendingTacticalEventId:null,tacticalEventHistory:[...activeRide.ride.tacticalEventHistory,{id:raceSituation.id,decision,at:elapsedSeconds}],...tacticalPatch})
+    speak(decision==='accepted'?raceSituation.accepted.caption:'Hold position. Keep the base prescription.',`${raceSituation.id}-${decision}`)
+  }
   function confirmEndEarly(reason:string){activeRide.pause();onEndEarly(reason,{completionPercentage:progress,distanceKm:routeKm,lifecycle:engine.lifecycle,sector:currentSegment.name,completedSectors:segments.slice(0,engine.segmentIndex).map(item=>item.name),earnedMarkerIds:activeRide.ride?.earnedMarkerIds??[],tacticalState:tactical.state})}
   function finishCooldown(skipped:boolean){activeRide.pause();onFinish(completeCooldown(timeline.raceFinishTime,timeline.duration,elapsedSeconds,skipped))}
 
@@ -1038,7 +1086,7 @@ function RideScreen({
         style={{ margin: '16px 0 10px' }}
       >
         <p className="eyebrow">
-          {stage.isTraining?(workoutId==='recovery-30'?'RECOVERY SESSION':'TRAINING RIDE'):`STAGE ${stage.number}`} • TEAM LORIOT
+          {isWorlds?(isTimeTrial?'ITT':'ROAD RACE'):(stage.isTraining?(workoutId==='recovery-30'?'RECOVERY SESSION':'TRAINING RIDE'):`STAGE ${stage.number}`)} • {isWorlds?'TEAM USA':'TEAM LORIOT'}
         </p>
 
         <h1
@@ -1054,15 +1102,17 @@ function RideScreen({
           {formatDistance(stage.distanceKm, measurementSystem)} •{' '}
           {formatElevation(stage.elevationM, measurementSystem)} D+
         </p>
+        {worldsLap&&<strong className="worlds-lap">MOUNT ROYAL · LAP {worldsLap} OF 12</strong>}
+        {raceSituation&&<aside className="race-situation" aria-label="Race situation"><small>RACE SITUATION</small><strong>{raceSituation.groupState.includes('CHASE')?'CHASE GROUP AHEAD':raceSituation.groupState.includes('BREAKAWAY')?'BREAKAWAY AHEAD':'RACE SELECTION'} · {raceSituation.simulatedGap.replace('SIMULATED · ','')}</strong><p>📻 JEAN: “{raceSituation.caption}”</p></aside>}
       </header>
 
       {!isFinished && (
         <>
           {currentSegmentIsClimb && (
             <div className="live-profile-card master-stage-profile" aria-label="Live stage profile">
-              <div className="live-profile-head"><div><p className="eyebrow">LIVE STAGE TRACKER</p><strong>{Math.round(progress)}% COMPLETE</strong></div><strong>{formatDistance(Math.max(stage.distanceKm - routeKm, 0), measurementSystem)} left</strong></div>
+              <ProfileStatusHeader worlds={isWorlds} completion={progress} remaining={formatDistance(Math.max(stage.distanceKm-routeKm,0),measurementSystem)}/>
               <div className="live-profile-wrap">
-                <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ width: '100%', height: '100%', display: 'block', overflow: 'visible' }}>
+                <svg data-profile-view={profileView.mode} viewBox={profileViewBox} preserveAspectRatio="none" style={{ width: '100%', height: '100%', display: 'block', overflow: 'visible' }}>
                   <defs><clipPath id="climbStageClip"><rect x="0" y="0" width={riderMarkerX} height="100" /></clipPath></defs>
                   <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="rgba(244,106,0,.34)" />
                   <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="rgba(105,105,105,.9)" clipPath="url(#climbStageClip)" />
@@ -1070,8 +1120,11 @@ function RideScreen({
                   {(stage.isTraining?trainingMarkerPositions(segments).slice(1,-1).map((position,index)=>({key:index,x:position*100})):timeline.segmentStarts.slice(1).map(start=>({key:start,x:timeline.roadSnapshot(start).courseProgress*100}))).map(marker => <line key={marker.key} x1={marker.x} x2={marker.x} y1="88" y2="100" stroke="rgba(255,255,255,.5)" vectorEffect="non-scaling-stroke" />)}
                   <line x1={riderMarkerX} x2={riderMarkerX} y1="2" y2="98" stroke="#fff" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
                 </svg>
-                {!stage.isTraining && timeline.markers.map((marker) => <span key={marker.key} className={`race-marker ${marker.type}`} style={{ left: `${marker.position * 100}%`, top:`${marker.localY}%`, color:marker.color }} title={marker.label}><b style={{ transform:`translate(${markerLabelOffset(marker.position,timeline.markers.map(item=>item.position)).translateX}%, ${markerLabelOffset(marker.position,timeline.markers.map(item=>item.position)).translateY}px)` }}>{marker.label}</b><i /></span>)}
-                <div style={{ position: 'absolute', left: `${riderMarkerX}%`, top: `${riderMarkerY}%`, transform: 'translate(-50%, -80%)', zIndex: 5, fontSize: '1.35rem', transition: 'left .25s linear, top .25s linear' }}>🚴</div>
+                {!stage.isTraining && timeline.markers.map((marker) => <span key={marker.key} className={`race-marker ${marker.type}`} style={{ left: `${displayX(marker.position*100)}%`, top:`${marker.localY}%`, color:marker.color }} title={marker.label}><b style={{ transform:`translate(${markerLabelOffset(marker.position,timeline.markers.map(item=>item.position)).translateX}%, ${markerLabelOffset(marker.position,timeline.markers.map(item=>item.position)).translateY}px)` }}>{marker.label}</b><i /></span>)}
+                {raceSituation&&<WorldsGroupMarkers event={raceSituation} courseProgress={engine.courseProgress} viewStart={detailStart} viewWidth={detailWidth}/>}
+                <div className="profile-rider" style={{ left: `${displayX(riderMarkerX)}%`, top: `${riderMarkerY}%` }}>🚴</div>
+                {isWorlds&&<ProfileDetail4022 state={chaseOffered?{...profileView,mode:'OVERVIEW'}:profileView} event={raceSituation} progress={localGradientProgress} gradientBlocks={mergedGradientBlocks} gradientIndex={detailGradientIndex} currentGradient={activeGradient} nextGradient={mergedGradientBlocks[detailGradientIndex+1]?.gradient??nextGradient} nextName={upcomingName} changeDistance={gradientTransitionKm<.005?'CHANGE NOW':formatDistance(gradientTransitionKm,measurementSystem)} resistance={displayResistance}/>}
+                {isWorlds&&<div className="profile-mode-control"><span className="mode-label-full">{profileView.mode==='DETAIL'?`DETAIL · ${currentSegment.name.toUpperCase()}`:'OVERVIEW · FULL COURSE'}</span><span className="mode-label-compact">{profileView.mode==='DETAIL'?'DETAIL':'OVERVIEW'}</span><ProfileViewControl state={profileView} onToggle={()=>activeRide.ride&&activeRide.updateRide({profileView:{...profileView,mode:profileView.mode==='DETAIL'?'OVERVIEW':'DETAIL',activeRangeId:profileView.mode==='DETAIL'?null:(detailEvent?.detailRangeId??'manual-current')}})}/></div>}
               </div>
               {captionVisible&&<div className="profile-caption" role="status" aria-live="polite">📻 JEAN: “{radioText}”<button type="button" aria-label="Dismiss Team Radio caption" onClick={()=>setCaptionVisible(false)}>×</button></div>}
             </div>
@@ -1126,21 +1179,11 @@ function RideScreen({
               </>
             ) : (
               <>
-                <div className="live-profile-head">
-                  <div>
-                    <p className="eyebrow">LIVE STAGE TRACKER</p>
-                    <strong>{currentSegment.terrainLabel}</strong>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <small>{Math.round(progress)}% COMPLETE</small>
-                    <strong style={{ display: 'block' }}>
-                      {formatDistance(Math.max(stage.distanceKm - routeKm, 0), measurementSystem)} left
-                    </strong>
-                  </div>
-                </div>
+                <ProfileStatusHeader worlds={isWorlds} completion={progress} remaining={formatDistance(Math.max(stage.distanceKm-routeKm,0),measurementSystem)}/>
+                <strong className="profile-terrain-name">{currentSegment.terrainLabel}</strong>
 
                 <div className="live-profile-wrap">
-                  <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ width: '100%', height: '100%', display: 'block', overflow: 'visible' }}>
+                  <svg data-profile-view={profileView.mode} viewBox={profileViewBox} preserveAspectRatio="none" style={{ width: '100%', height: '100%', display: 'block', overflow: 'visible' }}>
                     <defs>
                       <linearGradient id="liveMountainFill" x1="0" x2="0" y1="0" y2="1">
                         <stop offset="0%" stopColor="rgba(244,106,0,0.62)" />
@@ -1156,20 +1199,23 @@ function RideScreen({
                     {(stage.isTraining?trainingMarkerPositions(segments).slice(1,-1).map((position,index)=>({key:index,x:position*100})):timeline.segmentStarts.slice(1).map(start=>({key:start,x:timeline.roadSnapshot(start).courseProgress*100}))).map(marker => <line key={marker.key} x1={marker.x} x2={marker.x} y1="88" y2="100" stroke="rgba(255,255,255,.5)" vectorEffect="non-scaling-stroke" />)}
                     <line x1={riderMarkerX} x2={riderMarkerX} y1="2" y2="98" stroke="rgba(255,255,255,0.68)" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
                   </svg>
-                  {!stage.isTraining && timeline.markers.map((marker) => <span key={marker.key} className={`race-marker ${marker.type}`} style={{ left: `${marker.position * 100}%`, top:`${marker.localY}%`, color:marker.color }} title={marker.label}><b style={{ transform:`translate(${markerLabelOffset(marker.position,timeline.markers.map(item=>item.position)).translateX}%, ${markerLabelOffset(marker.position,timeline.markers.map(item=>item.position)).translateY}px)` }}>{marker.label}</b><i /></span>)}
-                  <div style={{ position: 'absolute', left: `${riderMarkerX}%`, top: `${riderMarkerY}%`, transform: 'translate(-50%, -80%)', zIndex: 5, fontSize: '1.35rem', transition: 'left .25s linear, top .25s linear' }}>🚴</div>
+                  {!stage.isTraining && timeline.markers.map((marker) => <span key={marker.key} className={`race-marker ${marker.type}`} style={{ left: `${displayX(marker.position*100)}%`, top:`${marker.localY}%`, color:marker.color }} title={marker.label}><b style={{ transform:`translate(${markerLabelOffset(marker.position,timeline.markers.map(item=>item.position)).translateX}%, ${markerLabelOffset(marker.position,timeline.markers.map(item=>item.position)).translateY}px)` }}>{marker.label}</b><i /></span>)}
+                {raceSituation&&<WorldsGroupMarkers event={raceSituation} courseProgress={engine.courseProgress} viewStart={detailStart} viewWidth={detailWidth}/>}
+                  <div className="profile-rider" style={{ left: `${displayX(riderMarkerX)}%`, top: `${riderMarkerY}%` }}>🚴</div>
+                {isWorlds&&<ProfileDetail4022 state={chaseOffered?{...profileView,mode:'OVERVIEW'}:profileView} event={raceSituation} progress={localGradientProgress} gradientBlocks={mergedGradientBlocks} gradientIndex={detailGradientIndex} currentGradient={activeGradient} nextGradient={mergedGradientBlocks[detailGradientIndex+1]?.gradient??nextGradient} nextName={upcomingName} changeDistance={gradientTransitionKm<.005?'CHANGE NOW':formatDistance(gradientTransitionKm,measurementSystem)} resistance={displayResistance}/>}
+                {isWorlds&&<div className="profile-mode-control"><span className="mode-label-full">{profileView.mode==='DETAIL'?`DETAIL · ${currentSegment.name.toUpperCase()}`:'OVERVIEW · FULL COURSE'}</span><span className="mode-label-compact">{profileView.mode==='DETAIL'?'DETAIL':'OVERVIEW'}</span><ProfileViewControl state={profileView} onToggle={()=>activeRide.ride&&activeRide.updateRide({profileView:{...profileView,mode:profileView.mode==='DETAIL'?'OVERVIEW':'DETAIL',activeRangeId:profileView.mode==='DETAIL'?null:(detailEvent?.detailRangeId??'manual-current')}})}/></div>}
                 </div>
               </>
             )}
             {!currentSegmentIsClimb&&captionVisible&&<div className="profile-caption" role="status" aria-live="polite">📻 JEAN: “{radioText}”<button type="button" aria-label="Dismiss Team Radio caption" onClick={()=>setCaptionVisible(false)}>×</button></div>}
-          </div>
+            {isWorlds&&isTimeTrial&&<div className="itt-split-status"><span><small>CURRENT SPLIT</small><strong>{crossedSplits.at(-1)?.label??'START HOUSE'}</strong></span><span><small>NEXT SPLIT</small><strong>{nextSplit?.label??'FINISH'}</strong></span><span><small>ELAPSED / REMAINING</small><strong>{formatTime(elapsedSeconds)} / {formatTime(stageRemaining)}</strong></span></div>}
 
+          </div>
           <div className="cockpit-card">
             <div className="cockpit-header">
               <div>
                 <h2 className="cockpit-title">
-                  {currentSegment.icon}{' '}
-                  {currentSegment.name}
+                  {worldsStart.phase==='WARMUP'?'🚴 PRE-RACE WARM-UP':currentSegment.icon}{worldsStart.phase==='WARMUP'?'':` ${currentSegment.name}`}
                 </h2>
               </div>
 
@@ -1203,14 +1249,18 @@ function RideScreen({
               </strong>
               </div>
             </div>
+            {chaseOffered&&raceSituation&&chasePreview&&<ChaseDecisionCard event={raceSituation} responseRemaining={responseRemaining} preview={{power:chasePreview.power,cadence:chasePreview.cadence,resistance:chasePreview.resistance.replace(/ · Start \d+%/,''),start:`START ${chasePreview.manualTarget.recommendedResistance}% @ ${chasePreview.manualTarget.recommendedCadence} RPM`}} onAccept={()=>decideSituation('accepted')} onHold={()=>decideSituation('declined')}/>}
+            {activeEffort&&effortRemaining>0&&<TacticalStatusStrip state="ACTIVE" remaining={effortRemaining}/>}
+            {tactical.state==='RETURNING_TO_PELOTON'&&tactical.transition&&<TacticalStatusStrip state="RETURNING" remaining={45*(1-tactical.transition.progress)}/>}
 
             <div className="segment-clock">
               {sprintPhase&&<strong className="sprint-command">{sprintPhase.name}</strong>}
-              <strong>{formatTime(sprintPhase?.remaining ?? segmentRemaining)}</strong>
-              <small>{sprintPhase ? `${sprintPhase.name} PHASE REMAINING` : 'SEGMENT REMAINING'}</small>
+              <strong>{formatTime(worldsStart.phase==='WARMUP'?worldsStart.warmupRemaining:worldsStart.phase==='COUNTDOWN'?(worldsStart.countdown??0):sprintPhase?.remaining ?? segmentRemaining)}</strong>
+              <small>{worldsStart.phase==='WARMUP'?'WARM-UP REMAINING':worldsStart.phase==='COUNTDOWN'?'RACE START':sprintPhase ? `${sprintPhase.name} PHASE REMAINING` : 'SEGMENT REMAINING'}</small>
               {sprintPhase&&sprintPhase.remaining<=10&&<b>NEXT IN {Math.ceil(sprintPhase.remaining)} SEC{sprintTransitionCountdown(sprintPhase.remaining)?` · ${sprintTransitionCountdown(sprintPhase.remaining)}`:''}</b>}
             </div>
-            {displayedPrescription.manualTarget.recommendedResistance!==null&&<div className="next-line">START {displayedPrescription.manualTarget.recommendedResistance}% @ {displayedPrescription.manualTarget.recommendedCadence} RPM · {displayedPrescription.manualTarget.adjustmentGuidance}</div>}
+            {isWorlds&&worldsStart.phase==='WARMUP'&&<><p className="warmup-jean">📻 JEAN: “{isTimeTrial?'Bring the cadence up gradually. Save the sharp effort for the course.':'Open the legs progressively. We race after the countdown.'}”</p><button type="button" className="skip-warmup" onClick={skipWorldsWarmup}>SKIP WARM-UP</button></>}
+            {displayedPrescription.manualTarget.recommendedResistance!==null&&<CalibrationHelper resistance={displayedPrescription.manualTarget.recommendedResistance} cadence={displayedPrescription.manualTarget.recommendedCadence??0}/>}
 
             <div className="target-grid">
               <div className="target-tile">
@@ -1231,9 +1281,9 @@ function RideScreen({
               </div>
             </div>
             <div className="next-line">NEXT: {actions.next?`${actions.next.name} · ${formatTime(actions.timeUntilNext??0)} · ${actions.next.power} · ${actions.next.cadence} · ${actions.next.openingResistance===null?'Resistance unavailable':`${Math.max(0,actions.next.openingResistance-1)}–${actions.next.openingResistance+2}%`}`:'Stage finish'}</div>
-            {!stage.isTraining&&nextCompetitionMarker&&<div className="next-line" aria-label="Next points marker">{nextCompetitionMarker.type==='kom'?`KOM ${nextCompetitionMarker.category??''}`:'SPRINT'} · {nextCompetitionMarker.points??0} pts · {formatTime(Math.max(0,nextCompetitionMarker.at-elapsedSeconds))} · {formatDistance(Math.max(0,nextCompetitionMarker.routeKm-routeKm),measurementSystem)}</div>}
+            {!stage.isTraining&&!isWorlds&&nextCompetitionMarker&&<div className="next-line" aria-label="Next points marker">{nextCompetitionMarker.type==='kom'?`KOM ${nextCompetitionMarker.category??''}`:'SPRINT'} · {nextCompetitionMarker.points??0} pts · {formatTime(Math.max(0,nextCompetitionMarker.at-elapsedSeconds))} · {formatDistance(Math.max(0,nextCompetitionMarker.routeKm-routeKm),measurementSystem)}</div>}
             {opportunity&&tactical.state==='PELOTON'&&!sprintPhase&&<div className="tactical-event-card"><strong>{opportunity.title}</strong><p>Jean: “{opportunity.prompt}”</p><small>{opportunity.durationSeconds} SEC · +{opportunity.powerDeltaPercent}% POWER · returns progressively to the current-road baseline</small><div><button type="button" onClick={()=>chooseTactic(opportunity.action)}>{opportunity.action.replaceAll('_',' ')}</button><button type="button">{opportunity.decline}</button></div></div>}
-            {tactical.state!=='PELOTON'&&<div className="tactical-event-card"><strong>{tactical.state==='RETURNING_TO_PELOTON'?'RETURNING TO PELOTON':tactical.state}</strong>{tactical.transition&&<b>{formatTime(45*(1-tactical.transition.progress))}</b>}{!sprintPhase&&tactical.state!=='RETURNING_TO_PELOTON'&&<button type="button" onClick={()=>chooseTactic('RETURN_TO_PELOTON')}>RETURN TO PELOTON</button>}</div>}
+            {!isWorlds&&tactical.state!=='PELOTON'&&<div className="tactical-event-card"><strong>{tactical.state==='RETURNING_TO_PELOTON'?'RETURNING TO PELOTON':tactical.state}</strong>{tactical.transition&&<b>{formatTime(45*(1-tactical.transition.progress))}</b>}{!sprintPhase&&tactical.state!=='RETURNING_TO_PELOTON'&&<button type="button" onClick={()=>chooseTactic('RETURN_TO_PELOTON')}>RETURN TO PELOTON</button>}</div>}
 
             <div className="progress-track">
               <div
@@ -1287,6 +1337,8 @@ function RideScreen({
             <div className="ride-details">
 
               <div className="detail-grid">
+                {isWorlds&&!isTimeTrial&&<div className="dashboard-card ride-detail-stat"><small>RACE GAPS</small><strong>Race-story estimates</strong><p>Current gaps support the race story and are not measured from other riders.</p></div>}
+                {displayedPrescription.manualTarget.recommendedResistance!==null&&<div className="dashboard-card ride-detail-stat"><small>MANUAL PELOTON GUIDANCE</small><p>If actual Peloton power is below the target while cadence is correct, increase resistance by one point. If actual power is above the target while cadence is correct, decrease resistance by one point. This is manual guidance until real-time telemetry exists.</p></div>}
                 <div className="dashboard-card ride-detail-stat"><small>RESOLVER</small><strong>{activePrescription.manualTarget.feasibility}</strong><p>{activePrescription.manualTarget.adjustmentReason}</p></div>
                 <div className="dashboard-card ride-detail-stat"><small>TEAM RADIO HISTORY</small>{radioHistory.slice().reverse().map(message=><p key={message.id}>📻 {message.text}</p>)}<button type="button" disabled={!radioText} onClick={()=>setCaptionVisible(true)}>Replay latest</button></div>
                 <div
