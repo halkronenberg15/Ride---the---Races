@@ -14,7 +14,7 @@ type Seed={name:string;type:string;weight:number;routeKm:number;zone:string;powe
 function sectors(seeds:Seed[],minutes:number):RideSegment[]{
  const total=seeds.reduce((sum,item)=>sum+item.weight,0),seconds=minutes*60
  let used=0
- return seeds.map((item,index)=>{const sec=index===seeds.length-1?seconds-used:Math.round(seconds*item.weight/total);used+=sec;return {...item,sec,resistance:'Resolver-backed',icon:/cooldown/i.test(item.name)?'🌅':'🏁',objective:item.description,secondaryObjective:'Follow Jean’s synchronized pacing call.',terrainLabel:item.type,fixed:index===0?[{at:5,text:item.description}]:[],random:[]}})
+ return seeds.map((item,index)=>{const sec=index===seeds.length-1?seconds-used:Math.round(seconds*item.weight/total);used+=sec;const label=`${item.name} ${item.type}`;const icon=/cooldown/i.test(label)?'🌅':/final sprint|finish/i.test(label)?'🏁':/attack/i.test(label)?'⚡':/chase/i.test(label)?'🔄':/climb|mount|ramps|bridge/i.test(label)?'⛰️':'🚴';return {...item,sec,resistance:'Resolver-backed',icon,objective:item.description,secondaryObjective:'Follow Jean’s synchronized pacing call.',terrainLabel:item.type,fixed:index===0?[{at:5,text:item.description}]:[],random:[]}})
 }
 const ittSeeds:Seed[]=[
  {name:'Start House',type:'ITT start',weight:2,routeKm:0,zone:'Z2',power:'70–78% FTP',cadence:'88–92 rpm',description:'Settle early. Do not spend the ride in the first kilometre.'},

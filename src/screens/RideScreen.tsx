@@ -23,7 +23,7 @@ import { captionDurationMs, type TeamRadioMessage } from '../engine/teamRadio'
 import { completeCooldown, type CooldownCompletion } from '../engine/rideCompletion'
 import { shouldDisplayClimb, sprintTransitionCountdown, tacticalOpportunity, tacticalPrescription, trainingMarkerPositions } from '../engine/alpha4021'
 import { activeRaceSituation, chasePrescription, circuitProgressToLap, synchronizeProfileView } from '../engine/alpha4022'
-import { CalibrationHelper, ChaseDecisionCard, LiveTrackerLabel, ProfileDetail4022, ProfileViewControl, WorldsGroupMarkers } from '../components/WorldsRaceLayer.ts'
+import { CalibrationHelper, ChaseDecisionCard, ProfileDetail4022, ProfileStatusHeader, ProfileViewControl, WorldsGroupMarkers } from '../components/WorldsRaceLayer.ts'
 
 type RideScreenProps = {
   stageNumber: number
@@ -133,7 +133,7 @@ function RideScreen({
   const displayedPrescription = tacticalPrescription(activePrescription,tactical.effortMultiplier,equipment,bikeProfileForEquipment(equipment),career.rider.cadencePreferences)
   const displayPower = displayedPrescription.power
   const displayCadence = displayedPrescription.cadence
-  const displayResistance = displayedPrescription.resistance
+  const displayResistance = displayedPrescription.manualTarget.recommendedResistance===null?displayedPrescription.resistance:displayedPrescription.resistance.replace(/ · Start \d+%/,'')
   const displayZone = activePrescription.zone
   const afterKmZero = engine.lifecycle==='OFFICIAL_RACING'
 
@@ -1081,7 +1081,7 @@ function RideScreen({
         <>
           {currentSegmentIsClimb && (
             <div className="live-profile-card master-stage-profile" aria-label="Live stage profile">
-              <div className="live-profile-head"><div><LiveTrackerLabel worlds={isWorlds}/><strong>{Math.round(progress)}% COMPLETE</strong></div><strong>{formatDistance(Math.max(stage.distanceKm - routeKm, 0), measurementSystem)} left</strong></div>
+              <ProfileStatusHeader worlds={isWorlds} completion={progress} remaining={formatDistance(Math.max(stage.distanceKm-routeKm,0),measurementSystem)}/>
               <div className="live-profile-wrap">
                 <svg data-profile-view={profileView.mode} viewBox={profileViewBox} preserveAspectRatio="none" style={{ width: '100%', height: '100%', display: 'block', overflow: 'visible' }}>
                   <defs><clipPath id="climbStageClip"><rect x="0" y="0" width={riderMarkerX} height="100" /></clipPath></defs>
@@ -1148,18 +1148,8 @@ function RideScreen({
               </>
             ) : (
               <>
-                <div className="live-profile-head">
-                  <div>
-                    <LiveTrackerLabel worlds={isWorlds}/>
-                    <strong>{currentSegment.terrainLabel}</strong>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <small>{Math.round(progress)}% COMPLETE</small>
-                    <strong style={{ display: 'block' }}>
-                      {formatDistance(Math.max(stage.distanceKm - routeKm, 0), measurementSystem)} left
-                    </strong>
-                  </div>
-                </div>
+                <ProfileStatusHeader worlds={isWorlds} completion={progress} remaining={formatDistance(Math.max(stage.distanceKm-routeKm,0),measurementSystem)}/>
+                <strong className="profile-terrain-name">{currentSegment.terrainLabel}</strong>
 
                 <div className="live-profile-wrap">
                   <svg data-profile-view={profileView.mode} viewBox={profileViewBox} preserveAspectRatio="none" style={{ width: '100%', height: '100%', display: 'block', overflow: 'visible' }}>
