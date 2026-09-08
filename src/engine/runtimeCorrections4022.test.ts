@@ -3,7 +3,7 @@ import test from 'node:test'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { ChaseDecisionCard, layoutRaceMarkers, ProfileDetail4022, WorldsGroupMarkers, TacticalStatusStrip } from '../components/WorldsRaceLayer.ts'
-import { chaseLifecycle, meaningfulTerrainChange, mergeTerrainBlocks, montrealRoadStory, nextMeaningfulBoundary } from './alpha4022.ts'
+import { chaseLifecycle, meaningfulTerrainChange, mergeTerrainBlocks, montrealRoadStory, nextMeaningfulBoundary, worldsStartGate } from './alpha4022.ts'
 import { resolveTacticalTransition } from './tacticalActions.ts'
 import { tacticalPrescription } from './alpha4021.ts'
 import { PELOTON_BASELINE_EQUIPMENT, bikeProfileForEquipment } from './manualBike.ts'
@@ -21,3 +21,6 @@ test('one resolved Chase prescription is harder, narrow and suitable for preview
 test('offered and active tactical presentations cannot coexist',()=>{const offered=renderToStaticMarkup(createElement(ChaseDecisionCard,{event:chase,responseRemaining:18,preview,onAccept:()=>{},onHold:()=>{}})),active=renderToStaticMarkup(createElement(TacticalStatusStrip,{state:'ACTIVE',remaining:51})),returning=renderToStaticMarkup(createElement(TacticalStatusStrip,{state:'RETURNING',remaining:32}));assert.match(offered,/CHASE<\/button>/);assert.doesNotMatch(active,/button|HOLD POSITION/);assert.doesNotMatch(returning,/button|CHASE ACTIVE/)})
 test('Chase lifecycle covers decline, reload, return and completion without reopening',()=>{assert.equal(chaseLifecycle({effortDurationSeconds:60,elapsed:0}),'OFFERED');assert.equal(chaseLifecycle({decision:'declined',effortDurationSeconds:60,elapsed:0}),'DECLINED');assert.equal(chaseLifecycle({decision:'accepted',activeStartedAt:100,effortDurationSeconds:60,elapsed:130}),'ACTIVE');assert.equal(chaseLifecycle({decision:'accepted',activeStartedAt:100,effortDurationSeconds:60,returnStartedAt:160,elapsed:180}),'RETURNING');assert.equal(chaseLifecycle({decision:'accepted',activeStartedAt:100,effortDurationSeconds:60,returnStartedAt:160,elapsed:205}),'COMPLETE')})
 test('Return reaches the exact current baseline at zero',()=>{const state=resolveTacticalTransition('RETURNING_TO_PELOTON',{startedAt:100,durationSeconds:45,from:'CHASING',progress:0},145);assert.equal(state.state,'PELOTON');assert.equal(state.effortMultiplier,1);assert.equal(state.transition,null)})
+
+test('Worlds warm-up stages the rider at KM 0 until the five-second gate clears',()=>{for(const elapsed of [0,60,299.9]){const gate=worldsStartGate(elapsed);assert.equal(gate.phase,'WARMUP');assert.equal(gate.officialElapsed,0)}for(const elapsed of [300,301,302,303,304.9]){const gate=worldsStartGate(elapsed);assert.equal(gate.phase,'COUNTDOWN');assert.equal(gate.officialElapsed,0)}assert.equal(worldsStartGate(305).phase,'RACING');assert.equal(worldsStartGate(305).officialElapsed,0);assert(worldsStartGate(306).officialElapsed>0)})
+test('skipping warm-up preserves the full start countdown',()=>{const elapsed=83,gate=worldsStartGate(elapsed,300-elapsed);assert.equal(gate.phase,'COUNTDOWN');assert.equal(gate.countdown,5);assert.equal(gate.officialElapsed,0)})

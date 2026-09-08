@@ -22,7 +22,7 @@ import { applyTacticalAction, resolveTacticalTransition, type TacticalAction } f
 import { captionDurationMs, type TeamRadioMessage } from '../engine/teamRadio'
 import { completeCooldown, type CooldownCompletion } from '../engine/rideCompletion'
 import { shouldDisplayClimb, sprintTransitionCountdown, tacticalOpportunity, tacticalPrescription, trainingMarkerPositions } from '../engine/alpha4021'
-import { activeRaceSituation, circuitProgressToLap, meaningfulTerrainChange, mergeTerrainBlocks, nextMeaningfulBoundary, synchronizeProfileView } from '../engine/alpha4022'
+import { activeRaceSituation, circuitProgressToLap, meaningfulTerrainChange, mergeTerrainBlocks, nextMeaningfulBoundary, synchronizeProfileView, WORLDS_WARMUP_SECONDS, worldsStartGate } from '../engine/alpha4022'
 import { CalibrationHelper, ChaseDecisionCard, ProfileDetail4022, ProfileStatusHeader, ProfileViewControl, TacticalStatusStrip, WorldsGroupMarkers } from '../components/WorldsRaceLayer.ts'
 
 type RideScreenProps = {
@@ -67,18 +67,20 @@ function RideScreen({
   const { career } = useCareer()
   const measurementSystem = career.settings.measurementSystem
   const stage = useMemo(() => stageData ?? getRaceStage(stageNumber), [stageNumber, stageData])
+  const isWorlds=stage.raceId==='worlds-2026'
   const adaptedSegments = useMemo(() => adaptSegments(stage.segments, career.rider.ftp, strategy), [stage, career.rider.ftp, strategy])
   const resolvedDuration=useMemo(()=>durationSelectionForStage(stage,durationSelection),[stage,durationSelection])
   const timedSegments=useMemo(()=>stage.isTraining?adaptedSegments:applyDurationSelection(adaptedSegments,resolvedDuration).segments,[stage.isTraining,adaptedSegments,resolvedDuration])
   const isTimeTrial = useMemo(() => isIndividualTimeTrial(timedSegments), [timedSegments])
-  const segments = useMemo(() => officialSegments(timedSegments), [timedSegments])
+  const segments = useMemo(() => isWorlds?timedSegments:officialSegments(timedSegments), [timedSegments,isWorlds])
   const equipment=(career.equipment.instances.find(item=>item.id===career.equipment.activeEquipmentId)??GENERIC_MANUAL_EQUIPMENT) as EquipmentInstance
   const activeRide = useActiveRide()
   const timeline = useMemo(() => createRoadModel(stage.number, segments, stage.distanceKm, raceIdentities[library as keyof typeof raceIdentities], stage.profilePoints, stage.officialCourseMarkers, stage.raceId, career.rider.ftp||150,equipment,career.rider.cadencePreferences), [segments, stage, library, career.rider.ftp,equipment,career.rider.cadencePreferences])
   const profilePoints = timeline.profilePoints
   const rideElapsed = activeRide.ride?.stageNumber === stageNumber ? activeRide.elapsed : 0
   const ttStart = useMemo(() => ttStartSnapshot(timedSegments, rideElapsed), [timedSegments, rideElapsed])
-  const elapsedSeconds = isTimeTrial ? ttStart.officialElapsed : rideElapsed
+  const worldsStart=worldsStartGate(rideElapsed,activeRide.ride?.worldsWarmupOffsetSeconds??0)
+  const elapsedSeconds = isWorlds ? worldsStart.officialElapsed : isTimeTrial ? ttStart.officialElapsed : rideElapsed
   const isRunning = activeRide.ride?.stageNumber === stageNumber && activeRide.ride.runningSince !== null
   const [countdown, setCountdown] = useState<number | null>(null)
   const [isFinished, setIsFinished] = useState(false)
@@ -115,7 +117,9 @@ function RideScreen({
   const segmentData = { index: engine.segmentIndex, segment: engine.segment, elapsedInSegment: engine.elapsedInSegment }
 
   const currentSegment = segmentData.segment
-  const openingStatus = isTimeTrial && !ttStart.official
+  const openingStatus = isWorlds&&worldsStart.phase!=='RACING'
+    ? worldsStart.phase==='WARMUP'?'PRE-RACE WARM-UP':`${worldsStart.countdown}`
+    : isTimeTrial && !ttStart.official
     ? ttStart.state === 'warm-up' ? 'WARM UP' : ttStart.state === 'start-gate' ? 'START GATE' : ttStart.state.replace('countdown-', '')
     : isTimeTrial && ttStart.state === 'go' ? 'GO'
     : engine.lifecycle==='NEUTRAL_ROLLOUT'
@@ -130,11 +134,12 @@ function RideScreen({
   const sprintPhase = engine.sprintPhase
   const tactical=resolveTacticalTransition(activeRide.ride?.tacticalState??'PELOTON',activeRide.ride?.tacticalTransition??null,elapsedSeconds)
   const activePrescription = engine.livePrescription
-  const displayedPrescription = tacticalPrescription(activePrescription,tactical.effortMultiplier,equipment,bikeProfileForEquipment(equipment),career.rider.cadencePreferences)
+  const warmupMultiplier=isWorlds&&worldsStart.phase==='WARMUP'?.78+.17*(1-worldsStart.warmupRemaining/WORLDS_WARMUP_SECONDS):1
+  const displayedPrescription = tacticalPrescription(activePrescription,warmupMultiplier*tactical.effortMultiplier,equipment,bikeProfileForEquipment(equipment),career.rider.cadencePreferences)
   const displayPower = displayedPrescription.power
   const displayCadence = displayedPrescription.cadence
   const displayResistance = displayedPrescription.manualTarget.recommendedResistance===null?displayedPrescription.resistance:displayedPrescription.resistance.replace(/ · Start \d+%/,'')
-  const displayZone = activePrescription.zone
+  const displayZone = isWorlds&&worldsStart.phase==='WARMUP'?'Z1–Z2':activePrescription.zone
   const afterKmZero = engine.lifecycle==='OFFICIAL_RACING'
 
   const progress = engine.courseProgress * 100
@@ -162,7 +167,6 @@ function RideScreen({
   const summitDistanceKm = engine.distanceToSummit
   const mode = jeanMode(currentSegment, isFinished)
   const actions = useMemo(() => timeline.actionTargets(elapsedSeconds), [elapsedSeconds, timeline])
-  const isWorlds=stage.raceId==='worlds-2026'
   const opportunity=tacticalOpportunity(currentSegment,Boolean(stage.isTraining)||Boolean(isWorlds&&isTimeTrial),Boolean(sprintPhase),engine.elapsedInSegment)
   const raceSituation=isWorlds&&!isTimeTrial?activeRaceSituation(stage.raceId??'',engine.courseProgress):undefined
   const worldsLap=isWorlds&&!isTimeTrial?circuitProgressToLap(engine.courseProgress):null
@@ -532,6 +536,12 @@ function RideScreen({
     activeRide.pause()
     void releaseWakeLock()
     speak('Stage paused. Keep the legs moving gently.')
+  }
+
+  function skipWorldsWarmup(){
+    if(!activeRide.ride||worldsStart.phase!=='WARMUP'||!window.confirm('Skip the pre-race warm-up and move to the start countdown?'))return
+    activeRide.updateRide({worldsWarmupOffsetSeconds:Math.max(0,WORLDS_WARMUP_SECONDS-rideElapsed)})
+    speak(isTimeTrial?'Five seconds. Settle into the start and build smoothly.':'Five seconds. Stay composed through the Brossard rollout.')
   }
 
 
@@ -1114,7 +1124,7 @@ function RideScreen({
                 {raceSituation&&<WorldsGroupMarkers event={raceSituation} courseProgress={engine.courseProgress} viewStart={detailStart} viewWidth={detailWidth}/>}
                 <div className="profile-rider" style={{ left: `${displayX(riderMarkerX)}%`, top: `${riderMarkerY}%` }}>🚴</div>
                 {isWorlds&&<ProfileDetail4022 state={chaseOffered?{...profileView,mode:'OVERVIEW'}:profileView} event={raceSituation} progress={localGradientProgress} gradientBlocks={mergedGradientBlocks} gradientIndex={detailGradientIndex} currentGradient={activeGradient} nextGradient={mergedGradientBlocks[detailGradientIndex+1]?.gradient??nextGradient} nextName={upcomingName} changeDistance={gradientTransitionKm<.005?'CHANGE NOW':formatDistance(gradientTransitionKm,measurementSystem)} resistance={displayResistance}/>}
-                {isWorlds&&<div className="profile-mode-control"><span>{profileView.mode==='DETAIL'?`DETAIL · ${currentSegment.name.toUpperCase()}`:'OVERVIEW · FULL COURSE'}</span><ProfileViewControl state={profileView} onToggle={()=>activeRide.ride&&activeRide.updateRide({profileView:{...profileView,mode:profileView.mode==='DETAIL'?'OVERVIEW':'DETAIL',activeRangeId:profileView.mode==='DETAIL'?null:(detailEvent?.detailRangeId??'manual-current')}})}/></div>}
+                {isWorlds&&<div className="profile-mode-control"><span className="mode-label-full">{profileView.mode==='DETAIL'?`DETAIL · ${currentSegment.name.toUpperCase()}`:'OVERVIEW · FULL COURSE'}</span><span className="mode-label-compact">{profileView.mode==='DETAIL'?'DETAIL':'OVERVIEW'}</span><ProfileViewControl state={profileView} onToggle={()=>activeRide.ride&&activeRide.updateRide({profileView:{...profileView,mode:profileView.mode==='DETAIL'?'OVERVIEW':'DETAIL',activeRangeId:profileView.mode==='DETAIL'?null:(detailEvent?.detailRangeId??'manual-current')}})}/></div>}
               </div>
               {captionVisible&&<div className="profile-caption" role="status" aria-live="polite">📻 JEAN: “{radioText}”<button type="button" aria-label="Dismiss Team Radio caption" onClick={()=>setCaptionVisible(false)}>×</button></div>}
             </div>
@@ -1193,7 +1203,7 @@ function RideScreen({
                 {raceSituation&&<WorldsGroupMarkers event={raceSituation} courseProgress={engine.courseProgress} viewStart={detailStart} viewWidth={detailWidth}/>}
                   <div className="profile-rider" style={{ left: `${displayX(riderMarkerX)}%`, top: `${riderMarkerY}%` }}>🚴</div>
                 {isWorlds&&<ProfileDetail4022 state={chaseOffered?{...profileView,mode:'OVERVIEW'}:profileView} event={raceSituation} progress={localGradientProgress} gradientBlocks={mergedGradientBlocks} gradientIndex={detailGradientIndex} currentGradient={activeGradient} nextGradient={mergedGradientBlocks[detailGradientIndex+1]?.gradient??nextGradient} nextName={upcomingName} changeDistance={gradientTransitionKm<.005?'CHANGE NOW':formatDistance(gradientTransitionKm,measurementSystem)} resistance={displayResistance}/>}
-                {isWorlds&&<div className="profile-mode-control"><span>{profileView.mode==='DETAIL'?`DETAIL · ${currentSegment.name.toUpperCase()}`:'OVERVIEW · FULL COURSE'}</span><ProfileViewControl state={profileView} onToggle={()=>activeRide.ride&&activeRide.updateRide({profileView:{...profileView,mode:profileView.mode==='DETAIL'?'OVERVIEW':'DETAIL',activeRangeId:profileView.mode==='DETAIL'?null:(detailEvent?.detailRangeId??'manual-current')}})}/></div>}
+                {isWorlds&&<div className="profile-mode-control"><span className="mode-label-full">{profileView.mode==='DETAIL'?`DETAIL · ${currentSegment.name.toUpperCase()}`:'OVERVIEW · FULL COURSE'}</span><span className="mode-label-compact">{profileView.mode==='DETAIL'?'DETAIL':'OVERVIEW'}</span><ProfileViewControl state={profileView} onToggle={()=>activeRide.ride&&activeRide.updateRide({profileView:{...profileView,mode:profileView.mode==='DETAIL'?'OVERVIEW':'DETAIL',activeRangeId:profileView.mode==='DETAIL'?null:(detailEvent?.detailRangeId??'manual-current')}})}/></div>}
                 </div>
               </>
             )}
@@ -1205,8 +1215,7 @@ function RideScreen({
             <div className="cockpit-header">
               <div>
                 <h2 className="cockpit-title">
-                  {currentSegment.icon}{' '}
-                  {currentSegment.name}
+                  {worldsStart.phase==='WARMUP'?'🚴 PRE-RACE WARM-UP':currentSegment.icon}{worldsStart.phase==='WARMUP'?'':` ${currentSegment.name}`}
                 </h2>
               </div>
 
@@ -1246,10 +1255,11 @@ function RideScreen({
 
             <div className="segment-clock">
               {sprintPhase&&<strong className="sprint-command">{sprintPhase.name}</strong>}
-              <strong>{formatTime(sprintPhase?.remaining ?? segmentRemaining)}</strong>
-              <small>{sprintPhase ? `${sprintPhase.name} PHASE REMAINING` : 'SEGMENT REMAINING'}</small>
+              <strong>{formatTime(worldsStart.phase==='WARMUP'?worldsStart.warmupRemaining:worldsStart.phase==='COUNTDOWN'?(worldsStart.countdown??0):sprintPhase?.remaining ?? segmentRemaining)}</strong>
+              <small>{worldsStart.phase==='WARMUP'?'WARM-UP REMAINING':worldsStart.phase==='COUNTDOWN'?'RACE START':sprintPhase ? `${sprintPhase.name} PHASE REMAINING` : 'SEGMENT REMAINING'}</small>
               {sprintPhase&&sprintPhase.remaining<=10&&<b>NEXT IN {Math.ceil(sprintPhase.remaining)} SEC{sprintTransitionCountdown(sprintPhase.remaining)?` · ${sprintTransitionCountdown(sprintPhase.remaining)}`:''}</b>}
             </div>
+            {isWorlds&&worldsStart.phase==='WARMUP'&&<><p className="warmup-jean">📻 JEAN: “{isTimeTrial?'Bring the cadence up gradually. Save the sharp effort for the course.':'Open the legs progressively. We race after the countdown.'}”</p><button type="button" className="skip-warmup" onClick={skipWorldsWarmup}>SKIP WARM-UP</button></>}
             {displayedPrescription.manualTarget.recommendedResistance!==null&&<CalibrationHelper resistance={displayedPrescription.manualTarget.recommendedResistance} cadence={displayedPrescription.manualTarget.recommendedCadence??0}/>}
 
             <div className="target-grid">
