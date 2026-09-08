@@ -16,6 +16,7 @@ type CareerContextValue = {
   selectRaceStage: (race: 'tour'|'vuelta', stage:number) => void
   completeRaceStage: (race:'tour'|'vuelta', stage:number) => void
   completeTraining: (workoutId:string,durationMinutes:number) => void
+  completeWorlds: (eventId:'men-elite-itt'|'men-elite-road-race',place?:number,splitIds?:string[]) => void
   addRide: (ride: RideMetricEntry) => void
   updateHealth: (entry: HealthEntry) => void
   updateRider: (rider: Partial<CareerState['rider']>) => void
@@ -61,6 +62,7 @@ export function CareerProvider({ children }: { children: React.ReactNode }) {
     selectRaceStage(race, stage) { setCareer(current=>({...current,races:{...current.races,[race]:{...current.races[race],currentStage:stage}},season:race==='tour'?{...current.season,currentStage:stage}:current.season})) },
     completeRaceStage(race, stage) { setCareer(current=>{const progress=current.races[race]; const completedStages=Array.from(new Set([...progress.completedStages,stage])).sort((a,b)=>a-b); return {...current,races:{...current.races,[race]:{currentStage:Math.min(21,stage+1),completedStages}},season:race==='tour'?{...current.season,currentStage:Math.min(21,stage+1),completedStages}:current.season} }) },
     completeTraining(workoutId,durationMinutes) { setCareer(current=>({...current,trainingHistory:[{workoutId,durationMinutes,completedAt:new Date().toISOString(),completed:true},...current.trainingHistory]})) },
+    completeWorlds(eventId,place,splitIds=[]) { setCareer(current=>({...current,alpha4022:{...current.alpha4022,worldsResults:{...current.alpha4022.worldsResults,[eventId]:{completed:true,...(place?{place}:{})}},ittSplits:{...current.alpha4022.ittSplits,...Object.fromEntries(splitIds.map(id=>[id,1]))},rainbowTitles:place===1&&!current.alpha4022.rainbowTitles.includes(eventId)?[...current.alpha4022.rainbowTitles,eventId]:current.alpha4022.rainbowTitles}})) },
     addRide(ride) {
       setCareer((current) => ({ ...current, rideHistory: [ride, ...current.rideHistory] }))
     },

@@ -28,11 +28,14 @@ import { actionableStage } from './utils/navigation'
 import RaceOverviewScreen from './screens/RaceOverviewScreen'
 import StageDetailScreen from './screens/StageDetailScreen'
 import { applyDurationSelection, durationSelectionForStage, type DurationSelection } from './engine/durationEngine'
+import WorldsHubScreen from './screens/WorldsHubScreen'
+import WorldsBriefingScreen from './screens/WorldsBriefingScreen'
+import { worldsStage } from './data/uciWorlds2026'
 
-type Screen = 'hq' | 'teamBus' | 'season' | 'race' | 'stageDetail' | 'training' | 'roster' | 'tactics' | 'ride' | 'restDay' | 'rideData' | 'health' | 'profile' | 'settings' | 'finale'
+type Screen = 'hq' | 'teamBus' | 'season' | 'race' | 'worldsBriefing' | 'stageDetail' | 'training' | 'roster' | 'tactics' | 'ride' | 'restDay' | 'rideData' | 'health' | 'profile' | 'settings' | 'finale'
 
 function RideTheRacesApp() {
-  const { career, selectRaceStage, completeRaceStage, completeTraining, addRide } = useCareer()
+  const { career, selectRaceStage, completeRaceStage, completeTraining, completeWorlds, addRide } = useCareer()
   const [screen, setScreen] = useState<Screen>('hq')
   const [selectedSeason, setSelectedSeason] = useState(2026)
   const [selectedRace, setSelectedRace] = useState('tour-2026')
@@ -71,8 +74,9 @@ function RideTheRacesApp() {
     }
     end()
     if(ride?.library==='training') completeTraining(ride.workoutId??'training',Math.round(elapsed/60))
+    else if(ride?.library==='worlds-2026') completeWorlds(ride.stageNumber===1?'men-elite-itt':'men-elite-road-race',undefined,ride.earnedMarkerIds.filter(id=>id.includes('itt-split')))
     else completeRaceStage(ride?.library==='vuelta-2026'?'vuelta':'tour',stage)
-    setScreen('rideData')
+    setScreen(ride?.library==='worlds-2026'?'season':'rideData')
   }
   function handleEndRideEarly(reason:string,snapshot:{completionPercentage:number;distanceKm:number;lifecycle:string;sector:string;completedSectors:string[];earnedMarkerIds:string[];tacticalState:string}){
     if(ride)addRide({id:crypto.randomUUID(),date:new Date().toISOString(),source:'Manual',durationMinutes:Math.round(elapsed/60),distanceKm:snapshot.distanceKm,race:career.season.currentRace,stageNumber:ride.stageNumber,stageName:getLibraryStage(ride.library,ride.stageNumber,ride.workoutId)?.title,actualEngineDurationSeconds:Math.round(elapsed),tactic:ride.strategy,ftp:career.rider.ftp,recovery:career.health,terminatedEarly:true,terminationReason:reason,completionPercentage:snapshot.completionPercentage,lifecycleAtTermination:snapshot.lifecycle,sectorAtTermination:snapshot.sector,completedSectors:snapshot.completedSectors,earnedMarkerIds:snapshot.earnedMarkerIds,tacticalState:snapshot.tacticalState})
@@ -106,7 +110,8 @@ function RideTheRacesApp() {
       )}
 
       {screen === 'season' && getSeason(selectedSeason) && <SeasonCalendarScreen season={getSeason(selectedSeason)!} currentRace={career.season.currentRace} onBack={() => setScreen('teamBus')} onOpenRace={(raceId) => { setSelectedRace(raceId); setScreen('race') }} />}
-      {screen === 'race' && <RaceOverviewScreen library={selectedRace} actionable={selectedRace==='vuelta-2026'?vueltaActionable:tourActionable} onBack={() => setScreen('season')} onOpenStage={(stage)=>{setSelectedStageNumber(stage);setScreen('stageDetail')}} />}
+      {screen === 'race' && (selectedRace==='worlds-2026'?<WorldsHubScreen onBack={()=>setScreen('season')} onOpen={(event)=>{setSelectedStageNumber(event);setScreen('worldsBriefing')}}/>:<RaceOverviewScreen library={selectedRace} actionable={selectedRace==='vuelta-2026'?vueltaActionable:tourActionable} onBack={() => setScreen('season')} onOpenStage={(stage)=>{setSelectedStageNumber(stage);setScreen('stageDetail')}} />)}
+      {screen === 'worldsBriefing'&&<WorldsBriefingScreen event={selectedStageNumber as 1|2} onBack={()=>setScreen('race')} onStart={(minutes)=>{setRideDuration({mode:'CUSTOM',customMinutes:minutes,targetMinutes:minutes});setRaceStrategy('Balanced');setScreen('ride')}}/>}
       {screen === 'stageDetail' && <StageDetailScreen library={selectedRace} stageNumber={selectedStageNumber} durationSelection={ride?.stageNumber===selectedStageNumber?{mode:ride.durationMode,customMinutes:ride.customDurationMinutes,targetMinutes:ride.targetDurationMinutes}:undefined} onBack={()=>setScreen('race')} onBriefing={()=>{selectRaceStage(selectedRace==='vuelta-2026'?'vuelta':'tour',selectedStageNumber);setScreen('tactics')}} />}
       {screen === 'training' && <RaceLibraryScreen library="training" selectedStageNumber={tourActionable} onSelectStage={()=>{}} onSelectWorkout={setSelectedWorkout} onBack={() => setScreen('teamBus')} onContinue={() => setScreen('tactics')} onOpenRestDay={() => setScreen('restDay')} />}
       {screen === 'roster' && <TeamRosterScreen onBack={() => setScreen('teamBus')} />}
@@ -130,12 +135,12 @@ function RideTheRacesApp() {
       {screen === 'ride' && (
         <RideScreen
           stageNumber={ride?.stageNumber ?? selectedStageNumber}
-          stageData={ride?getLibraryStage(ride.library,ride.stageNumber,ride.workoutId):getLibraryStage(selectedRace,selectedRace==='training'?trainingRides.find(r=>r.id===selectedWorkout)?.stage.number??tourActionable:selectedStageNumber,selectedWorkout)}
+          stageData={ride?getLibraryStage(ride.library,ride.stageNumber,ride.workoutId):selectedRace==='worlds-2026'?worldsStage(selectedStageNumber===1?'itt':'road',rideDuration.customMinutes):getLibraryStage(selectedRace,selectedRace==='training'?trainingRides.find(r=>r.id===selectedWorkout)?.stage.number??tourActionable:selectedStageNumber,selectedWorkout)}
           library={ride?.library??selectedRace}
           workoutId={ride?.workoutId??(selectedRace==='training'?selectedWorkout:undefined)}
           strategy={ride?.strategy ?? raceStrategy}
           durationSelection={ride?{mode:ride.durationMode,customMinutes:ride.customDurationMinutes,targetMinutes:ride.targetDurationMinutes}:rideDuration}
-          onBack={() => setScreen('tactics')}
+          onBack={() => setScreen(selectedRace==='worlds-2026'?'worldsBriefing':'tactics')}
           onFinish={handleFinishRide}
           onEndEarly={handleEndRideEarly}
         />

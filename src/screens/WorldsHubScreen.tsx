@@ -1,0 +1,12 @@
+import { uciWorlds2026, worldsStages } from '../data/uciWorlds2026'
+import { useCareer } from '../state/CareerContext'
+import { formatDistance, formatElevation } from '../utils/units'
+import type { RaceStage } from '../data/raceStages'
+import type { ChampionshipRace } from '../data/professionalRaces'
+
+export function WorldsEventCard({event,stage,result,onOpen,index,measurementSystem}:{event:ChampionshipRace;stage:RaceStage;result?:{completed:boolean;place?:number};onOpen:(event:number)=>void;index:number;measurementSystem:'metric'|'imperial'}){return <article className="dashboard-card worlds-event"><p className="eyebrow">{event.discipline==='individual-time-trial'?'ITT':'ROAD RACE'} • {event.date}</p><h2>{event.name}</h2><div className="stage-facts"><span><small>DISTANCE</small><strong>{formatDistance(stage.distanceKm,measurementSystem)}</strong></span><span><small>ELEVATION</small><strong>{formatElevation(stage.elevationM,measurementSystem)}</strong></span></div><svg viewBox="0 0 100 100" preserveAspectRatio="none" className="worlds-profile" aria-label={`${event.name} authored course profile`}><polyline points={stage.profilePoints.map((point,i)=>typeof point==='string'?point:`${i/(stage.profilePoints.length-1)*100},${95-point.elevationM/3}`).join(' ')}/></svg><p><strong>{result?.completed?result.place===1?'WORLD CHAMPION · RAINBOW BANDS':'COMPLETED':'READY'}</strong></p><button className="primary-cta" onClick={()=>onOpen(index+1)}>COURSE BRIEFING →</button></article>}
+
+export default function WorldsHubScreen({onBack,onOpen}:{onBack:()=>void;onOpen:(event:number)=>void}){
+ const {career}=useCareer(),results=career.alpha4022.worldsResults
+ return <section className="worlds-hub"><button onClick={onBack}>← September calendar</button><header className="worlds-hero"><p className="eyebrow">TEAM USA • MONTRÉAL 2026</p><h1>UCI Road World Championships</h1><p>Two Elite Men events. Jean directs the same rider career under an event-scoped national-team identity.</p></header><div className="worlds-grid">{uciWorlds2026.races.map((event,index)=><WorldsEventCard key={event.id} event={event} stage={worldsStages[index]} result={results[event.id]} onOpen={onOpen} index={index} measurementSystem={career.settings.measurementSystem}/>)}</div><small>Distances, ascent, dates, circuit count and landmarks are official UCI figures. Intermediate profile geometry and tactical situations are explicitly authored RtR interpretations.</small></section>
+}
