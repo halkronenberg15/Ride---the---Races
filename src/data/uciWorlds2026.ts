@@ -8,6 +8,8 @@ const verification={profile:false,map:false,distance:true,ascent:true,markers:fa
 const map=(alt:string,points:Array<{x:number;y:number}>)=>({type:'simplified-route' as const,alt,verified:false,source:'Authored Ride the Races interpretation; route coordinates are not official UCI data.',points})
 
 export const WORLDS_DURATIONS={itt:[30,40,50],road:[70,80,105]} as const
+export const ROAD_RACE_MISSION='Race patiently across the South Shore, stay protected into Montréal, then survive the repeated Mount Royal selections.'
+export const ROAD_RACE_SUPPORT='Watch the break, respond when the race becomes dangerous, and save enough for the final Avenue du Parc drive.'
 type Seed={name:string;type:string;weight:number;routeKm:number;zone:string;power:string;cadence:string;description:string}
 function sectors(seeds:Seed[],minutes:number):RideSegment[]{
  const total=seeds.reduce((sum,item)=>sum+item.weight,0),seconds=minutes*60
@@ -28,7 +30,7 @@ const ittSeeds:Seed[]=[
 const roadSeeds:Seed[]=[
  {name:'Brossard Rollout',type:'Rollout',weight:6,routeKm:0,zone:'Z1–Z2',power:'55–70% FTP',cadence:'88–94 rpm',description:'Settle into Team USA position.'},
  {name:'South Shore Positioning',type:'Flat',weight:6,routeKm:18,zone:'Z2',power:'70–78% FTP',cadence:'88–96 rpm',description:'The early move is forming on the South Shore.'},
- {name:'Montérégie Roads',type:'Rolling',weight:7,routeKm:42,zone:'Z2–Z3',power:'76–86% FTP',cadence:'84–92 rpm',description:'The peloton permits a controlled, simulated gap.'},
+ {name:'Montérégie Roads',type:'Rolling',weight:7,routeKm:42,zone:'Z2–Z3',power:'76–86% FTP',cadence:'84–92 rpm',description:'The peloton permits a controlled gap.'},
  {name:'Montréal Approach',type:'Chase',weight:6,routeKm:75,zone:'Z3',power:'84–92% FTP',cadence:'86–94 rpm',description:'The move is getting dangerous. Close it now.'},
  {name:'Samuel-De Champlain Bridge',type:'Positioning',weight:5,routeKm:100,zone:'Z3',power:'88–96% FTP',cadence:'82–90 rpm',description:'Bridge crossing. Position before the circuit.'},
  {name:'Mount Royal Circuit Entry',type:'Circuit entry',weight:5,routeKm:112.9,zone:'Z3',power:'86–94% FTP',cadence:'84–92 rpm',description:'MOUNT ROYAL. The break is reduced.'},
@@ -36,15 +38,15 @@ const roadSeeds:Seed[]=[
  {name:'Camillien-Houde Pressure',type:'Repeated climb',weight:7,routeKm:166.5,zone:'Z4',power:'96–105% FTP',cadence:'74–84 rpm',description:'Camillien-Houde. Absorb the selection.'},
  {name:'Polytechnique Selection',type:'Repeated ramps',weight:7,routeKm:206.7,zone:'Z4',power:'98–108% FTP',cadence:'72–84 rpm',description:'Polytechnique ramps exceed eleven percent.'},
  {name:'Late Circuit Racing',type:'Circuit laps 8–10',weight:7,routeKm:233.5,zone:'Z4',power:'95–105% FTP',cadence:'80–90 rpm',description:'Favorites are testing the reduced group.'},
- {name:'Final Mount Royal Selection',type:'Attack',weight:6,routeKm:260.3,zone:'Z5',power:'108–120% FTP',cadence:'82–94 rpm',description:'Late favorites attack. Follow the authored move or hold.'},
+ {name:'Final Mount Royal Selection',type:'Attack',weight:6,routeKm:260.3,zone:'Z5',power:'108–120% FTP',cadence:'82–94 rpm',description:'The favorites attack. Follow the move or hold your position.'},
  {name:'Avenue du Parc Finish',type:'Final sprint',weight:4,routeKm:272.2,zone:'Z6',power:'120–150% FTP',cadence:'96–115 rpm',description:'Final lap. Rising Avenue du Parc. Build, position, launch, sprint.'},
  {name:'Cooldown',type:'Cooldown',weight:5,routeKm:273.7,zone:'Z1',power:'Under 55% FTP',cadence:'85–92 rpm',description:'Across the line. Cool down with Team USA.'},
 ]
 const ittMarkers:OfficialCourseMarker[]=[8,16,24,32].map((routeKm,index)=>({id:`worlds-2026-itt-split-${index+1}`,type:'tt-check',routeKm,label:`SPLIT ${index+1}`,verified:true,source:{organization:'Ride the Races authored split',reference:WORLDS_UCI_REFERENCE,verifiedAt:'2026-09-08'}}))
-const roadMarkers:OfficialCourseMarker[]=[{id:'worlds-2026-road-sprint',type:'sprint',routeKm:68,label:'SPRINT',verified:true,source:{organization:'Ride the Races authored marker',reference:WORLDS_UCI_REFERENCE,verifiedAt:'2026-09-08'}},{id:'worlds-2026-road-kom',type:'kom',routeKm:260.3,label:'MOUNT ROYAL',verified:true,source:{organization:'Ride the Races authored marker',reference:WORLDS_UCI_REFERENCE,verifiedAt:'2026-09-08'}}]
-const profile=(distance:number,road=false)=>road?[0,30,65,100,112.9,126.3,139.7,153.1,166.5,179.9,193.3,206.7,220.1,233.5,246.9,260.3,273.7].map((distanceKm,i)=>({distanceKm,elevationM:i<4?25+i*8:55+(i%2?150:0)})):[0,4,8,12,16,20,24,28,32,36,distance].map((distanceKm,i)=>({distanceKm,elevationM:20+[0,10,4,15,3,6,2,17,4,25,12][i]}))
+const roadMarkers:OfficialCourseMarker[]=[]
+const profile=(distance:number,road=false)=>road?[0,42,82,100,112.9,150,205,255,268,273.7].map((distanceKm,i)=>({distanceKm,elevationM:[25,38,31,52,58,92,118,108,72,88][i]})):[0,4,8,12,16,20,24,28,32,36,distance].map((distanceKm,i)=>({distanceKm,elevationM:20+[0,10,4,15,3,6,2,17,4,25,12][i]}))
 const lapProfile=[0,1.8,3.4,5.1,6.7,8.4,10.1,11.7,13.4].map((distanceKm,index)=>({distanceKm,elevationM:[55,84,205,72,61,118,58,96,55][index]}))
-function stage(id:string,number:number,distanceKm:number,elevationM:number,seeds:Seed[],minutes:number,markers:OfficialCourseMarker[]):RaceStage{return {id,raceId:'worlds-2026',number,route:number===1?'Avenue du Parc → Montréal':'Brossard / Quartier DIX30 → Avenue du Parc',title:number===1?'Montréal Worlds — Elite Men ITT':'Montréal Worlds — Elite Men Road Race',distanceKm,elevationM,theme:number===1?'Individual Time Trial':'Road World Championship',difficulty:'Championship',objective:number===1?'Deliver a sustainable, precisely paced time trial.':'Race the authored Montréal situation without moving canonical course position.',teamOrders:['Represent Team USA.','Jean remains performance director.'],profilePoints:profile(distanceKm,number===2),profileVerified:false,profileSource:'Authored Ride the Races interpretation from official UCI totals and landmarks.',profileReference:WORLDS_UCI_REFERENCE,profileUpdatedAt:'2026-09-08',verification,workoutReady:true,officialCourseMarkers:markers,segments:sectors(seeds,minutes)}}
+function stage(id:string,number:number,distanceKm:number,elevationM:number,seeds:Seed[],minutes:number,markers:OfficialCourseMarker[]):RaceStage{return {id,raceId:'worlds-2026',number,route:number===1?'Avenue du Parc → Montréal':'Brossard / Quartier DIX30 → Avenue du Parc',title:number===1?'Montréal Worlds — Elite Men ITT':'Montréal Worlds — Elite Men Road Race',distanceKm,elevationM,theme:number===1?'Individual Time Trial':'Road World Championship',difficulty:'Championship',objective:number===1?'Deliver a sustainable, precisely paced time trial.':ROAD_RACE_MISSION,teamOrders:['Represent Team USA.','Jean remains performance director.'],profilePoints:profile(distanceKm,number===2),profileVerified:false,profileSource:'Authored Ride the Races interpretation from official UCI totals and landmarks.',profileReference:WORLDS_UCI_REFERENCE,profileUpdatedAt:'2026-09-08',verification,workoutReady:true,officialCourseMarkers:markers,segments:sectors(seeds,minutes)}}
 export function worldsStage(discipline:'itt'|'road',minutes?:number){return discipline==='itt'?stage('worlds-2026-elite-men-itt',1,39.2,220,ittSeeds,minutes??40,ittMarkers):stage('worlds-2026-elite-men-road',2,273.7,3803,roadSeeds,minutes??80,roadMarkers)}
 export const worldsStages=[worldsStage('itt'),worldsStage('road')]
 

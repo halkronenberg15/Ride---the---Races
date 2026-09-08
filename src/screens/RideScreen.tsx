@@ -23,7 +23,7 @@ import { captionDurationMs, type TeamRadioMessage } from '../engine/teamRadio'
 import { completeCooldown, type CooldownCompletion } from '../engine/rideCompletion'
 import { shouldDisplayClimb, sprintTransitionCountdown, tacticalOpportunity, tacticalPrescription, trainingMarkerPositions } from '../engine/alpha4021'
 import { activeRaceSituation, chasePrescription, circuitProgressToLap, synchronizeProfileView } from '../engine/alpha4022'
-import { ChaseDecisionCard, ProfileDetail4022, ProfileViewControl, WorldsGroupMarkers } from '../components/WorldsRaceLayer.ts'
+import { CalibrationHelper, ChaseDecisionCard, LiveTrackerLabel, ProfileDetail4022, ProfileViewControl, WorldsGroupMarkers } from '../components/WorldsRaceLayer.ts'
 
 type RideScreenProps = {
   stageNumber: number
@@ -184,8 +184,8 @@ function RideScreen({
   useEffect(()=>{if(tactical.state!==activeRide.ride?.tacticalState||tactical.transition?.progress!==activeRide.ride?.tacticalTransition?.progress)activeRide.updateRide({tacticalState:tactical.state,tacticalTransition:tactical.transition})},[tactical.state,tactical.transition?.progress])
   useEffect(()=>{if(!activeRide.ride||!isWorlds)return;const next=synchronizeProfileView(profileView,detailEvent,currentSegment.type==='Cooldown');if(next.mode!==profileView.mode||next.activeRangeId!==profileView.activeRangeId||next.autoConsumedIds.length!==profileView.autoConsumedIds.length)activeRide.updateRide({profileView:next})},[detailEvent?.id,currentSegment.type,isWorlds])
   useEffect(()=>{if(!radioText)return;const timer=setTimeout(()=>setCaptionVisible(false),captionDurationMs(radioText));return()=>clearTimeout(timer)},[radioText])
-  useEffect(()=>{if(engine.lifecycle!=='OFFICIAL_RACING'||!activeRide.ride)return;const crossed=timeline.markers.filter(marker=>(marker.type==='sprint'||marker.type==='kom'||(isWorlds&&isTimeTrial&&marker.type==='time-check'))&&marker.position<=engine.courseProgress&&!activeRide.ride!.earnedMarkerIds.includes(marker.key));if(crossed.length){activeRide.updateRide({earnedMarkerIds:[...activeRide.ride.earnedMarkerIds,...crossed.map(marker=>marker.key)]});const marker=crossed.at(-1)!;speak(marker.type==='time-check'?`${marker.label} recorded at the canonical crossing.`:`${marker.type==='kom'?`KOM ${marker.category??''}`:'Intermediate sprint'} crossed. ${marker.points??0} points earned.`,`marker-${marker.key}`)}},[engine.courseProgress,engine.lifecycle,isWorlds,isTimeTrial])
-  useEffect(()=>{if(!engine.raceFinished||didFinalizeRace.current)return;didFinalizeRace.current=true;activeRide.updateRide({tacticalState:'PELOTON',tacticalTransition:null});speak('Across the line. Results and points are final. Begin your recovery cooldown.')},[engine.raceFinished])
+  useEffect(()=>{if(engine.lifecycle!=='OFFICIAL_RACING'||!activeRide.ride)return;const crossed=timeline.markers.filter(marker=>(marker.type==='sprint'||marker.type==='kom'||(isWorlds&&isTimeTrial&&marker.type==='time-check'))&&marker.position<=engine.courseProgress&&!activeRide.ride!.earnedMarkerIds.includes(marker.key));if(crossed.length){activeRide.updateRide({earnedMarkerIds:[...activeRide.ride.earnedMarkerIds,...crossed.map(marker=>marker.key)]});const marker=crossed.at(-1)!;speak(marker.type==='time-check'?`${marker.label} recorded.`:`${marker.type==='kom'?`KOM ${marker.category??''}`:'Intermediate sprint'} crossed. ${marker.points??0} points earned.`,`marker-${marker.key}`)}},[engine.courseProgress,engine.lifecycle,isWorlds,isTimeTrial])
+  useEffect(()=>{if(!engine.raceFinished||didFinalizeRace.current)return;didFinalizeRace.current=true;activeRide.updateRide({tacticalState:'PELOTON',tacticalTransition:null});speak(isWorlds?'Across the line. The race is finished. Begin your recovery cooldown.':'Across the line. Results and points are final. Begin your recovery cooldown.')},[engine.raceFinished,isWorlds])
 
   useEffect(() => {
     if (!isRunning || !isTimeTrial || ttStart.official) return
@@ -1074,14 +1074,14 @@ function RideScreen({
           {formatElevation(stage.elevationM, measurementSystem)} D+
         </p>
         {worldsLap&&<strong className="worlds-lap">MOUNT ROYAL · LAP {worldsLap} OF 12</strong>}
-        {raceSituation&&<aside className="race-situation" aria-label="Authored race situation"><small>AUTHORED RACE SITUATION · NOT TELEMETRY</small><strong>{raceSituation.groupState} · {raceSituation.simulatedGap}</strong><p>📻 JEAN: “{raceSituation.caption}”</p></aside>}
+        {raceSituation&&<aside className="race-situation" aria-label="Authored race situation"><small>RACE SITUATION</small><strong>{raceSituation.groupState} · {raceSituation.simulatedGap.replace('SIMULATED · ','')}</strong><p>📻 JEAN: “{raceSituation.caption}”</p></aside>}
       </header>
 
       {!isFinished && (
         <>
           {currentSegmentIsClimb && (
             <div className="live-profile-card master-stage-profile" aria-label="Live stage profile">
-              <div className="live-profile-head"><div><p className="eyebrow">LIVE STAGE TRACKER</p><strong>{Math.round(progress)}% COMPLETE</strong></div><strong>{formatDistance(Math.max(stage.distanceKm - routeKm, 0), measurementSystem)} left</strong></div>
+              <div className="live-profile-head"><div><LiveTrackerLabel worlds={isWorlds}/><strong>{Math.round(progress)}% COMPLETE</strong></div><strong>{formatDistance(Math.max(stage.distanceKm - routeKm, 0), measurementSystem)} left</strong></div>
               <div className="live-profile-wrap">
                 <svg data-profile-view={profileView.mode} viewBox={profileViewBox} preserveAspectRatio="none" style={{ width: '100%', height: '100%', display: 'block', overflow: 'visible' }}>
                   <defs><clipPath id="climbStageClip"><rect x="0" y="0" width={riderMarkerX} height="100" /></clipPath></defs>
@@ -1150,7 +1150,7 @@ function RideScreen({
               <>
                 <div className="live-profile-head">
                   <div>
-                    <p className="eyebrow">LIVE STAGE TRACKER</p>
+                    <LiveTrackerLabel worlds={isWorlds}/>
                     <strong>{currentSegment.terrainLabel}</strong>
                   </div>
                   <div style={{ textAlign: 'right' }}>
@@ -1186,7 +1186,7 @@ function RideScreen({
             )}
             {!currentSegmentIsClimb&&captionVisible&&<div className="profile-caption" role="status" aria-live="polite">📻 JEAN: “{radioText}”<button type="button" aria-label="Dismiss Team Radio caption" onClick={()=>setCaptionVisible(false)}>×</button></div>}
             {isWorlds&&isTimeTrial&&<div className="itt-split-status"><span><small>CURRENT SPLIT</small><strong>{crossedSplits.at(-1)?.label??'START HOUSE'}</strong></span><span><small>NEXT SPLIT</small><strong>{nextSplit?.label??'FINISH'}</strong></span><span><small>ELAPSED / REMAINING</small><strong>{formatTime(elapsedSeconds)} / {formatTime(stageRemaining)}</strong></span></div>}
-                    {isWorlds&&<div className="profile-view-row"><span>{detailEligible?'DETAIL AHEAD · canonical viewport':'OVERVIEW · full course'}</span><ProfileViewControl state={profileView} onToggle={()=>activeRide.ride&&activeRide.updateRide({profileView:{...profileView,mode:profileView.mode==='DETAIL'?'OVERVIEW':'DETAIL',activeRangeId:profileView.mode==='DETAIL'?null:(detailEvent?.detailRangeId??'manual-current')}})}/></div>}
+                    {isWorlds&&<div className="profile-view-row"><span>{detailEligible?'DETAIL AHEAD':'OVERVIEW · FULL COURSE'}</span><ProfileViewControl state={profileView} onToggle={()=>activeRide.ride&&activeRide.updateRide({profileView:{...profileView,mode:profileView.mode==='DETAIL'?'OVERVIEW':'DETAIL',activeRangeId:profileView.mode==='DETAIL'?null:(detailEvent?.detailRangeId??'manual-current')}})}/></div>}
             {isWorlds&&<ProfileDetail4022 state={profileView} event={raceSituation} progress={localGradientProgress} gradientBlocks={gradientBlocks} gradientIndex={activeGradientIndex} currentGradient={activeGradient} nextGradient={nextGradient} distanceToTransition={gradientTransitionKm} resistance={displayResistance}/>}
           </div>
           {raceSituation&&<ChaseDecisionCard event={raceSituation} active={tactical.state==='CHASING'} preview={chasePreview?{power:chasePreview.power,cadence:chasePreview.cadence,resistance:chasePreview.resistance,start:`START ${chasePreview.manualTarget.recommendedResistance}% @ ${chasePreview.manualTarget.recommendedCadence} RPM`}:undefined} onAccept={()=>decideSituation('accepted')} onHold={()=>decideSituation('declined')}/>}
@@ -1237,7 +1237,7 @@ function RideScreen({
               <small>{sprintPhase ? `${sprintPhase.name} PHASE REMAINING` : 'SEGMENT REMAINING'}</small>
               {sprintPhase&&sprintPhase.remaining<=10&&<b>NEXT IN {Math.ceil(sprintPhase.remaining)} SEC{sprintTransitionCountdown(sprintPhase.remaining)?` · ${sprintTransitionCountdown(sprintPhase.remaining)}`:''}</b>}
             </div>
-            {displayedPrescription.manualTarget.recommendedResistance!==null&&<div className="next-line">START {displayedPrescription.manualTarget.recommendedResistance}% @ {displayedPrescription.manualTarget.recommendedCadence} RPM · {displayedPrescription.manualTarget.adjustmentGuidance}</div>}
+            {displayedPrescription.manualTarget.recommendedResistance!==null&&<CalibrationHelper resistance={displayedPrescription.manualTarget.recommendedResistance} cadence={displayedPrescription.manualTarget.recommendedCadence??0} guidance={displayedPrescription.manualTarget.adjustmentGuidance}/>}
 
             <div className="target-grid">
               <div className="target-tile">
@@ -1258,7 +1258,7 @@ function RideScreen({
               </div>
             </div>
             <div className="next-line">NEXT: {actions.next?`${actions.next.name} · ${formatTime(actions.timeUntilNext??0)} · ${actions.next.power} · ${actions.next.cadence} · ${actions.next.openingResistance===null?'Resistance unavailable':`${Math.max(0,actions.next.openingResistance-1)}–${actions.next.openingResistance+2}%`}`:'Stage finish'}</div>
-            {!stage.isTraining&&nextCompetitionMarker&&<div className="next-line" aria-label="Next points marker">{nextCompetitionMarker.type==='kom'?`KOM ${nextCompetitionMarker.category??''}`:'SPRINT'} · {nextCompetitionMarker.points??0} pts · {formatTime(Math.max(0,nextCompetitionMarker.at-elapsedSeconds))} · {formatDistance(Math.max(0,nextCompetitionMarker.routeKm-routeKm),measurementSystem)}</div>}
+            {!stage.isTraining&&!isWorlds&&nextCompetitionMarker&&<div className="next-line" aria-label="Next points marker">{nextCompetitionMarker.type==='kom'?`KOM ${nextCompetitionMarker.category??''}`:'SPRINT'} · {nextCompetitionMarker.points??0} pts · {formatTime(Math.max(0,nextCompetitionMarker.at-elapsedSeconds))} · {formatDistance(Math.max(0,nextCompetitionMarker.routeKm-routeKm),measurementSystem)}</div>}
             {opportunity&&tactical.state==='PELOTON'&&!sprintPhase&&<div className="tactical-event-card"><strong>{opportunity.title}</strong><p>Jean: “{opportunity.prompt}”</p><small>{opportunity.durationSeconds} SEC · +{opportunity.powerDeltaPercent}% POWER · returns progressively to the current-road baseline</small><div><button type="button" onClick={()=>chooseTactic(opportunity.action)}>{opportunity.action.replaceAll('_',' ')}</button><button type="button">{opportunity.decline}</button></div></div>}
             {tactical.state!=='PELOTON'&&<div className="tactical-event-card"><strong>{tactical.state==='RETURNING_TO_PELOTON'?'RETURNING TO PELOTON':tactical.state}</strong>{tactical.transition&&<b>{formatTime(45*(1-tactical.transition.progress))}</b>}{!sprintPhase&&tactical.state!=='RETURNING_TO_PELOTON'&&<button type="button" onClick={()=>chooseTactic('RETURN_TO_PELOTON')}>RETURN TO PELOTON</button>}</div>}
 
@@ -1314,6 +1314,7 @@ function RideScreen({
             <div className="ride-details">
 
               <div className="detail-grid">
+                {isWorlds&&!isTimeTrial&&<div className="dashboard-card ride-detail-stat"><small>RACE GAPS</small><strong>Race-story estimates</strong><p>Current gaps support the race story and are not measured from other riders.</p></div>}
                 <div className="dashboard-card ride-detail-stat"><small>RESOLVER</small><strong>{activePrescription.manualTarget.feasibility}</strong><p>{activePrescription.manualTarget.adjustmentReason}</p></div>
                 <div className="dashboard-card ride-detail-stat"><small>TEAM RADIO HISTORY</small>{radioHistory.slice().reverse().map(message=><p key={message.id}>📻 {message.text}</p>)}<button type="button" disabled={!radioText} onClick={()=>setCaptionVisible(true)}>Replay latest</button></div>
                 <div
