@@ -16,7 +16,7 @@ test('gradient selection follows section boundaries and Tour difficulty colors',
   assert.equal(gradientSectionIndex(sections, 0), 0)
   assert.equal(gradientSectionIndex(sections, .2), 1)
   assert.equal(gradientSectionIndex(sections, 1), 4)
-  assert.deepEqual([2.9, 3, 6, 9].map(gradientDifficultyColor), ['#29a35a', '#2374d8', '#d73535', '#111111'])
+  assert.deepEqual([2.9, 3, 6, 9].map(gradientDifficultyColor), ['#29a35a', '#2374d8', '#e67922', '#d73535'])
 })
 test('Jean uses TT focus and escalating sprint/climb urgency', () => {
   assert.equal(jeanMode({ name: 'Race', type: 'Time trial' }), 'time-trial')

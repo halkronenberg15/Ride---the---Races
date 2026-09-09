@@ -221,3 +221,7 @@ At runtime, Peloton calibration is not importer-only: onboarding attaches the an
 # Alpha 4.0.22 championship and situation architecture
 
 The Montréal Worlds integration and its official/authored boundary, scoped Team USA identity, canonical ITT timeline and split contract, deterministic 12-lap mapping, race-position/course-position separation, reusable situation/Chase layer, contextual profile viewport, synchronized gradient-detail rules and additive persistence are specified in [ALPHA_4.0.22.md](./ALPHA_4.0.22.md). The complete authored story is intentionally Montréal Road Race-only; Tour and Vuelta remain unchanged until later stage-by-stage authoring. Simulated gaps are labeled and are not telemetry.
+
+## Alpha 4.0.23 canonical cockpit projection
+
+`RoadModel` owns the ordered section clock and fixed course geography. `canonicalCoursePosition` is the only adapter consumed by `RideScreen` for completion, remaining distance, rider coordinates, climb lifecycle, gradient boundaries, current/next targets, and finish state. Profile modes are presentation state only and may never create a second climb clock or persist SVG coordinates.
