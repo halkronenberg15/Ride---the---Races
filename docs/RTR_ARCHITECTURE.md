@@ -225,3 +225,5 @@ The Montréal Worlds integration and its official/authored boundary, scoped Team
 ## Alpha 4.0.23 canonical cockpit projection
 
 `RoadModel` owns the ordered section clock and fixed course geography. `canonicalCoursePosition` is the only adapter consumed by `RideScreen` for completion, remaining distance, rider coordinates, climb lifecycle, gradient boundaries, current/next targets, and finish state. Profile modes are presentation state only and may never create a second climb clock or persist SVG coordinates.
+
+The Alpha 4.0.23 correction adds `createPreRacePlan`/`preRaceSnapshot` ahead of the road timeline. Gate time is persisted as a clock offset, while `RoadModel` receives official racing sections only. `ClimbProfile4023` draws connected source-profile paths; `ProfileControls4023` keeps geographic scale independent from information density. Tactical offer timestamps and consumed decisions are authoritative persisted inputs, never SVG state.
