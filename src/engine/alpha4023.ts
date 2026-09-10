@@ -9,10 +9,16 @@ export type CanonicalCoursePosition={
  climbCoordinate:number|null; climbCompletion:number|null; distanceToSummit:number|null; timeToSummit:number|null
  currentGradientSection:GradientSection|null; nextGradientSection:GradientSection|null
  distanceToNextGradientBoundary:number|null; currentTargets:RoadSnapshot['livePrescription'];nextTargets:ReturnType<RoadModel['actionTargets']>['next'];finished:boolean
- profileMode:CourseProfileMode; gradientSections:GradientSection[]
+ profileMode:CourseProfileMode; gradientSections:GradientSection[];gradientBoundaryCrossing:boolean
 }
 
 export const CLIMB_APPROACH_KM=1.5
+
+export function courseContextLabel(sector:string,gradient:number){
+ if(gradient<=-2)return `${sector} · Descent`
+ if(/approach/i.test(sector))return `${sector} · Approach`
+ return sector
+}
 
 /**
  * Read-only projection of the road model. This is the sole runtime source for
@@ -30,6 +36,7 @@ export function canonicalCoursePosition(model:RoadModel,elapsedSeconds:number):C
  const next=current?sections.slice(index+1).find(section=>Math.abs(section.gradient-current.gradient)>=.5)??null:null
  const climbLength=road.climbStartDistance!==null&&road.summitDistance!==null?road.summitDistance-road.climbStartDistance:0
  const boundaryDistance=current?Math.max(0,(current.end-progress)*climbLength):null
+ const gradientBoundaryCrossing=Boolean(onClimb&&current&&current.start>0&&Math.abs(progress-current.start)<1e-8)
  const finished=road.raceFinished
  const remaining=finished?0:Math.max(0,model.distanceKm-road.courseDistance)
  const completion=finished?100:remaining>1e-9?Math.min(99.9,road.courseProgress*100):100
@@ -41,7 +48,7 @@ export function canonicalCoursePosition(model:RoadModel,elapsedSeconds:number):C
   distanceToSummit:onClimb?(summitClimb?0:road.distanceToSummit):null,timeToSummit:onClimb?(summitClimb||road.distanceToSummit<=1e-7?0:road.estimatedTimeToSummit):null,
   currentGradientSection:current,nextGradientSection:next,distanceToNextGradientBoundary:boundaryDistance,
   currentTargets:road.livePrescription,nextTargets:model.actionTargets(elapsedSeconds).next,finished,
-  profileMode:onClimb?'CLIMB':entrance!==null&&entrance<=CLIMB_APPROACH_KM?'CLIMB_APPROACH':'FULL_STAGE',gradientSections:sections,
+  profileMode:onClimb?'CLIMB':entrance!==null&&entrance<=CLIMB_APPROACH_KM?'CLIMB_APPROACH':'FULL_STAGE',gradientSections:sections,gradientBoundaryCrossing,
  }
 }
 

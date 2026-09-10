@@ -21,7 +21,7 @@ import { applyTacticalAction, resolveTacticalTransition, type TacticalAction } f
 import { captionDurationMs, type TeamRadioMessage } from '../engine/teamRadio'
 import { completeCooldown, type CooldownCompletion } from '../engine/rideCompletion'
 import { shouldDisplayClimb, sprintTransitionCountdown, tacticalOpportunity, tacticalPrescription, trainingMarkerPositions } from '../engine/alpha4021'
-import { canonicalCoursePosition } from '../engine/alpha4023'
+import { canonicalCoursePosition, courseContextLabel } from '../engine/alpha4023'
 import { activeRaceSituation, circuitProgressToLap, meaningfulTerrainChange, mergeTerrainBlocks, nextMeaningfulBoundary, synchronizeProfileView } from '../engine/alpha4022'
 import { createPreRacePlan, preRaceSnapshot, skipRemainingWarmup } from '../engine/preRaceLifecycle'
 import { ChaseDecisionCard, ProfileDetail4022, ProfileStatusHeader, TacticalStatusStrip, WorldsGroupMarkers } from '../components/WorldsRaceLayer.ts'
@@ -29,6 +29,8 @@ import { ClimbProfile4023 } from '../components/ClimbProfile4023.ts'
 import { ProfileControls4023 } from '../components/ProfileControls4023.ts'
 import { CourseEndpointMarkers4023 } from '../components/CourseEndpointMarkers4023.ts'
 import { tacticalOfferSnapshot } from '../engine/tacticalLifecycle4023.ts'
+import { targetPreview4023 } from '../engine/targetPreview4023.ts'
+import { RiderMarker4023 } from '../components/RiderMarker4023.ts'
 
 type RideScreenProps = {
   stageNumber: number
@@ -183,17 +185,22 @@ function RideScreen({
   const climbAvailable=currentSegmentIsClimb&&coursePosition.currentClimbId!==null||climbApproachAvailable
   const showClimbView=climbAvailable&&geographicMode==='CLIMB'
   const climbRenderPosition=currentSegmentIsClimb||!upcomingClimb?coursePosition:canonicalCoursePosition(timeline,timeline.elapsedAtCourseDistance(upcomingClimb.startDistance+.00001))
+  const climbStartResistance=climbRenderPosition.currentTargets.resistance.replace(/ · START \d+% @ \d+ rpm| · Start \d+%/i,'')
   const nextBoundaryElapsed=coursePosition.distanceToNextGradientBoundary===null?null:timeline.elapsedAtCourseDistance(routeKm+coursePosition.distanceToNextGradientBoundary+.00001)
   const nextBoundaryResistance=nextBoundaryElapsed===null?'—':timeline.roadSnapshot(nextBoundaryElapsed).livePrescription.resistance.replace(/ · START \d+% @ \d+ rpm| · Start \d+%/i,'')
   const mode = jeanMode(currentSegment, isFinished)
   const actions = useMemo(() => timeline.actionTargets(elapsedSeconds), [elapsedSeconds, timeline])
+  const firstRaceTarget=targetPreview4023(segments[0].name,segments[0].sec,timeline.roadSnapshot(0).livePrescription)
+  const kilometreZeroTarget=preRacePlan&&gateModels?targetPreview4023('KILOMETRE ZERO',preRacePlan.kilometreZeroSeconds,gateModels.kilometreZero.roadSnapshot(0).livePrescription):null
+  const nextSectionIndex=engine.segmentIndex+1
+  const nextSectionTarget=nextSectionIndex<segments.length?targetPreview4023(segments[nextSectionIndex].name,segments[nextSectionIndex].sec,timeline.roadSnapshot(timeline.segmentStarts[nextSectionIndex]).livePrescription):null
   const gateTitle=massStart?.phase==='PRE_RACE_WARMUP'?'PRE-RACE WARM-UP':massStart?.phase==='KILOMETRE_ZERO'?'KILOMETRE ZERO':massStart?.phase==='GO'?'GO':null
   const opportunity=gateActive?null:tacticalOpportunity(currentSegment,Boolean(stage.isTraining)||Boolean(isWorlds&&isTimeTrial),Boolean(sprintPhase),engine.elapsedInSegment)
   const opportunityPreview=opportunity?tacticalPrescription(activePrescription,1+opportunity.powerDeltaPercent/100,equipment,bikeProfileForEquipment(equipment),career.rider.cadencePreferences):null
   const upNext=massStart?.phase==='PRE_RACE_WARMUP'&&preRacePlan
-    ?{...actions.current,name:'KILOMETRE ZERO',remaining:preRacePlan.kilometreZeroSeconds}
+    ?kilometreZeroTarget
     :massStart&&(massStart.phase==='KILOMETRE_ZERO'||massStart.phase==='GO')
-      ?{...actions.current,remaining:segments[0].sec}:actions.next
+      ?firstRaceTarget:nextSectionTarget
   const raceSituation=isWorlds&&!isTimeTrial&&!gateActive?activeRaceSituation(stage.raceId??'',engine.courseProgress):undefined
   const worldsLap=isWorlds&&!isTimeTrial&&!gateActive?circuitProgressToLap(engine.courseProgress):null
   const profileView=activeRide.ride?.profileView??{mode:'OVERVIEW' as const,activeRangeId:null,autoConsumedIds:[]}
@@ -220,7 +227,8 @@ function RideScreen({
   const gradientTransitionKm=mergedGradientBlocks[detailGradientIndex]?Math.max(0,(mergedGradientBlocks[detailGradientIndex].end-localGradientProgress)*(engine.sectionEndCourseDistance-engine.sectionStartCourseDistance)):0
   const courseTerrainBlocks=segments.map((segment,index)=>({start:segment.routeKm,end:segments[index+1]?.routeKm??stage.distanceKm,gradient:timeline.roadSnapshot(timeline.segmentStarts[index]+1).gradient,name:segment.name}))
   const upcomingBoundary=nextMeaningfulBoundary(courseTerrainBlocks,routeKm,stage.distanceKm)
-  const upcomingName=upcomingBoundary.finish&&actions.next?actions.next.name:upcomingBoundary.name
+  const detailNextName=upcomingBoundary.finish?(actions.next?.name??'FINISH'):upcomingBoundary.name
+  const courseContext=courseContextLabel(currentSegment.name,activeGradient)
   const chasePreview=raceAction&&raceSituation?tacticalPrescription(activePrescription,raceSituation.preview.powerMultiplier,equipment,bikeProfileForEquipment(equipment),career.rider.cadencePreferences):null
   const radioHistory=activeRide.ride?.radioHistory??[]
   const nextCompetitionMarker=timeline.markers.find(marker=>(marker.type==='sprint'||marker.type==='kom')&&marker.position>engine.courseProgress)
@@ -702,7 +710,7 @@ function RideScreen({
         }
 
         .profile-end-marker{position:absolute;bottom:0;z-index:10;font-size:.58rem;font-weight:900;pointer-events:none}.profile-end-marker.start{left:0}.profile-end-marker.finish{right:0}.profile-end-marker i{display:block;height:20px;border-left:2px solid currentColor}
-        .climb-profile-4023{height:190px;display:grid;grid-template-rows:auto auto 1fr;gap:5px}.climb-profile-4023 header{display:flex;justify-content:space-between;gap:8px;font-size:.76rem}.climb-guidance{display:grid;grid-template-columns:1fr 1fr .8fr;gap:5px}.climb-guidance>span{min-width:0;padding:5px 7px;border-radius:8px;background:rgba(255,255,255,.07)}.climb-guidance small,.climb-guidance strong,.climb-guidance b{display:block}.climb-guidance strong{font-size:1.1rem}.climb-guidance b{font-size:.62rem;white-space:nowrap}.climb-svg-region{position:relative;min-height:82px}.climb-svg-region svg{width:100%;height:100%;display:block;overflow:visible}.climb-svg-region g.completed{opacity:.4;filter:saturate(.3)}.climb-svg-region g.current{opacity:1;filter:drop-shadow(0 0 4px rgba(255,255,255,.8))}.climb-svg-region g.upcoming{opacity:.72}.climb-rider{position:absolute;z-index:30;transform:translate(-50%,-72%);font-size:1.55rem;filter:drop-shadow(0 0 2px #fff) drop-shadow(0 2px 4px #000);pointer-events:none}.profile-control-footer{display:flex;justify-content:flex-end;gap:6px;min-height:44px;margin-top:auto;padding-top:4px;position:relative;z-index:40}.profile-control-footer button{min-height:44px;min-width:116px}.profile-scale-control[aria-pressed=true]{background:#f46a00;color:#fff}.live-profile-card{height:330px;display:flex;flex-direction:column}.profile-detail-4022{position:relative!important;inset:auto!important;height:116px;margin:0!important;z-index:7}.profile-caption{max-height:54px;overflow:hidden}.profile-progress-row{padding-right:4px}.live-profile-wrap svg{pointer-events:none}
+        .climb-profile-4023{height:190px;display:grid;grid-template-rows:auto auto 1fr;gap:5px;color:#fff}.climb-profile-4023 header{display:flex;justify-content:space-between;gap:8px;font-size:.76rem}.climb-guidance{display:grid;grid-template-columns:1fr 1fr .8fr;gap:5px}.climb-guidance>span{min-width:0;padding:5px 7px;border-radius:8px;background:rgba(255,255,255,.07)}.climb-guidance small,.climb-guidance strong,.climb-guidance b{display:block}.climb-guidance strong{font-size:1.1rem}.climb-guidance b{font-size:.62rem;white-space:nowrap}.climb-svg-region{position:relative;min-height:82px}.climb-svg-region svg{width:100%;height:100%;display:block;overflow:visible}.climb-svg-region g.completed{opacity:.4;filter:saturate(.3)}.climb-svg-region g.current{opacity:1;filter:drop-shadow(0 0 4px rgba(255,255,255,.8))}.climb-svg-region g.upcoming{opacity:.72}.climb-rider{position:absolute;z-index:30;transform:translate(-50%,-72%);font-size:1.55rem;filter:drop-shadow(0 0 2px #fff) drop-shadow(0 2px 4px #000);pointer-events:none}.profile-control-footer{display:flex;justify-content:flex-end;gap:6px;min-height:44px;margin-top:auto;padding-top:4px;position:relative;z-index:40}.profile-control-footer button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:116px;color:#fff!important;font-size:.72rem;font-weight:900;line-height:1;white-space:nowrap;opacity:1}.profile-scale-control[aria-pressed=true]{background:#f46a00;color:#fff}.live-profile-card{height:330px;display:flex;flex-direction:column}.profile-detail-4022{position:relative!important;inset:auto!important;height:150px;margin:0!important;padding:8px!important;z-index:7;color:#fff!important;background:#081422!important;overflow:hidden}.profile-detail-4022 *{color:#fff!important}.profile-detail-4022 .detail-gradient-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));height:auto!important;margin:0!important;gap:5px}.profile-detail-4022 .detail-gradient-summary span{min-width:0;padding:6px!important;background:#132942}.profile-detail-4022 .detail-gradient-summary strong{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere}.profile-detail-4022 .detail-gradient-blocks{display:none!important}.profile-caption{max-height:54px;overflow:hidden}.profile-progress-row{padding-right:4px}.live-profile-wrap svg{pointer-events:none}.rider-glyph{display:inline-block;transform:scaleX(-1);transform-origin:center}.summit-metrics{padding-right:52px}.profile-status-regions{padding-right:52px}.profile-control-footer{padding-right:52px}
 
         .ride-countdown { position: fixed; inset: 0; z-index: 3000; display: grid; place-content: center; gap: 18px; text-align: center; background: rgba(7,8,10,.94); }
         .ride-countdown strong { font-size: min(42vw, 15rem); line-height: .8; color: #f46a00; font-variant-numeric: tabular-nums; }
@@ -1095,10 +1103,12 @@ function RideScreen({
               <strong>{timeline.profileSourceKind === 'authoritative' ? `${activeGradient.toFixed(1)}% ${activeGradient > 0 ? '↑' : activeGradient < 0 ? '↓' : ''}` : '—'}</strong>
             </div>
             {showClimbView ? (
-              <ClimbProfile4023 model={timeline} position={climbRenderPosition} currentResistance={displayResistance} nextResistance={nextBoundaryResistance} formatDistance={km=>formatDistance(km,measurementSystem)} formatTime={formatTime}/>
+              <ClimbProfile4023 model={timeline} position={climbRenderPosition} approach={climbApproachAvailable&&!currentSegmentIsClimb} currentResistance={climbApproachAvailable&&!currentSegmentIsClimb?climbStartResistance:displayResistance} nextResistance={nextBoundaryResistance==='—'?climbStartResistance:nextBoundaryResistance} formatDistance={km=>formatDistance(km,measurementSystem)} formatTime={formatTime}/>
+            ) : isWorlds&&profileView.mode==='DETAIL' ? (
+              <ProfileDetail4022 state={profileView} event={raceSituation} progress={localGradientProgress} gradientBlocks={mergedGradientBlocks} gradientIndex={detailGradientIndex} currentGradient={activeGradient} nextGradient={mergedGradientBlocks[detailGradientIndex+1]?.gradient??nextGradient} nextName={detailNextName} changeDistance={gradientTransitionKm<.005?'CHANGE NOW':formatDistance(gradientTransitionKm,measurementSystem)} resistance={displayResistance} context={courseContext}/>
             ) : (
               <>
-                <strong className="profile-terrain-name">{currentSegment.terrainLabel}</strong>
+                <strong className="profile-terrain-name">{courseContext}</strong>
 
                 <div className="live-profile-wrap">
                   <svg data-profile-view={profileView.mode} viewBox={profileViewBox} preserveAspectRatio="none" style={{ width: '100%', height: '100%', display: 'block', overflow: 'visible' }}>
@@ -1120,12 +1130,11 @@ function RideScreen({
                   <CourseEndpointMarkers4023/>
                   {!stage.isTraining && timeline.markers.filter(marker=>marker.type!=='kilometre-zero'&&marker.type!=='finish').map((marker) => <span key={marker.key} className={`race-marker ${marker.type}`} style={{ left: `${displayX(marker.position*100)}%`, top:`${marker.localY}%`, color:marker.color }} title={marker.label}><b style={{ transform:`translate(${markerLabelOffset(marker.position,timeline.markers.map(item=>item.position)).translateX}%, ${markerLabelOffset(marker.position,timeline.markers.map(item=>item.position)).translateY}px)` }}>{marker.label}</b><i /></span>)}
                 {raceSituation&&<WorldsGroupMarkers event={raceSituation} courseProgress={engine.courseProgress} viewStart={detailStart} viewWidth={detailWidth}/>}
-                  <div className="profile-rider" style={{ left: `${displayX(riderMarkerX)}%`, top: `${riderMarkerY}%` }}>🚴</div>
-                {isWorlds&&<ProfileDetail4022 state={chaseOffered?{...profileView,mode:'OVERVIEW'}:profileView} event={raceSituation} progress={localGradientProgress} gradientBlocks={mergedGradientBlocks} gradientIndex={detailGradientIndex} currentGradient={activeGradient} nextGradient={mergedGradientBlocks[detailGradientIndex+1]?.gradient??nextGradient} nextName={upcomingName} changeDistance={gradientTransitionKm<.005?'CHANGE NOW':formatDistance(gradientTransitionKm,measurementSystem)} resistance={displayResistance}/>}
+                  <RiderMarker4023 kind="profile" left={displayX(riderMarkerX)} top={riderMarkerY} coordinate={coursePosition.fullProfileCoordinate}/>
                 </div>
               </>
             )}
-            {!showClimbView&&captionVisible&&<div className="profile-caption" role="status" aria-live="polite">📻 JEAN: “{radioText}”<button type="button" aria-label="Dismiss Team Radio caption" onClick={()=>setCaptionVisible(false)}>×</button></div>}
+            {!showClimbView&&profileView.mode!=='DETAIL'&&captionVisible&&<div className="profile-caption" role="status" aria-live="polite">📻 JEAN: “{radioText}”<button type="button" aria-label="Dismiss Team Radio caption" onClick={()=>setCaptionVisible(false)}>×</button></div>}
             <ProfileControls4023 climbAvailable={climbAvailable} geographicMode={geographicMode} density={profileView.mode} onGeographicMode={profileGeographicMode=>activeRide.ride&&activeRide.updateRide({profileGeographicMode})} onDensity={mode=>activeRide.ride&&activeRide.updateRide({profileView:{...profileView,mode,activeRangeId:mode==='DETAIL'?(detailEvent?.detailRangeId??'manual-current'):null}})}/>
             {isWorlds&&isTimeTrial&&<div className="itt-split-status"><span><small>CURRENT SPLIT</small><strong>{crossedSplits.at(-1)?.label??'START HOUSE'}</strong></span><span><small>NEXT SPLIT</small><strong>{nextSplit?.label??'FINISH'}</strong></span><span><small>ELAPSED / REMAINING</small><strong>{formatTime(elapsedSeconds)} / {formatTime(stageRemaining)}</strong></span></div>}
 
