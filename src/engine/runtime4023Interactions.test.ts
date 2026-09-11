@@ -16,6 +16,7 @@ import { tacticalOfferSnapshot } from './tacticalLifecycle4023.ts'
 import { WorldsOverviewLabels, ProfileDetail4022 } from '../components/WorldsRaceLayer.ts'
 import { RiderMarker4023 } from '../components/RiderMarker4023.ts'
 import { targetPreview4023 } from './targetPreview4023.ts'
+import { completionLabel, lifecycleJeanMessage, lifecycleProfileContext } from './cockpitPresentation4023.ts'
 import { courseContextLabel } from './alpha4023.ts'
 
 const vuelta=getLibraryStage('vuelta-2026',9)!
@@ -77,3 +78,33 @@ test('future previews equal activation resolver targets for KM0 and normal secti
 test('rider faces right without transforming canonical coordinates at all checkpoints',()=>{for(const coordinate of [0,.0001,.5,.9999,1]){const html=renderToStaticMarkup(createElement(RiderMarker4023,{kind:'profile',left:coordinate*100,top:50,coordinate}));assert.match(html,/data-direction="right"/);assert.match(html,/Rider facing right/);assert.match(html,new RegExp(`data-course-coordinate="${coordinate.toFixed(6)}"`))}})
 
 test('full-stage context follows authored sector and material descent',()=>{assert.equal(courseContextLabel('Mountain Chain Two',-6.2),'Mountain Chain Two · Descent');assert.equal(courseContextLabel('Aitana Approach',1.2),'Aitana Approach · Approach');assert.equal(courseContextLabel('Central Valley',.2),'Central Valley')})
+
+test('lifecycle presentation freezes pre-race context and selects exactly one current Jean message',()=>{
+ const racing='Opening Mountain'
+ assert.equal(lifecycleProfileContext(false,'PRE_RACE_WARMUP',racing),'READY')
+ assert.equal(lifecycleProfileContext(true,'PRE_RACE_WARMUP',racing),'PRE-RACE STAGING')
+ assert.equal(lifecycleProfileContext(true,'KILOMETRE_ZERO',racing),'KILOMETRE ZERO')
+ assert.equal(lifecycleProfileContext(true,'GO',racing),'GO')
+ assert.equal(lifecycleProfileContext(true,'RACING',racing),racing)
+ const messages=['PRE_RACE_WARMUP','KILOMETRE_ZERO','GO','RACING'].map(phase=>lifecycleJeanMessage(true,phase as Parameters<typeof lifecycleJeanMessage>[1],'Race instruction'))
+ assert.deepEqual(messages,['Open the legs progressively. We race after Kilometre Zero.','Hold the line. Build only when I call GO.','GO. The race is live.','Race instruction'])
+ assert(messages.every(message=>!message.includes('Press Start Ride')))
+})
+
+test('profile controls render compact contrasting buttons and switch both independent modes',()=>{
+ let geographic:'FULL_STAGE'|'CLIMB'='FULL_STAGE',density:'OVERVIEW'|'DETAIL'='OVERVIEW'
+ const render=()=>ProfileControls4023({climbAvailable:true,geographicMode:geographic,density,onGeographicMode:value=>{geographic=value},onDensity:value=>{density=value}})
+ for(const width of [320,375,390,430]){const html=renderToStaticMarkup(createElement('div',{style:{width}},render()));assert.equal((html.match(/<button/g)??[]).length,2);assert.match(html,/background:#512000;color:#ffffff/);assert.doesNotMatch(html,/disabled|<button[^>]*><\/button>/)}
+ buttons(render()).find(button=>button.props['aria-label']==='Show Climb')!.props.onClick();assert.equal(geographic,'CLIMB');assert.match(renderToStaticMarkup(render()),/SHOW FULL STAGE/)
+ buttons(render()).find(button=>button.props['aria-label']==='Show Detail')!.props.onClick();assert.equal(density,'DETAIL');assert.equal(geographic,'CLIMB');assert.match(renderToStaticMarkup(render()),/SHOW OVERVIEW/)
+})
+
+test('completion communicates initial canonical movement without rounding back to zero',()=>{
+ assert.equal(completionLabel(0,0),'0% COMPLETE');assert.equal(completionLabel(.3,.5),'<1% COMPLETE');assert.equal(completionLabel(1.2,2),'1% COMPLETE');assert.equal(completionLabel(99.9,1),'99% COMPLETE')
+})
+
+test('every Stage 9 transition preview reuses its activation prescription including climb descent and cooldown',()=>{
+ const segments=scaled(vuelta,90),plan=createPreRacePlan(segments,90),road=createRoadModel(9,plan.officialSegments,vuelta.distanceKm,undefined,vuelta.profilePoints,vuelta.officialCourseMarkers,vuelta.raceId,206,GENERIC_MANUAL_EQUIPMENT)
+ for(let index=0;index<plan.officialSegments.length;index++){const segment=plan.officialSegments[index],active=road.roadSnapshot(road.segmentStarts[index]).livePrescription,preview=targetPreview4023(segment.name,segment.sec,active);assert.equal(preview.name,segment.name);assert.equal(preview.remaining,segment.sec);assert.equal(preview.power,active.power);assert.equal(preview.cadence,active.cadence);assert.equal(preview.openingResistance,active.manualTarget.recommendedResistance)}
+ assert(plan.officialSegments.some(segment=>/climb|mountain/i.test(segment.name)));assert(plan.officialSegments.some(segment=>/descent/i.test(segment.name)));assert(plan.officialSegments.some(segment=>/cooldown/i.test(segment.type)))
+})
