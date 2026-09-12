@@ -22,3 +22,9 @@ export function completionLabel(completion:number,distanceTravelled:number){
  if(completion<1)return '<1% COMPLETE'
  return `${completion<100?Math.min(99,Math.round(completion)):100}% COMPLETE`
 }
+
+/** Detail guidance stops at the canonical gradient model; Finish is not a road change. */
+export function resolveDetailGuidance4023(nextGradient:number|null,distanceToBoundary:number|null,crossing:boolean){
+ if(nextGradient===null||distanceToBoundary===null)return {name:'NO UPCOMING GRADIENT CHANGE',gradient:null,distanceKm:null,crossing:false}
+ return {name:'NEXT GRADIENT',gradient:nextGradient,distanceKm:distanceToBoundary,crossing}
+}

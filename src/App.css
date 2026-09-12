@@ -1065,3 +1065,8 @@ html[data-motion="reduced"] .ride-screen svg,html[data-motion="reduced"] .race-m
 .worlds-overview-labels{pointer-events:none}
 .worlds-overview-labels>strong{left:auto;right:6px;top:6px;bottom:auto;transform:none;font-size:.58rem;padding:2px 5px;white-space:nowrap}
 @media(max-width:520px){.worlds-overview-labels>strong{right:4px;top:4px;font-size:.54rem}.worlds-overview-profile{overflow:hidden}}
+/* Alpha 4.0.23 phone corrections: bare group glyphs and Safari-safe Finish text. */
+.worlds-group-marker b{min-width:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;text-shadow:0 1px 2px #000,0 0 3px #000}
+.course-finish-svg text{fill:#fff;filter:drop-shadow(0 1px 1px rgba(0,0,0,.8))}
+.profile-detail-4022 .detail-gradient-summary{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media(max-width:520px){.profile-detail-4022 .detail-gradient-summary{grid-template-columns:repeat(3,minmax(0,1fr));height:auto}}
