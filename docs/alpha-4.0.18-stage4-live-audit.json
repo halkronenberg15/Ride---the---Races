@@ -10,7 +10,7 @@
     {
       "climb": 1,
       "checkpoint": "entry",
-      "officialElapsed": 770,
+      "officialElapsed": 879,
       "courseDistance": 0,
       "courseProgress": 0,
       "elevation": 1020,
@@ -19,16 +19,16 @@
       "activeClimbId": "4-geo-0-14",
       "climbProgress": 0,
       "distanceToSummit": 14,
-      "power": "146–173 W",
-      "resistance": "53%",
-      "cadence": "82–94 rpm",
-      "ftpPercentCeiling": 83.00970873786407,
+      "power": "189–214 W",
+      "resistance": "52–55% · Start 53%",
+      "cadence": "66–78 rpm",
+      "ftpPercentCeiling": 102.9126213592233,
       "jeanEvent": null
     },
     {
       "climb": 1,
       "checkpoint": "25%",
-      "officialElapsed": 837.6666666666666,
+      "officialElapsed": 1037.108695652174,
       "courseDistance": 3.5,
       "courseProgress": 0.033396946564885496,
       "elevation": 1256.9005000000002,
@@ -37,16 +37,16 @@
       "activeClimbId": "4-geo-0-14",
       "climbProgress": 0.25,
       "distanceToSummit": 10.5,
-      "power": "146–173 W",
-      "resistance": "53%",
-      "cadence": "82–94 rpm",
-      "ftpPercentCeiling": 83.00970873786407,
+      "power": "189–214 W",
+      "resistance": "52–55% · Start 53%",
+      "cadence": "66–78 rpm",
+      "ftpPercentCeiling": 102.9126213592233,
       "jeanEvent": null
     },
     {
       "climb": 1,
       "checkpoint": "50%",
-      "officialElapsed": 943.2941176470588,
+      "officialElapsed": 1195.217391304348,
       "courseDistance": 7,
       "courseProgress": 0.06679389312977099,
       "elevation": 1563.2453311332783,
@@ -56,7 +56,7 @@
       "climbProgress": 0.5,
       "distanceToSummit": 7,
       "power": "193–214 W",
-      "resistance": "62%",
+      "resistance": "61–63% · Start 61%",
       "cadence": "65–72 rpm",
       "ftpPercentCeiling": 102.9126213592233,
       "jeanEvent": null
@@ -64,7 +64,7 @@
     {
       "climb": 1,
       "checkpoint": "75%",
-      "officialElapsed": 1143.8235294117646,
+      "officialElapsed": 1353.3260869565217,
       "courseDistance": 10.5,
       "courseProgress": 0.10019083969465649,
       "elevation": 2074.0832603315084,
@@ -74,7 +74,7 @@
       "climbProgress": 0.75,
       "distanceToSummit": 3.5,
       "power": "195–214 W",
-      "resistance": "67%",
+      "resistance": "58–61% · Start 58%",
       "cadence": "65–69 rpm",
       "ftpPercentCeiling": 102.9126213592233,
       "jeanEvent": null
@@ -82,7 +82,7 @@
     {
       "climb": 1,
       "checkpoint": "pre-summit",
-      "officialElapsed": 1344.3521390588235,
+      "officialElapsed": 1511.4341501739132,
       "courseDistance": 13.999986,
       "courseProgress": 0.13358765267175574,
       "elevation": 2379.9994490617264,
@@ -92,7 +92,7 @@
       "climbProgress": 0.999999,
       "distanceToSummit": 0.000014000000000180535,
       "power": "186–214 W",
-      "resistance": "47%",
+      "resistance": "51–54% · Start 51%",
       "cadence": "70–82 rpm",
       "ftpPercentCeiling": 102.9126213592233,
       "jeanEvent": "climb-1-summit"
@@ -100,7 +100,7 @@
     {
       "climb": 1,
       "checkpoint": "summit",
-      "officialElapsed": 1344.3529411764707,
+      "officialElapsed": 1511.4347826086957,
       "courseDistance": 14,
       "courseProgress": 0.13358778625954199,
       "elevation": 2380,
@@ -110,7 +110,7 @@
       "climbProgress": 1,
       "distanceToSummit": 0,
       "power": "186–214 W",
-      "resistance": "47%",
+      "resistance": "51–54% · Start 51%",
       "cadence": "70–82 rpm",
       "ftpPercentCeiling": 102.9126213592233,
       "jeanEvent": null
@@ -118,7 +118,7 @@
     {
       "climb": 1,
       "checkpoint": "post-summit",
-      "officialElapsed": 1344.4102352941177,
+      "officialElapsed": 1511.479956521739,
       "courseDistance": 14.001,
       "courseProgress": 0.1335973282442748,
       "elevation": 2379.97665,
@@ -128,7 +128,7 @@
       "climbProgress": 0,
       "distanceToSummit": 0,
       "power": "185–214 W",
-      "resistance": "33%",
+      "resistance": "45–48% · Start 45%",
       "cadence": "86–100 rpm",
       "ftpPercentCeiling": 102.9126213592233,
       "jeanEvent": null
@@ -136,7 +136,7 @@
     {
       "climb": 2,
       "checkpoint": "entry",
-      "officialElapsed": 2102.785714285714,
+      "officialElapsed": 2180.4285714285716,
       "courseDistance": 34,
       "courseProgress": 0.3244274809160305,
       "elevation": 1050,
@@ -146,7 +146,7 @@
       "climbProgress": 0,
       "distanceToSummit": 17,
       "power": "95–142 W",
-      "resistance": "42%",
+      "resistance": "36–39% · Start 36%",
       "cadence": "88–100 rpm",
       "ftpPercentCeiling": 68.44660194174757,
       "jeanEvent": null
@@ -154,7 +154,7 @@
     {
       "climb": 2,
       "checkpoint": "25%",
-      "officialElapsed": 2196.589285714286,
+      "officialElapsed": 2281.8214285714284,
       "courseDistance": 38.25,
       "courseProgress": 0.36498091603053434,
       "elevation": 1213.7538333333334,
@@ -164,7 +164,7 @@
       "climbProgress": 0.25,
       "distanceToSummit": 12.75,
       "power": "98–142 W",
-      "resistance": "51%",
+      "resistance": "37–40% · Start 37%",
       "cadence": "83–95 rpm",
       "ftpPercentCeiling": 68.44660194174757,
       "jeanEvent": null
@@ -172,7 +172,7 @@
     {
       "climb": 2,
       "checkpoint": "50%",
-      "officialElapsed": 2290.392857142857,
+      "officialElapsed": 2383.214285714286,
       "courseDistance": 42.5,
       "courseProgress": 0.40553435114503816,
       "elevation": 1507.5086666666666,
@@ -182,7 +182,7 @@
       "climbProgress": 0.5,
       "distanceToSummit": 8.5,
       "power": "99–142 W",
-      "resistance": "52%",
+      "resistance": "37–40% · Start 37%",
       "cadence": "82–94 rpm",
       "ftpPercentCeiling": 68.44660194174757,
       "jeanEvent": null
@@ -190,7 +190,7 @@
     {
       "climb": 2,
       "checkpoint": "75%",
-      "officialElapsed": 2384.1964285714284,
+      "officialElapsed": 2484.607142857143,
       "courseDistance": 46.75,
       "courseProgress": 0.446087786259542,
       "elevation": 1832.7488504462613,
@@ -200,7 +200,7 @@
       "climbProgress": 0.75,
       "distanceToSummit": 4.25,
       "power": "100–142 W",
-      "resistance": "56%",
+      "resistance": "38–41% · Start 38%",
       "cadence": "80–92 rpm",
       "ftpPercentCeiling": 68.44660194174757,
       "jeanEvent": null
@@ -208,7 +208,7 @@
     {
       "climb": 2,
       "checkpoint": "pre-summit",
-      "officialElapsed": 2477.9996247857143,
+      "officialElapsed": 2585.9995944285715,
       "courseDistance": 50.999983,
       "courseProgress": 0.48664105916030537,
       "elevation": 2049.999656990925,
@@ -218,7 +218,7 @@
       "climbProgress": 0.999999,
       "distanceToSummit": 0.00001699999999971169,
       "power": "95–142 W",
-      "resistance": "43%",
+      "resistance": "36–39% · Start 36%",
       "cadence": "88–100 rpm",
       "ftpPercentCeiling": 68.44660194174757,
       "jeanEvent": "climb-2-summit"
@@ -226,7 +226,7 @@
     {
       "climb": 2,
       "checkpoint": "summit",
-      "officialElapsed": 2478,
+      "officialElapsed": 2586,
       "courseDistance": 51,
       "courseProgress": 0.4866412213740458,
       "elevation": 2050,
@@ -236,7 +236,7 @@
       "climbProgress": 1,
       "distanceToSummit": 0,
       "power": "206–235 W",
-      "resistance": "43%",
+      "resistance": "56–59% · Start 56%",
       "cadence": "66–80 rpm",
       "ftpPercentCeiling": 113.10679611650485,
       "jeanEvent": null
@@ -244,7 +244,7 @@
     {
       "climb": 2,
       "checkpoint": "post-summit",
-      "officialElapsed": 2478.049052631579,
+      "officialElapsed": 2586.051789473684,
       "courseDistance": 51.001,
       "courseProgress": 0.4866507633587786,
       "elevation": 2049.977645047099,
@@ -254,7 +254,7 @@
       "climbProgress": 0,
       "distanceToSummit": 0,
       "power": "206–235 W",
-      "resistance": "34%",
+      "resistance": "46–49% · Start 47%",
       "cadence": "86–100 rpm",
       "ftpPercentCeiling": 113.10679611650485,
       "jeanEvent": null
@@ -262,7 +262,7 @@
     {
       "climb": 3,
       "checkpoint": "entry",
-      "officialElapsed": 3410,
+      "officialElapsed": 3570,
       "courseDistance": 70,
       "courseProgress": 0.66793893129771,
       "elevation": 980,
@@ -272,7 +272,7 @@
       "climbProgress": 0,
       "distanceToSummit": 18,
       "power": "95–142 W",
-      "resistance": "43%",
+      "resistance": "36–39% · Start 36%",
       "cadence": "88–100 rpm",
       "ftpPercentCeiling": 68.44660194174757,
       "jeanEvent": null
@@ -280,7 +280,7 @@
     {
       "climb": 3,
       "checkpoint": "25%",
-      "officialElapsed": 3564.5,
+      "officialElapsed": 3737,
       "courseDistance": 74.5,
       "courseProgress": 0.7108778625954199,
       "elevation": 1208.033269556739,
@@ -290,7 +290,7 @@
       "climbProgress": 0.25,
       "distanceToSummit": 13.5,
       "power": "100–142 W",
-      "resistance": "55%",
+      "resistance": "38–41% · Start 38%",
       "cadence": "80–92 rpm",
       "ftpPercentCeiling": 68.44660194174757,
       "jeanEvent": null
@@ -298,7 +298,7 @@
     {
       "climb": 3,
       "checkpoint": "50%",
-      "officialElapsed": 3719,
+      "officialElapsed": 3904,
       "courseDistance": 79,
       "courseProgress": 0.7538167938931298,
       "elevation": 1551.5743685126297,
@@ -308,7 +308,7 @@
       "climbProgress": 0.5,
       "distanceToSummit": 9,
       "power": "99–142 W",
-      "resistance": "53%",
+      "resistance": "37–40% · Start 37%",
       "cadence": "82–94 rpm",
       "ftpPercentCeiling": 68.44660194174757,
       "jeanEvent": null
@@ -316,7 +316,7 @@
     {
       "climb": 3,
       "checkpoint": "75%",
-      "officialElapsed": 3873.5,
+      "officialElapsed": 4071,
       "courseDistance": 83.5,
       "courseProgress": 0.7967557251908397,
       "elevation": 1909.3485817483647,
@@ -326,7 +326,7 @@
       "climbProgress": 0.75,
       "distanceToSummit": 4.5,
       "power": "99–142 W",
-      "resistance": "53%",
+      "resistance": "37–40% · Start 37%",
       "cadence": "82–94 rpm",
       "ftpPercentCeiling": 68.44660194174757,
       "jeanEvent": null
@@ -334,7 +334,7 @@
     {
       "climb": 3,
       "checkpoint": "pre-summit",
-      "officialElapsed": 4027.999382,
+      "officialElapsed": 4237.999332,
       "courseDistance": 87.999982,
       "courseProgress": 0.8396944847328245,
       "elevation": 2109.9996528841425,
@@ -344,7 +344,7 @@
       "climbProgress": 0.9999990000000002,
       "distanceToSummit": 0.000017999999997186933,
       "power": "95–142 W",
-      "resistance": "43%",
+      "resistance": "36–39% · Start 36%",
       "cadence": "88–100 rpm",
       "ftpPercentCeiling": 68.44660194174757,
       "jeanEvent": "climb-3-summit"
@@ -352,7 +352,7 @@
     {
       "climb": 3,
       "checkpoint": "summit",
-      "officialElapsed": 4028,
+      "officialElapsed": 4238,
       "courseDistance": 88,
       "courseProgress": 0.8396946564885497,
       "elevation": 2110,
@@ -362,7 +362,7 @@
       "climbProgress": 1,
       "distanceToSummit": 0,
       "power": "206–235 W",
-      "resistance": "43%",
+      "resistance": "56–59% · Start 56%",
       "cadence": "66–80 rpm",
       "ftpPercentCeiling": 113.10679611650485,
       "jeanEvent": null
@@ -370,7 +370,7 @@
     {
       "climb": 3,
       "checkpoint": "post-summit",
-      "officialElapsed": 4028.1295000000005,
+      "officialElapsed": 4238.136750000001,
       "courseDistance": 88.001,
       "courseProgress": 0.8397041984732825,
       "elevation": 2109.971857046426,
@@ -380,7 +380,7 @@
       "climbProgress": 0,
       "distanceToSummit": 0,
       "power": "206–235 W",
-      "resistance": "32%",
+      "resistance": "46–49% · Start 47%",
       "cadence": "86–100 rpm",
       "ftpPercentCeiling": 113.10679611650485,
       "jeanEvent": null

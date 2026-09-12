@@ -101,7 +101,7 @@ test('RideScreen live resolver synchronizes Stage 4 gradient, climb, terrain pre
     assert.equal(isJeanEventContextValid(stale,{courseDistance:after.courseDistance,activeClimbId:after.activeClimbId,summitDistance:after.summitDistance,climbProgress:after.climbProgress}),false)
   }
   const rideScreen=readFileSync(new URL('../screens/RideScreen.tsx',import.meta.url),'utf8')
-  assert.match(rideScreen,/activePrescription = engine\.livePrescription/)
+  assert.match(rideScreen,/activePrescription = gatePrescription\?\?engine\.livePrescription/)
   assert.match(rideScreen,/courseDistance: engine\.courseDistance[\s\S]*activeClimbId: engine\.activeClimbId[\s\S]*climbProgress: engine\.climbProgress/)
 })
 

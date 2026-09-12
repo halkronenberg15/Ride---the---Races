@@ -1,0 +1,5 @@
+import { createElement as h } from 'react'
+/** Endpoint lines stay in course coordinates; their labels are non-scaling HTML overlays. */
+export function CourseEndpointMarkers4023({progress=0}:{progress?:number}){return h('div',{className:'course-endpoint-layer','aria-label':'Course start'},h('span',{className:`profile-end-marker start${progress>0?' compact':''}`,'aria-label':'Kilometre Zero'},progress>0?null:h('b',{style:{left:'8px',bottom:'22px'}},'KM 0'),h('i')))}
+export function CourseFinishMarker4023({y}:{y:number}){const labelY=Math.max(8,y-24);return h('g',{className:'course-finish-svg','aria-hidden':'true','data-endpoint-x':'100','data-endpoint-y':y.toFixed(3)},h('line',{x1:100,y1:y,x2:100,y2:labelY+3,stroke:'#ffffff',strokeWidth:2,vectorEffect:'non-scaling-stroke'}))}
+export function CourseFinishLabel4023({y}:{y:number}){const labelY=Math.max(8,y-24);return h('span',{className:'course-finish-label','aria-label':'Finish','data-endpoint-x':'100','data-endpoint-y':y.toFixed(3),style:{top:`${labelY}%`}},'FINISH')}

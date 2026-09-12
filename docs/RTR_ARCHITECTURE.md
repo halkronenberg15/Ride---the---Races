@@ -221,3 +221,15 @@ At runtime, Peloton calibration is not importer-only: onboarding attaches the an
 # Alpha 4.0.22 championship and situation architecture
 
 The Montréal Worlds integration and its official/authored boundary, scoped Team USA identity, canonical ITT timeline and split contract, deterministic 12-lap mapping, race-position/course-position separation, reusable situation/Chase layer, contextual profile viewport, synchronized gradient-detail rules and additive persistence are specified in [ALPHA_4.0.22.md](./ALPHA_4.0.22.md). The complete authored story is intentionally Montréal Road Race-only; Tour and Vuelta remain unchanged until later stage-by-stage authoring. Simulated gaps are labeled and are not telemetry.
+
+## Alpha 4.0.23 canonical cockpit projection
+
+`RoadModel` owns the ordered section clock and fixed course geography. `canonicalCoursePosition` is the only adapter consumed by `RideScreen` for completion, remaining distance, rider coordinates, climb lifecycle, gradient boundaries, current/next targets, and finish state. Profile modes are presentation state only and may never create a second climb clock or persist SVG coordinates.
+
+The Alpha 4.0.23 correction adds `createPreRacePlan`/`preRaceSnapshot` ahead of the road timeline. Gate time is persisted as a clock offset, while `RoadModel` receives official racing sections only. `ClimbProfile4023` draws connected source-profile paths; `ProfileControls4023` keeps geographic scale independent from information density. Tactical offer timestamps and consumed decisions are authoritative persisted inputs, never SVG state.
+Alpha 4.0.23 presents the canonical road through one mobile Live Tracker. Mass-start warm-up and Kilometre Zero are staging projections, never numbered official sections; the post-GO profile, Detail, targets, Up Next, progress and endpoint markers all consume the same normalized road timeline. Overview/Detail and Full Stage/Climb remain independent persisted dimensions.
+The profile visualization owns a bounded drawable region followed by a normal-flow control footer. Finish geometry is rendered inside the course SVG at the final canonical elevation sample; HTML overlays cannot reposition that endpoint. Persisted tactical efforts carry their authored Attack/Chase identity and percentage modifier so restoration cannot rename or double-resolve an effort.
+
+Detail consumes only the canonical next meaningful gradient boundary; Finish and workout-section transitions are separate concepts. Worlds group geography also distinguishes race state from label layout: while the rider is in `PELOTON`, rider and peloton share one course coordinate and only their visual labels may be offset.
+
+Non-uniform SVG scaling is limited to course geometry. Endpoint labels are projected HTML overlays, so typography never inherits the profile's `preserveAspectRatio="none"` stretch; the canonical endpoint line remains in the SVG coordinate domain.

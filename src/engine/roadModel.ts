@@ -52,6 +52,8 @@ export type ActionTarget = {
 export type ActionTargets = { current: ActionTarget; next: ActionTarget | null; timeUntilNext: number | null }
 
 export type RoadModel = StageTimeline & {
+  distanceKm:number
+  climbs:Array<{id:string;name:string;startDistance:number;summitDistance:number;pointStart:number;pointEnd:number}>
   points: RoadPoint[]
   profilePoints: string[]
   profileSourceKind: 'authoritative' | 'generated-fallback'
@@ -111,7 +113,7 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
   const max = Math.max(...raw.map((point) => point.elevation))
   const span = Math.max(1, max - min)
   const points = explicitPoints.length>=2 ? explicitPoints : raw.map((point) => ({ ...point, elevation: 82 - ((point.elevation - min) / span) * 62 }))
-  const canonicalClimbs = officialProfile ? points.slice(0, -1).reduce<Array<{start:number;summit:number;pointStart:number;pointEnd:number}>>((climbs, point, index) => {
+  const rawClimbs = officialProfile ? points.slice(0, -1).reduce<Array<{start:number;summit:number;pointStart:number;pointEnd:number}>>((climbs, point, index) => {
     if (points[index + 1].elevation <= point.elevation) return climbs
     const previous = climbs.at(-1)
     if (previous?.pointEnd === index) {
@@ -121,6 +123,10 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
     else climbs.push({ start: point.position * distanceKm, summit: points[index + 1].position * distanceKm, pointStart: index, pointEnd: index + 1 })
     return climbs
   }, []) : []
+  // Interpolation creates many tiny positive runs. Only real, useful mountain
+  // intervals enter Climb View; smaller rises remain visible on Full Stage.
+  const canonicalClimbs=rawClimbs.filter(climb=>climb.summit-climb.start>=1&&(points[climb.pointEnd].elevation-points[climb.pointStart].elevation)>=30)
+  const namedClimbs=canonicalClimbs.map((climb,index)=>{const midpoint=(climb.start+climb.summit)/2;const sectionIndex=segments.findIndex((_,item)=>{const snap=timeline.snapshot(timeline.segmentStarts[item]);return midpoint>=snap.sectionStartCourseDistance&&midpoint<=snap.sectionEndCourseDistance});return {id:`${stageNumber}-geo-${climb.start}-${climb.summit}`,name:segments[Math.max(0,sectionIndex)]?.name??`Climb ${index+1}`,startDistance:climb.start,summitDistance:climb.summit,pointStart:climb.pointStart,pointEnd:climb.pointEnd}})
   const pointMin=Math.min(...points.map(point=>point.elevation)); const pointMax=Math.max(...points.map(point=>point.elevation)); const pointSpan=Math.max(1,pointMax-pointMin)
   const elevationAt = (position: number) => {
     const p = Math.min(1, Math.max(0, position))
@@ -185,6 +191,8 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
 
   return {
     ...timeline,
+    distanceKm,
+    climbs:namedClimbs,
     points,
     profileSourceKind: explicitPoints.length>=2?'authoritative':'generated-fallback',
     profilePoints: points.map((point) => `${(point.position * 100).toFixed(3)},${profileYAt(point.position).toFixed(3)}`),

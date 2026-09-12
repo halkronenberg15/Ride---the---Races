@@ -12,8 +12,23 @@ export function gradientSectionIndex(sections: GradientSection[], progress: numb
 export function gradientDifficultyColor(gradient: number) {
   if (gradient < 3) return '#29a35a'
   if (gradient < 6) return '#2374d8'
-  if (gradient < 9) return '#d73535'
-  return '#111111'
+  if (gradient < 9) return '#e67922'
+  if (gradient < 12) return '#d73535'
+  return '#310811'
+}
+
+/** Merge visual noise while retaining authored ends as canonical boundaries. */
+export function mergeMeaningfulGradientSections(sections: readonly GradientSection[], threshold=.5) {
+  return sections.reduce<GradientSection[]>((result, section) => {
+    const previous=result.at(-1)
+    if(previous&&Math.abs(previous.gradient-section.gradient)<threshold){
+      const length=previous.end-previous.start
+      const nextLength=section.end-section.start
+      previous.gradient=Number(((previous.gradient*length+section.gradient*nextLength)/(length+nextLength)).toFixed(1))
+      previous.end=section.end
+    } else result.push({...section})
+    return result
+  },[])
 }
 
 export function buildGradientSections(seedText: string, durationSeconds: number, zone: string): GradientSection[] {

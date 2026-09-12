@@ -93,8 +93,11 @@ export function createStageTimeline(segments: RideSegment[], routeDistanceKm?: n
       const sectionEndCourseDistance = Math.min(totalDistance, Math.max(sectionStartCourseDistance,
         routeStarts[segmentIndex + 1] ?? totalDistance))
       const sectionFraction = Math.min(1, Math.max(0, elapsedInSegment / Math.max(1, segment.sec)))
-      const distance = raceFinished ? totalDistance : Number((sectionStartCourseDistance
-        + (sectionEndCourseDistance - sectionStartCourseDistance) * sectionFraction).toFixed(9))
+      const interpolated=sectionStartCourseDistance+(sectionEndCourseDistance-sectionStartCourseDistance)*sectionFraction
+      // The finish coordinate belongs exclusively to the finish instant. Some
+      // authored finale sections begin at the last verified profile sample;
+      // retain a sub-metre remainder until their official clock expires.
+      const distance = raceFinished ? totalDistance : Math.min(Math.max(0,totalDistance-1e-6),Number(interpolated.toFixed(9)))
       const events: StageEvent[] = []
       if (Math.floor(elapsed) === Math.floor(duration / 2)) events.push('stage-halfway')
       if (Math.floor(elapsedInSegment) === Math.floor(segment.sec / 2)) events.push('sector-halfway')

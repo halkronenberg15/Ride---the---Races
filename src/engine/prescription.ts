@@ -81,6 +81,11 @@ export function ftpIntensity(segment: RideSegment) {
   if (underPercent) return { min: 45, max: Number(underPercent[1]) }
   const fromPercent = segment.power.match(/(?:from|to)\s*(\d+)%\s*FTP/i)
   if (fromPercent) return { min: Number(fromPercent[1]), max: Math.max(120, Number(fromPercent[1])) }
+  // Finishing prescriptions such as "105% FTP to maximal" intentionally have
+  // one numeric anchor. Treat that anchor as the safe floor rather than
+  // allowing the resolver to fall through to a zero-intensity diagnostic.
+  const anchoredPercent = segment.power.match(/(\d+)%\s*FTP/i)
+  if (anchoredPercent) return { min: Number(anchoredPercent[1]), max: Math.max(120, Number(anchoredPercent[1])) }
   const watts = numericRange(segment.power)
   if (watts) return { min: watts.min / AUTHORED_REFERENCE_FTP * 100, max: watts.max / AUTHORED_REFERENCE_FTP * 100 }
   const underWatts = segment.power.match(/Under\s+(\d+)\s*W/i)
