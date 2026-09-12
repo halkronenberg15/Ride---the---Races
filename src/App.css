@@ -1067,6 +1067,6 @@ html[data-motion="reduced"] .ride-screen svg,html[data-motion="reduced"] .race-m
 @media(max-width:520px){.worlds-overview-labels>strong{right:4px;top:4px;font-size:.54rem}.worlds-overview-profile{overflow:hidden}}
 /* Alpha 4.0.23 phone corrections: bare group glyphs and Safari-safe Finish text. */
 .worlds-group-marker b{min-width:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;text-shadow:0 1px 2px #000,0 0 3px #000}
-.course-finish-svg text{fill:#fff;filter:drop-shadow(0 1px 1px rgba(0,0,0,.8))}
+.course-finish-label{position:absolute;right:3px;z-index:18;display:inline-block;box-sizing:border-box;max-width:calc(100% - 6px);padding:2px 4px;transform:translateY(-100%);border-radius:3px;background:rgba(5,5,5,.78);color:#fff;font:800 9px/1.15 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:.02em;white-space:nowrap;text-shadow:0 1px 1px rgba(0,0,0,.8);pointer-events:none}
 .profile-detail-4022 .detail-gradient-summary{grid-template-columns:repeat(5,minmax(0,1fr))}
 @media(max-width:520px){.profile-detail-4022 .detail-gradient-summary{grid-template-columns:repeat(3,minmax(0,1fr));height:auto}}

@@ -11,7 +11,7 @@ import { createRoadModel } from './roadModel.ts'
 import { canonicalCoursePosition } from './alpha4023.ts'
 import { ClimbProfile4023 } from '../components/ClimbProfile4023.ts'
 import { ProfileControls4023 } from '../components/ProfileControls4023.ts'
-import { CourseEndpointMarkers4023, CourseFinishMarker4023 } from '../components/CourseEndpointMarkers4023.ts'
+import { CourseEndpointMarkers4023, CourseFinishLabel4023, CourseFinishMarker4023 } from '../components/CourseEndpointMarkers4023.ts'
 import { GENERIC_MANUAL_EQUIPMENT, bikeProfileForEquipment } from './manualBike.ts'
 import { tacticalOfferSnapshot } from './tacticalLifecycle4023.ts'
 import { WorldsOverviewLabels, ProfileDetail4022, LiveTrackerHeader4023, WorldsGroupMarkers, TacticalStatusStrip, situationGroups } from '../components/WorldsRaceLayer.ts'
@@ -47,7 +47,7 @@ test('Worlds skip confirmation target is KM0 and repeat skips are idempotent',()
 })
 
 
-test('course endpoints keep KM0 separate and anchor Finish at the final SVG sample',()=>{const start=renderToStaticMarkup(createElement(CourseEndpointMarkers4023)),finish=renderToStaticMarkup(createElement('svg',null,createElement(CourseFinishMarker4023,{y:37.5})));assert.equal((start.match(/aria-label="Kilometre Zero"/g)??[]).length,1);assert.equal((finish.match(/aria-label="Finish"/g)??[]).length,1);assert.match(finish,/data-endpoint-x="100"/);assert.match(finish,/data-endpoint-y="37.500"/);assert.match(finish,/x1="100" y1="37.5"/)})
+test('course endpoints keep KM0 separate and anchor Finish at the final SVG sample',()=>{const start=renderToStaticMarkup(createElement(CourseEndpointMarkers4023)),line=renderToStaticMarkup(createElement('svg',{viewBox:'0 0 100 100',preserveAspectRatio:'none'},createElement(CourseFinishMarker4023,{y:37.5}))),label=renderToStaticMarkup(createElement(CourseFinishLabel4023,{y:37.5}));assert.equal((start.match(/aria-label="Kilometre Zero"/g)??[]).length,1);assert.equal((`${line}${label}`.match(/aria-label="Finish"/g)??[]).length,1);assert.match(line,/data-endpoint-x="100"/);assert.match(line,/data-endpoint-y="37.500"/);assert.match(line,/x1="100" y1="37.5"/);assert.doesNotMatch(line,/FINISH/);assert.match(label,/FINISH/)})
 
 test('Climb Overview renders one connected source mountain without duplicate gradient guidance',()=>{
  const segments=scaled(vuelta,90),road=createRoadModel(9,createPreRacePlan(segments,90).officialSegments,vuelta.distanceKm,undefined,vuelta.profilePoints,vuelta.officialCourseMarkers,vuelta.raceId,206,GENERIC_MANUAL_EQUIPMENT)
@@ -132,7 +132,7 @@ test('connected Worlds Detail path never substitutes Finish for a missing gradie
 
 test('Detail omits internal profile-window position from visible and accessible output',()=>{const html=renderToStaticMarkup(createElement(ProfileDetail4022,{state:{mode:'DETAIL',activeRangeId:'road',autoConsumedIds:[]},gradientBlocks:[],gradientIndex:0,currentGradient:0,nextGradient:null,nextName:'NO UPCOMING GRADIENT CHANGE',changeDistance:null,resistance:'38–41%',context:'South Shore Positioning'}));assert.doesNotMatch(html,/POSITION IN VIEW/i);assert.match(html,/South Shore Positioning/)})
 
-test('Finish label is solid, backed and contained without Safari-distorting text strokes',()=>{const html=renderToStaticMarkup(createElement('svg',null,createElement(CourseFinishMarker4023,{y:42}))),textTag=html.match(/<text[^>]*>/)?.[0]??'',styles=`${readFileSync(new URL('../App.css',import.meta.url),'utf8')} ${readFileSync(new URL('../screens/RideScreen.tsx',import.meta.url),'utf8')}`;assert.match(html,/<rect[^>]*fill="rgba\(5,5,5,\.78\)"/);assert.match(textTag,/x="97"/);assert.match(textTag,/fill="#ffffff"/);assert.doesNotMatch(textTag,/stroke|paint-order|paintOrder/);assert.doesNotMatch(styles,/paint-order|course-finish-svg text\{[^}]*stroke/);assert.match(html,/data-endpoint-x="100"/);assert.match(html,/x1="100" y1="42"/)})
+test('Finish uses one non-scaling HTML label beside an unchanged canonical SVG endpoint',()=>{for(const width of [320,375,390,430]){const line=renderToStaticMarkup(createElement('svg',{viewBox:'0 0 100 100',preserveAspectRatio:'none',style:{width}},createElement(CourseFinishMarker4023,{y:42}))),label=renderToStaticMarkup(createElement(CourseFinishLabel4023,{y:42})),html=`${line}${label}`,styles=`${readFileSync(new URL('../App.css',import.meta.url),'utf8')} ${readFileSync(new URL('../screens/RideScreen.tsx',import.meta.url),'utf8')}`;assert.equal((html.match(/>FINISH</g)??[]).length,1);assert.doesNotMatch(line,/FINISH|<text|textLength|lengthAdjust/);assert.match(label,/class="course-finish-label"/);assert.match(label,/top:18%/);assert.doesNotMatch(label,/textLength|lengthAdjust|scaleX|matrix/);assert.doesNotMatch(styles,/paint-order|course-finish-svg text|textLength|lengthAdjust/);assert.match(styles,/right:3px/);assert.match(styles,/system-ui/);assert.match(styles,/letter-spacing:\.02em/);assert.match(styles,/background:rgba\(5,5,5,\.78\)/);assert.match(line,/data-endpoint-x="100"/);assert.match(line,/x1="100" y1="42"/)}})
 
 test('KM0 label offsets without moving its canonical tick',()=>{const html=renderToStaticMarkup(createElement(CourseEndpointMarkers4023,{progress:0}));assert.match(html,/left:8px;bottom:22px/);assert.match(html,/class="profile-end-marker start"/);assert.match(html,/<i><\/i>/)})
 

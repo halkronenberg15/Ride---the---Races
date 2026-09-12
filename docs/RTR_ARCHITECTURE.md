@@ -231,3 +231,5 @@ Alpha 4.0.23 presents the canonical road through one mobile Live Tracker. Mass-s
 The profile visualization owns a bounded drawable region followed by a normal-flow control footer. Finish geometry is rendered inside the course SVG at the final canonical elevation sample; HTML overlays cannot reposition that endpoint. Persisted tactical efforts carry their authored Attack/Chase identity and percentage modifier so restoration cannot rename or double-resolve an effort.
 
 Detail consumes only the canonical next meaningful gradient boundary; Finish and workout-section transitions are separate concepts. Worlds group geography also distinguishes race state from label layout: while the rider is in `PELOTON`, rider and peloton share one course coordinate and only their visual labels may be offset.
+
+Non-uniform SVG scaling is limited to course geometry. Endpoint labels are projected HTML overlays, so typography never inherits the profile's `preserveAspectRatio="none"` stretch; the canonical endpoint line remains in the SVG coordinate domain.
