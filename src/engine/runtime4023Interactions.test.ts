@@ -13,11 +13,12 @@ import { ProfileControls4023 } from '../components/ProfileControls4023.ts'
 import { CourseEndpointMarkers4023 } from '../components/CourseEndpointMarkers4023.ts'
 import { GENERIC_MANUAL_EQUIPMENT } from './manualBike.ts'
 import { tacticalOfferSnapshot } from './tacticalLifecycle4023.ts'
-import { WorldsOverviewLabels, ProfileDetail4022 } from '../components/WorldsRaceLayer.ts'
+import { WorldsOverviewLabels, ProfileDetail4022, LiveTrackerHeader4023, WorldsGroupMarkers } from '../components/WorldsRaceLayer.ts'
 import { RiderMarker4023 } from '../components/RiderMarker4023.ts'
 import { targetPreview4023 } from './targetPreview4023.ts'
 import { completionLabel, lifecycleJeanMessage, lifecycleProfileContext } from './cockpitPresentation4023.ts'
 import { courseContextLabel } from './alpha4023.ts'
+import { montrealRoadStory } from './alpha4022.ts'
 
 const vuelta=getLibraryStage('vuelta-2026',9)!
 const worlds=getLibraryStage('worlds-2026',2)!
@@ -33,6 +34,8 @@ test('every Stage 9 duration traverses warm-up, KM0, GO and racing once without 
  }
 })
 function atGate(plan:ReturnType<typeof createPreRacePlan>,elapsed:number){return preRaceSnapshot(plan,elapsed)}
+
+test('Stage 9 briefing timeline extracts its scaled 8:15 warm-up and numbers Opening Mountain first',()=>{const plan=createPreRacePlan(scaled(vuelta,90),90);assert.equal(plan.warmupSegment.name,'Villajoyosa Rollout');assert.equal(plan.warmupSeconds,8*60+15);assert.equal(plan.kilometreZeroSeconds,45);assert.equal(plan.officialSegments[0].name,'Opening Mountain');assert.equal(plan.officialSegments.some(segment=>segment.name==='Villajoyosa Rollout'),false)})
 
 test('Worlds skip confirmation target is KM0 and repeat skips are idempotent',()=>{
  const plan=createPreRacePlan(worlds.segments,80);assert.equal(plan.warmupSeconds,300);assert.equal(plan.kilometreZeroSeconds,30);assert.equal(plan.officialSegments[0].name,'Brossard Rollout')
@@ -108,3 +111,11 @@ test('every Stage 9 transition preview reuses its activation prescription includ
  for(let index=0;index<plan.officialSegments.length;index++){const segment=plan.officialSegments[index],active=road.roadSnapshot(road.segmentStarts[index]).livePrescription,preview=targetPreview4023(segment.name,segment.sec,active);assert.equal(preview.name,segment.name);assert.equal(preview.remaining,segment.sec);assert.equal(preview.power,active.power);assert.equal(preview.cadence,active.cadence);assert.equal(preview.openingResistance,active.manualTarget.recommendedResistance)}
  assert(plan.officialSegments.some(segment=>/climb|mountain/i.test(segment.name)));assert(plan.officialSegments.some(segment=>/descent/i.test(segment.name)));assert(plan.officialSegments.some(segment=>/cooldown/i.test(segment.type)))
 })
+
+test('unified tracker stays one semantic row with section and zone at every mobile width',()=>{for(const width of [320,375,390,430]){const html=renderToStaticMarkup(createElement('div',{style:{width}},createElement(LiveTrackerHeader4023,{worlds:width%2===0,section:'Mountain Chain One',zone:'Z3–Z4'})));assert.equal((html.match(/<header/g)??[]).length,1);assert.match(html,/LIVE (?:RACE|STAGE) TRACKER/);assert.match(html,/Mountain Chain One/);assert.match(html,/Z3–Z4/);assert.doesNotMatch(html,/<br|overflow-x/)}})
+
+test('Worlds profile markers render bounded compact B and P semantics',()=>{const event=montrealRoadStory[2];for(const width of [320,375,390,430]){const html=renderToStaticMarkup(createElement(WorldsGroupMarkers,{event,courseProgress:.01,pixelWidth:width}));assert.match(html,/aria-label="BREAKAWAY"/);assert.match(html,/>B<\/b>/);assert.match(html,/aria-label="PELOTON"/);assert.match(html,/>P<\/b>/);assert.doesNotMatch(html,/>BREAK<|>PELOTON</)}})
+
+test('endpoint layer reduces KM0 after movement and retains one canonical Finish',()=>{const start=renderToStaticMarkup(createElement(CourseEndpointMarkers4023,{progress:0})),moving=renderToStaticMarkup(createElement(CourseEndpointMarkers4023,{progress:.01}));assert.equal((start.match(/KM 0/g)??[]).length,1);assert.equal((moving.match(/KM 0/g)??[]).length,0);assert.match(moving,/start compact/);assert.equal((moving.match(/>FINISH</g)??[]).length,1)})
+
+test('Worlds KM0 Detail uses staging prescription, countdown and first official section',()=>{const state={mode:'DETAIL' as const,activeRangeId:'km0',autoConsumedIds:[]};const html=renderToStaticMarkup(createElement(ProfileDetail4022,{state,progress:0,gradientBlocks:[],gradientIndex:0,currentGradient:0,nextGradient:null,nextName:'Brossard Rollout',changeDistance:'00:28',resistance:'38–41%',context:'Kilometre Zero'}));assert.match(html,/0\.0% FLAT/);assert.match(html,/Brossard Rollout/);assert.match(html,/00:28/);assert.match(html,/38–41%/);assert.match(html,/Kilometre Zero/);assert.doesNotMatch(html,/Avenue du Parc Finish|CHANGE NOW/)})

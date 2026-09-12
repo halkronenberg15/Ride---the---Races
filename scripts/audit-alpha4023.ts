@@ -8,7 +8,7 @@ import { createRoadModel } from '../src/engine/roadModel.ts'
 import { canonicalCoursePosition } from '../src/engine/alpha4023.ts'
 import { createPreRacePlan, preRaceSnapshot } from '../src/engine/preRaceLifecycle.ts'
 import { ClimbProfile4023 } from '../src/components/ClimbProfile4023.ts'
-import { ProfileDetail4022, WorldsOverviewLabels } from '../src/components/WorldsRaceLayer.ts'
+import { LiveTrackerHeader4023, ProfileDetail4022, WorldsGroupMarkers, WorldsOverviewLabels } from '../src/components/WorldsRaceLayer.ts'
 import { RiderMarker4023 } from '../src/components/RiderMarker4023.ts'
 import { targetPreview4023 } from '../src/engine/targetPreview4023.ts'
 import { completionLabel, lifecycleJeanMessage, lifecycleProfileContext } from '../src/engine/cockpitPresentation4023.ts'
@@ -17,5 +17,7 @@ for(const minutes of [90,112]){const timed=applyDurationSelection(adaptSegments(
 const hub=renderToStaticMarkup(createElement(WorldsOverviewLabels));assert.equal((hub.match(/12× MOUNT ROYAL/g)??[]).length,1);assert.doesNotMatch(hub,/SOUTH SHORE|BRIDGE|AVENUE DU PARC/)
 const rider=renderToStaticMarkup(createElement(RiderMarker4023,{kind:'profile',left:50,top:50,coordinate:.5}));assert.match(rider,/data-direction="right"/)
 const detail=renderToStaticMarkup(createElement(ProfileDetail4022,{state:{mode:'DETAIL',activeRangeId:null,autoConsumedIds:[]},progress:.2,currentGradient:-1.6,nextGradient:2.8,changeDistance:'0.3 mi',resistance:'45–48%',context:'Opening Mountain Approach'}));assert.match(detail,/Opening Mountain Approach/);assert.doesNotMatch(detail,/detail-gradient-blocks/)
+const tracker=renderToStaticMarkup(createElement(LiveTrackerHeader4023,{worlds:false,section:'Opening Mountain',zone:'Z3–Z4'}));assert.match(tracker,/LIVE STAGE TRACKER/);assert.equal((tracker.match(/<header/g)??[]).length,1)
+const worldsMarkers=renderToStaticMarkup(createElement(WorldsGroupMarkers,{event:{id:'audit',trigger:0,expiry:1,caption:'Breakaway forms.',groupState:'BREAKAWAY',simulatedGap:'0:35',actions:[],responseWindowSeconds:20,effortDurationSeconds:60,preview:{powerMultiplier:1,cadence:90},accepted:{powerMultiplier:1,caption:''},decline:'BASE_PRESCRIPTION',resolutionCaption:'',detailRangeId:'audit'},courseProgress:.1}));assert.match(worldsMarkers,/>B<\/b>/);assert.match(worldsMarkers,/>P<\/b>/)
 assert.equal(lifecycleProfileContext(true,'PRE_RACE_WARMUP','Opening Mountain'),'PRE-RACE STAGING');assert.equal(lifecycleProfileContext(true,'KILOMETRE_ZERO','Opening Mountain'),'KILOMETRE ZERO');assert.doesNotMatch(lifecycleJeanMessage(true,'PRE_RACE_WARMUP','stale'),/Press Start/);assert.equal(completionLabel(.4,.5),'<1% COMPLETE')
-console.log('Alpha 4.0.23 audit passed: one start gate/Jean message, lifecycle context, sub-one-percent progress, canonical finish, exact previews, readable controls/Detail, right-facing rider, and connected Climb View at 90/112 minutes.')
+console.log('Alpha 4.0.23 audit passed: consolidated live tracker, one start gate/Jean banner, compact B/P markers, lifecycle context, sub-one-percent progress, canonical finish, exact previews, readable controls/Detail, right-facing rider, and connected Climb View at 90/112 minutes.')
