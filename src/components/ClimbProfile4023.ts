@@ -9,7 +9,7 @@ const clamp=(value:number)=>Math.max(0,Math.min(1,value))
 
 /** Continuous source-profile mountain. Every path uses the canonical climb
  * coordinate; colors are decoration over the same connected elevation line. */
-export function ClimbProfile4023({model,position,currentResistance,nextResistance,formatDistance,formatTime,approach=false}:Props){
+export function ClimbProfile4023({model,position,formatDistance,formatTime,approach=false}:Props){
  const climb=model.climbs.find(item=>item.id===position.currentClimbId)
  if(!climb||position.climbCoordinate===null)return null
  const all=position.gradientSections
@@ -30,14 +30,8 @@ export function ClimbProfile4023({model,position,currentResistance,nextResistanc
   return samples.map((km,index)=>`${index?'L':'M'}${xy(km).x.toFixed(3)},${xy(km).y.toFixed(3)}`).join(' ')
  }
  const summit=!approach&&(position.climbCompletion??0)===100
- const formattedChange=formatDistance(position.distanceToNextGradientBoundary??0)
- const readableChange=/^0\.0\s/.test(formattedChange)?formattedChange.replace(/^0\.0/,'<0.1'):formattedChange
  return h('section',{className:'climb-profile-4023','aria-label':`${climb.name} Climb View`},
-  h('header',null,h('strong',null,climb.name),h('span',null,summit?'SUMMIT':`${approach?0:Math.round(position.climbCompletion??0)}%`),h('span',{className:'summit-metrics'},`${formatDistance(position.distanceToSummit??0)} · ${formatTime(position.timeToSummit??0)}`)),
-  h('div',{className:'climb-guidance'},
-   h('span',null,h('small',null,approach?'CLIMB START':'CURRENT'),h('strong',null,`${position.currentGradientSection?.gradient.toFixed(1)??'—'}%`),h('b',null,`${currentResistance} resistance`)),
-   h('span',null,h('small',null,'NEXT'),h('strong',null,position.nextGradientSection?`${position.nextGradientSection.gradient.toFixed(1)}%`:'SUMMIT'),h('b',null,position.nextGradientSection?`${nextResistance} resistance`:'—')),
-   h('span',{className:'change'},h('small',null,position.gradientBoundaryCrossing?'CHANGE':'CHANGE IN'),h('strong',null,position.gradientBoundaryCrossing?'NOW':readableChange))),
+  h('header',null,h('strong',null,summit?'SUMMIT':`CLIMB ${approach?0:Math.round(position.climbCompletion??0)}%`),h('span',{className:'summit-metrics'},`${formatDistance(position.distanceToSummit??0)} TO SUMMIT · ${formatTime(position.timeToSummit??0)} ETA`)),
   h('div',{className:'climb-svg-region'},
    h('svg',{viewBox:'0 0 100 100',preserveAspectRatio:'none',role:'img','aria-label':'Continuous colored climb mountain'},...windowed.sections.map((section,index)=>{const d=segmentPath(section.start,section.end),left=(section.start-first)/windowSpan*100,right=(section.end-first)/windowSpan*100,end=xy(climb.startDistance+section.end*climbLength);return h('g',{key:`${section.start}-${section.end}`,className:index+windowed.start<active?'completed':index+windowed.start===active?'current':'upcoming'},h('path',{d:`${d} L${right},94 L${left},94 Z`,fill:gradientDifficultyColor(section.gradient)}),h('path',{d,fill:'none',stroke:gradientDifficultyColor(section.gradient),strokeWidth:index+windowed.start===active?5:3,vectorEffect:'non-scaling-stroke'}),h('circle',{cx:end.x,cy:end.y,r:'.6',fill:'currentColor'}))})),
    h(RiderMarker4023,{kind:'climb',left:clamp(rider.x/100)*100,top:rider.y,coordinate:displayedCoordinate})))

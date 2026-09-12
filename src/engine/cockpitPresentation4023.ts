@@ -13,6 +13,7 @@ export function lifecycleJeanMessage(running:boolean,phase:PreRacePhase|undefine
  if(phase==='PRE_RACE_WARMUP')return 'Open the legs progressively. We race after Kilometre Zero.'
  if(phase==='KILOMETRE_ZERO')return 'Hold the line. Build only when I call GO.'
  if(phase==='GO')return 'GO. The race is live.'
+ if(/kilometre zero|prepare for go|pre-race warm-up/i.test(racingMessage))return 'Race is live. Settle into the opening section.'
  return racingMessage
 }
 
