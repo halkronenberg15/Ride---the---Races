@@ -24,14 +24,14 @@ import { shouldDisplayClimb, tacticalOpportunity, tacticalPrescription, training
 import { canonicalCoursePosition, courseContextLabel } from '../engine/alpha4023'
 import { activeRaceSituation, circuitProgressToLap, meaningfulTerrainChange, mergeTerrainBlocks, synchronizeProfileView } from '../engine/alpha4022'
 import { createPreRacePlan, preRaceSnapshot, skipRemainingWarmup } from '../engine/preRaceLifecycle'
-import { ChaseDecisionCard, LiveTrackerHeader4023, ProfileDetail4022, TacticalStatusStrip, WorldsGroupMarkers } from '../components/WorldsRaceLayer.ts'
+import { AuthoritativeJeanBanner4023, ChaseDecisionCard, LiveTrackerHeader4023, ProfileDetail4022, TacticalStatusStrip, WorldsGroupMarkers } from '../components/WorldsRaceLayer.ts'
 import { ClimbProfile4023 } from '../components/ClimbProfile4023.ts'
 import { ProfileControls4023 } from '../components/ProfileControls4023.ts'
 import { CourseEndpointMarkers4023, CourseFinishLabel4023, CourseFinishMarker4023 } from '../components/CourseEndpointMarkers4023.ts'
 import { tacticalOfferSnapshot } from '../engine/tacticalLifecycle4023.ts'
 import { targetPreview4023 } from '../engine/targetPreview4023.ts'
 import { RiderMarker4023 } from '../components/RiderMarker4023.ts'
-import { completionLabel, lifecycleJeanMessage, lifecycleProfileContext, resolveDetailGuidance4023 } from '../engine/cockpitPresentation4023.ts'
+import { completionLabel, lifecycleProfileContext, resolveDetailGuidance4023 } from '../engine/cockpitPresentation4023.ts'
 
 type RideScreenProps = {
   stageNumber: number
@@ -216,7 +216,6 @@ function RideScreen({
   const detailGuidance=resolveDetailGuidance4023(coursePosition.nextGradientSection?.gradient??null,coursePosition.distanceToNextGradientBoundary,coursePosition.gradientBoundaryCrossing)
   const racingCourseContext=courseContextLabel(currentSegment.name,activeGradient)
   const courseContext=lifecycleProfileContext(rideStarted,massStart?.phase,racingCourseContext)
-  const jeanMessage=lifecycleJeanMessage(rideStarted,massStart?.phase,raceSituation?.caption??radioText)
   const chasePreview=raceAction&&raceSituation?tacticalPrescription(activePrescription,raceSituation.preview.powerMultiplier,equipment,bikeProfileForEquipment(equipment),career.rider.cadencePreferences):null
   const radioHistory=activeRide.ride?.radioHistory??[]
   const nextCompetitionMarker=timeline.markers.find(marker=>(marker.type==='sprint'||marker.type==='kom')&&marker.position>engine.courseProgress)
@@ -1038,7 +1037,7 @@ function RideScreen({
             {isWorlds&&isTimeTrial&&<div className="itt-split-status"><span><small>CURRENT SPLIT</small><strong>{crossedSplits.at(-1)?.label??'START HOUSE'}</strong></span><span><small>NEXT SPLIT</small><strong>{nextSplit?.label??'FINISH'}</strong></span><span><small>ELAPSED / REMAINING</small><strong>{formatTime(elapsedSeconds)} / {formatTime(stageRemaining)}</strong></span></div>}
 
           </div>
-          {dismissedJeanMessage!==jeanMessage&&<div className="profile-caption authoritative-jean" role="status" aria-live="polite">{raceSituation&&<strong>{raceSituation.groupState.includes('BREAKAWAY')?'BREAKAWAY AHEAD':'RACE SITUATION'} · {raceSituation.simulatedGap.replace('SIMULATED · ','')}</strong>}<span>📻 JEAN: “{jeanMessage}”</span><button type="button" aria-label="Dismiss Team Radio caption" onClick={()=>setDismissedJeanMessage(jeanMessage)}>×</button></div>}
+          <AuthoritativeJeanBanner4023 active={rideStarted} phase={massStart?.phase} racingMessage={raceSituation?.caption??radioText} dismissedMessage={dismissedJeanMessage} onDismiss={setDismissedJeanMessage} situation={raceSituation?{title:raceSituation.groupState.includes('BREAKAWAY')?'BREAKAWAY AHEAD':'RACE SITUATION',gap:raceSituation.simulatedGap.replace('SIMULATED · ','')}:undefined}/>
           <div className="cockpit-card">
             {chaseOffered&&raceSituation&&chasePreview&&<ChaseDecisionCard event={raceSituation} responseRemaining={responseRemaining} actionLabel={raceAction??'CHASE'} preview={{power:chasePreview.power,cadence:chasePreview.cadence,resistance:chasePreview.resistance.replace(/ · START \d+% @ \d+ rpm| · Start \d+%/i,''),start:`START ${chasePreview.manualTarget.recommendedResistance}% @ ${chasePreview.manualTarget.recommendedCadence} RPM`}} onAccept={()=>decideSituation('accepted')} onHold={()=>decideSituation('declined')}/>}
             {activeEffort&&effortRemaining>0&&<TacticalStatusStrip state="ACTIVE" action={activeEffort.action??(tactical.state==='ATTACKING'?'ATTACK':'CHASE')} remaining={effortRemaining}/>}

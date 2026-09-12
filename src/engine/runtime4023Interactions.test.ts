@@ -14,7 +14,7 @@ import { ProfileControls4023 } from '../components/ProfileControls4023.ts'
 import { CourseEndpointMarkers4023, CourseFinishLabel4023, CourseFinishMarker4023 } from '../components/CourseEndpointMarkers4023.ts'
 import { GENERIC_MANUAL_EQUIPMENT, bikeProfileForEquipment } from './manualBike.ts'
 import { tacticalOfferSnapshot } from './tacticalLifecycle4023.ts'
-import { WorldsOverviewLabels, ProfileDetail4022, LiveTrackerHeader4023, WorldsGroupMarkers, TacticalStatusStrip, situationGroups } from '../components/WorldsRaceLayer.ts'
+import { AuthoritativeJeanBanner4023, WorldsOverviewLabels, ProfileDetail4022, LiveTrackerHeader4023, WorldsGroupMarkers, TacticalStatusStrip, situationGroups } from '../components/WorldsRaceLayer.ts'
 import { RiderMarker4023 } from '../components/RiderMarker4023.ts'
 import { targetPreview4023 } from './targetPreview4023.ts'
 import { completionLabel, lifecycleJeanMessage, lifecycleProfileContext, resolveDetailGuidance4023 } from './cockpitPresentation4023.ts'
@@ -99,6 +99,8 @@ test('lifecycle presentation freezes pre-race context and selects exactly one cu
 })
 
 test('Jean replaces ready copy on the active-warmup edge and after warmup restoration',()=>{const ready=lifecycleJeanMessage(false,undefined,'stale'),started=lifecycleJeanMessage(true,'PRE_RACE_WARMUP',ready),restored=lifecycleJeanMessage(true,'PRE_RACE_WARMUP','Radio connected. Press Start Ride when you are ready.');assert.match(ready,/Press Start Ride/);assert.equal(started,'Open the legs progressively. We race after Kilometre Zero.');assert.equal(restored,started);assert.doesNotMatch(`${started} ${restored}`,/Press Start Ride/)})
+
+test('rendered Stage 10 banner masks persisted ready copy at warm-up start and 09:51',()=>{const stage10=getLibraryStage('vuelta-2026',10)!,plan=createPreRacePlan(stage10.segments,Math.round(stage10.segments.reduce((sum,segment)=>sum+segment.sec,0)/60)),stale='Radio connected. Press Start Ride when you are ready.',render=(elapsed:number,active=true)=>{const gate=preRaceSnapshot(plan,elapsed);assert.equal(gate.phase,'PRE_RACE_WARMUP');return renderToStaticMarkup(createElement(AuthoritativeJeanBanner4023,{active,phase:gate.phase,racingMessage:stale,dismissedMessage:null,onDismiss:()=>{}}))};const atStart=render(0),afterNineSeconds=render(9),restoredBeforeActiveFlag=render(9,false);for(const html of [atStart,afterNineSeconds,restoredBeforeActiveFlag]){assert.match(html,/Open the legs progressively/);assert.doesNotMatch(html,/Press Start Ride/)}assert.equal(plan.warmupSeconds-preRaceSnapshot(plan,9).warmupRemaining,9)})
 
 test('profile controls render compact contrasting buttons and switch both independent modes',()=>{
  let geographic:'FULL_STAGE'|'CLIMB'='FULL_STAGE',density:'OVERVIEW'|'DETAIL'='OVERVIEW'

@@ -8,7 +8,7 @@ import { createRoadModel } from '../src/engine/roadModel.ts'
 import { canonicalCoursePosition } from '../src/engine/alpha4023.ts'
 import { createPreRacePlan, preRaceSnapshot } from '../src/engine/preRaceLifecycle.ts'
 import { ClimbProfile4023 } from '../src/components/ClimbProfile4023.ts'
-import { LiveTrackerHeader4023, ProfileDetail4022, TacticalStatusStrip, WorldsGroupMarkers, WorldsOverviewLabels } from '../src/components/WorldsRaceLayer.ts'
+import { AuthoritativeJeanBanner4023, LiveTrackerHeader4023, ProfileDetail4022, TacticalStatusStrip, WorldsGroupMarkers, WorldsOverviewLabels } from '../src/components/WorldsRaceLayer.ts'
 import { CourseFinishLabel4023, CourseFinishMarker4023 } from '../src/components/CourseEndpointMarkers4023.ts'
 import { RiderMarker4023 } from '../src/components/RiderMarker4023.ts'
 import { targetPreview4023 } from '../src/engine/targetPreview4023.ts'
@@ -24,4 +24,5 @@ const finishMarker=renderToStaticMarkup(createElement('svg',{preserveAspectRatio
 const attack=renderToStaticMarkup(createElement(TacticalStatusStrip,{state:'ACTIVE',action:'ATTACK',remaining:60}));assert.match(attack,/ATTACK ACTIVE/);assert.doesNotMatch(attack,/CHASE ACTIVE/)
 const bounded=resolveDetailGuidance4023(null,null,false);const noBoundary=renderToStaticMarkup(createElement(ProfileDetail4022,{state:{mode:'DETAIL',activeRangeId:null,autoConsumedIds:[]},gradientBlocks:[],gradientIndex:0,currentGradient:0,nextGradient:bounded.gradient,nextName:bounded.name,changeDistance:null,resistance:'38–41%',context:'Brossard Rollout'}));assert.match(noBoundary,/NO UPCOMING GRADIENT CHANGE/);assert.doesNotMatch(noBoundary,/FINISH|CHANGE IN|POSITION IN VIEW/)
 assert.equal(lifecycleProfileContext(true,'PRE_RACE_WARMUP','Opening Mountain'),'PRE-RACE STAGING');assert.equal(lifecycleProfileContext(true,'KILOMETRE_ZERO','Opening Mountain'),'KILOMETRE ZERO');assert.doesNotMatch(lifecycleJeanMessage(true,'PRE_RACE_WARMUP','stale'),/Press Start/);assert.equal(completionLabel(.4,.5),'<1% COMPLETE')
+const warmupBanner=renderToStaticMarkup(createElement(AuthoritativeJeanBanner4023,{active:false,phase:'PRE_RACE_WARMUP',racingMessage:'Radio connected. Press Start Ride when you are ready.',dismissedMessage:null,onDismiss:()=>{}}));assert.match(warmupBanner,/Open the legs progressively/);assert.doesNotMatch(warmupBanner,/Press Start Ride/)
 console.log('Alpha 4.0.23 audit passed: compact tracker/profile geometry, Detail-only gradients, one start gate/Jean banner, attack identity, B/P markers, source-elevation Finish, exact previews, and connected Climb View at 90/112 minutes.')

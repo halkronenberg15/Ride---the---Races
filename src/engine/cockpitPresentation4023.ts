@@ -9,10 +9,11 @@ export function lifecycleProfileContext(running:boolean,phase:PreRacePhase|undef
 }
 
 export function lifecycleJeanMessage(running:boolean,phase:PreRacePhase|undefined,racingMessage:string){
- if(!running)return 'Radio connected. Press Start Ride when you are ready.'
+ // A persisted gate is authoritative immediately; never expose stale ready copy for one render.
  if(phase==='PRE_RACE_WARMUP')return 'Open the legs progressively. We race after Kilometre Zero.'
  if(phase==='KILOMETRE_ZERO')return 'Hold the line. Build only when I call GO.'
  if(phase==='GO')return 'GO. The race is live.'
+ if(!running)return 'Radio connected. Press Start Ride when you are ready.'
  if(/kilometre zero|prepare for go|pre-race warm-up/i.test(racingMessage))return 'Race is live. Settle into the opening section.'
  return racingMessage
 }
