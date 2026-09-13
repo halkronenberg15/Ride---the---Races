@@ -14,6 +14,8 @@ export type ThemePreference = 'dark' | 'light' | 'system'
 export type DeviceSource = 'Garmin' | 'Peloton' | 'WHOOP' | 'Strava' | 'Wahoo' | 'Zwift' | 'Apple Health' | 'Manual only'
 export type ConnectionMethod = 'manual-guidance'|'post-ride-import'
 export type PreferredRideDurationMode = 'RECOMMENDED'|'QUICK'|'STANDARD'|'EXTENDED'|'EPIC'
+export type IntroCyclingAnswers={cyclingExperience:'New'|'Returning'|'Experienced';indoorExperience:'None'|'Some'|'Regular';outdoorExperience:'None'|'Some'|'Regular';ftpKnown:boolean;weeklyDays:number;comfortableMinutes:number;primaryGoal:'Build confidence'|'Outdoor ride preparation'|'Fitness'|'Return to cycling';cadenceResistanceConfidence:'Low'|'Growing'|'Confident';shiftingBrakingConfidence:'Low'|'Growing'|'Confident';bikeAccess:'Indoor'|'Outdoor'|'Both';outdoorConfidence:'Low'|'Growing'|'Confident';limitations:string;preferredNextProgram:'Undecided'|'Outdoor Ride Readiness'|'RtR Femmes'|'Standard RtR'}
+export type IntroCyclingPlan={startingDurationMinutes:number;powerCeilingPercent:number;recoveryEveryRides:number;instructionDensity:'high'|'standard';cadenceComplexity:'FOUNDATION'|'PROGRESSIVE';climbingIntroducedAfterRide:number;readinessAssessmentAfterRide:number;weeklyDays:number;comfortableMinutes:number;deliveryMode:'INDOOR'|'OUTDOOR_GUIDED'|'HYBRID';outdoorChecklistStartsAfterRide:number;rides:Array<{id:string;title:string;durationMinutes:number;focus:string;scheduledDay:number;recoveryAfter:boolean}>}
 
 export type RideMetricEntry = {
   id: string
@@ -59,7 +61,7 @@ export type HealthEntry = {
 }
 
 export type CareerState = {
-  schemaVersion: 4
+  schemaVersion: 5
   onboardingComplete: boolean
   rider: {
     name: string
@@ -97,6 +99,7 @@ export type CareerState = {
   rideHistory: RideMetricEntry[]
   alpha4020: { calendar:{month:number;scrollY:number}; earnedMarkerIds:string[] }
   alpha4022: { worldsResults:Record<string,{completed:boolean;place?:number}>; ittSplits:Record<string,number>; raceEvents:Record<string,'accepted'|'declined'|'consumed'>; radioHistory:string[]; rainbowTitles:string[]; profileView:{mode:'OVERVIEW'|'DETAIL';activeRangeId:string|null;autoConsumedIds:string[]} }
+  introCycling:{selected:boolean;answers:IntroCyclingAnswers|null;plan:IntroCyclingPlan|null;completedRideIds:string[];dismissed:boolean;outdoorChecklistIds:string[];requestedNextProgram:'Outdoor Ride Readiness'|'RtR Femmes'|'Standard RtR'|null}
   settings: {
     jeanVoiceEnabled: boolean
     jeanVoiceVolume: number

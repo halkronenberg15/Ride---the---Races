@@ -3,6 +3,9 @@ import { useCareer } from '../state/CareerContext'
 import type { CareerState, ConnectionMethod, DeviceSource, ExperienceLevel, MeasurementSystem, RiderArchetype, SeasonGoal } from '../types/career'
 import { cmToIn, inToCm, kgToLb, lbToKg } from '../utils/units'
 import { advanceOnboarding, canAdvanceOnboarding } from '../engine/onboardingFlow'
+import { createIntroCyclingPlan } from '../engine/introCycling.ts'
+import type { IntroCyclingAnswers } from '../types/career.ts'
+import { useAuth } from '../state/AuthContext.tsx'
 
 const archetypes: RiderArchetype[] = ['GC Contender', 'Sprinter', 'Climber', 'Puncheur', 'Time Trial Specialist', 'All-Rounder', 'Domestique']
 const experiences: ExperienceLevel[] = ['Beginner', 'Recreational', 'Intermediate', 'Advanced', 'Competitive']
@@ -20,6 +23,7 @@ const stepTitles = ['Meet the rider', 'Your engine', 'Season objective', 'Connec
 
 export default function OnboardingScreen() {
   const { career, completeOnboarding, setMeasurementSystem } = useCareer()
+  const {enroll}=useAuth()
   const [system, setSystem] = useState<MeasurementSystem>(career.settings.measurementSystem)
   const [step, setStep] = useState(0)
   const [rider, setRider] = useState<CareerState['rider']>(career.rider)
@@ -27,6 +31,8 @@ export default function OnboardingScreen() {
   const [heightText, setHeightText] = useState(career.rider.heightCm ? String(system === 'imperial' ? Math.round(cmToIn(career.rider.heightCm)) : Math.round(career.rider.heightCm)) : '')
   const [weightText, setWeightText] = useState(career.rider.weightKg ? String(system === 'imperial' ? Math.round(kgToLb(career.rider.weightKg)) : Math.round(career.rider.weightKg)) : '')
   const [ftpText, setFtpText] = useState(String(career.rider.ftp || ''))
+  const [program,setProgram]=useState<'intro-cycling'|'standard'>('intro-cycling')
+  const [intro,setIntro]=useState<IntroCyclingAnswers>({cyclingExperience:'New',indoorExperience:'None',outdoorExperience:'None',ftpKnown:false,weeklyDays:2,comfortableMinutes:30,primaryGoal:'Build confidence',cadenceResistanceConfidence:'Low',shiftingBrakingConfidence:'Low',bikeAccess:'Both',outdoorConfidence:'Low',limitations:'',preferredNextProgram:'Undecided'})
 
   function patch(values: Partial<CareerState['rider']>) {
     setRider((current) => ({ ...current, ...values }))
@@ -61,7 +67,7 @@ export default function OnboardingScreen() {
 
   const numbers={numberText,heightText,weightText,ftpText}
   const canContinue=canAdvanceOnboarding(step,rider,numbers)
-  function submit(event:React.FormEvent){event.preventDefault();if(!canContinue)return;commitNumbers();setMeasurementSystem(system);if(step<stepTitles.length-1)setStep(current=>advanceOnboarding(current,rider,numbers));else completeOnboarding({ ...rider, number:Number(numberText),ftp:Number(ftpText)||0,heightCm:system==='imperial'?inToCm(Number(heightText)):Number(heightText),weightKg:system==='imperial'?lbToKg(Number(weightText)):Number(weightText) })}
+  function submit(event:React.FormEvent){event.preventDefault();if(!canContinue)return;commitNumbers();setMeasurementSystem(system);if(step<stepTitles.length-1)setStep(current=>advanceOnboarding(current,rider,numbers));else {const answers={...intro,ftpKnown:rider.ftpKnown};enroll(program==='standard'?'rtr-standard':'intro-cycling');completeOnboarding({ ...rider, number:Number(numberText),ftp:Number(ftpText)||0,heightCm:system==='imperial'?inToCm(Number(heightText)):Number(heightText),weightKg:system==='imperial'?lbToKg(Number(weightText)):Number(weightText) },program==='intro-cycling'?{answers,plan:createIntroCyclingPlan(answers)}:null)}}
 
   return (
     <section className="onboarding-screen">
@@ -76,6 +82,7 @@ export default function OnboardingScreen() {
         </header>
         <div className="onboarding-card">
           {step === 0 && <>
+            <h2>Choose a starting program</h2><div className="choice-grid program-choice"><button type="button" className={program==='intro-cycling'?'selected':''} onClick={()=>setProgram('intro-cycling')}><strong>Intro Cycling</strong><span>For new or returning riders, or preparation for outdoor riding.</span></button><button type="button" className={program==='standard'?'selected':''} onClick={()=>setProgram('standard')}><strong>Standard RtR</strong><span>Enter the current stage-racing pathway.</span></button></div>
             <div className="unit-choice-panel">
               <span>Preferred measurements</span>
               <div className="unit-choice-buttons">
@@ -100,6 +107,7 @@ export default function OnboardingScreen() {
               <label>Current or estimated FTP<input inputMode="numeric" pattern="[0-9]*" value={ftpText} onChange={(event) => setFtpText(event.target.value.replace(/\D/g, ''))} onBlur={commitNumbers} /></label>
               <p>FTP sets the scale, not your worth. Every stage adapts to your current fitness.</p>
             </div>
+            {program==='intro-cycling'&&<fieldset className="intro-intake"><legend>Intro Cycling profile</legend><div className="wizard-grid"><label>Cycling experience<select value={intro.cyclingExperience} onChange={event=>setIntro({...intro,cyclingExperience:event.target.value as IntroCyclingAnswers['cyclingExperience']})}><option>New</option><option>Returning</option><option>Experienced</option></select></label><label>Indoor experience<select value={intro.indoorExperience} onChange={event=>setIntro({...intro,indoorExperience:event.target.value as IntroCyclingAnswers['indoorExperience']})}><option>None</option><option>Some</option><option>Regular</option></select></label><label>Outdoor experience<select value={intro.outdoorExperience} onChange={event=>setIntro({...intro,outdoorExperience:event.target.value as IntroCyclingAnswers['outdoorExperience']})}><option>None</option><option>Some</option><option>Regular</option></select></label><label>Weekly riding days<input type="number" min="1" max="7" value={intro.weeklyDays} onChange={event=>setIntro({...intro,weeklyDays:Number(event.target.value)})}/></label><label>Comfortable minutes<input type="number" min="30" max="90" value={intro.comfortableMinutes} onChange={event=>setIntro({...intro,comfortableMinutes:Number(event.target.value)})}/></label><label>Primary goal<select value={intro.primaryGoal} onChange={event=>setIntro({...intro,primaryGoal:event.target.value as IntroCyclingAnswers['primaryGoal']})}><option>Build confidence</option><option>Outdoor ride preparation</option><option>Fitness</option><option>Return to cycling</option></select></label><label>Cadence and resistance<select value={intro.cadenceResistanceConfidence} onChange={event=>setIntro({...intro,cadenceResistanceConfidence:event.target.value as IntroCyclingAnswers['cadenceResistanceConfidence']})}><option>Low</option><option>Growing</option><option>Confident</option></select></label><label>Shifting and braking<select value={intro.shiftingBrakingConfidence} onChange={event=>setIntro({...intro,shiftingBrakingConfidence:event.target.value as IntroCyclingAnswers['shiftingBrakingConfidence']})}><option>Low</option><option>Growing</option><option>Confident</option></select></label><label>Bike access<select value={intro.bikeAccess} onChange={event=>setIntro({...intro,bikeAccess:event.target.value as IntroCyclingAnswers['bikeAccess']})}><option>Indoor</option><option>Outdoor</option><option>Both</option></select></label><label>Outdoor confidence<select value={intro.outdoorConfidence} onChange={event=>setIntro({...intro,outdoorConfidence:event.target.value as IntroCyclingAnswers['outdoorConfidence']})}><option>Low</option><option>Growing</option><option>Confident</option></select></label><label>Preferred progression<select value={intro.preferredNextProgram} onChange={event=>setIntro({...intro,preferredNextProgram:event.target.value as IntroCyclingAnswers['preferredNextProgram']})}><option>Undecided</option><option>Outdoor Ride Readiness</option><option>RtR Femmes</option><option>Standard RtR</option></select></label><label>Limitations or accommodations<textarea value={intro.limitations} onChange={event=>setIntro({...intro,limitations:event.target.value})} placeholder="Optional"/></label></div></fieldset>}
           </>}
           {step === 2 && <><h2>What would make this season meaningful?</h2><div className="choice-grid goals">{goals.map((goal) => <button type="button" className={rider.seasonGoal === goal ? 'selected' : ''} onClick={() => patch({ seasonGoal: goal })} key={goal}>{goal}</button>)}</div></>}
           {step === 3 && <><h2>Choose your equipment</h2><p className="wizard-note">Equipment determines which live bike instructions RtR can provide. It is separate from how ride data reaches RtR.</p><div className="archetype-grid">{equipmentChoices.map(choice=><button type="button" className={rider.devices.includes(choice.device)?'selected':''} onClick={()=>selectEquipment(choice.device)} key={choice.label}><strong>{choice.label}</strong><span>{choice.description}</span></button>)}</div><h3>Connection method</h3><div className="choice-grid">{connectionChoices.map(choice=><button type="button" className={`connection-card${connectionMethod===choice.id?' selected':''}`} onClick={()=>patch({connectionMethod:choice.id})} key={choice.id}><strong>{choice.label}</strong><span className="connection-status">{choice.status}</span><span className="connection-description">{choice.description}</span></button>)}</div><div className="wizard-note"><strong>Connected sensors:</strong> Coming later · <strong>Connected smart equipment:</strong> Coming later</div>{selectedEquipment&&<div className="rider-summary" aria-label="Your setup"><strong>Your setup:</strong><span>{selectedEquipment.label}</span><span>{selectedEquipment.device==='Peloton'?'Manual resistance control':selectedEquipment.device==='Manual only'?'Manual resistance control':'Automatic control: Not connected'}</span><span>{selectedEquipment.device==='Peloton'?'Peloton BASELINE calibration':selectedEquipment.device==='Manual only'?'Bike-specific calibration: Unavailable':'Smart control adapter: Planned'}</span><span>Live bike telemetry: Not connected</span><span>Connection: {connectionChoices.find(choice=>choice.id===connectionMethod)?.label}</span></div>}</>}

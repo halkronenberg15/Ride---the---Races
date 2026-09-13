@@ -31,11 +31,14 @@ import { applyDurationSelection, durationSelectionForStage, type DurationSelecti
 import WorldsHubScreen from './screens/WorldsHubScreen'
 import WorldsBriefingScreen from './screens/WorldsBriefingScreen'
 import { worldsStage } from './data/uciWorlds2026'
+import { AuthProvider, useAuth } from './state/AuthContext.tsx'
+import AuthScreen from './screens/AuthScreen.tsx'
 
-type Screen = 'hq' | 'teamBus' | 'season' | 'race' | 'worldsBriefing' | 'stageDetail' | 'training' | 'roster' | 'tactics' | 'ride' | 'restDay' | 'rideData' | 'health' | 'profile' | 'settings' | 'finale'
+type Screen = 'hq' | 'teamBus' | 'season' | 'race' | 'worldsBriefing' | 'stageDetail' | 'training' | 'roster' | 'tactics' | 'ride' | 'restDay' | 'rideData' | 'health' | 'profile' | 'settings' | 'finale'|'femmes'
 
 function RideTheRacesApp() {
   const { career, selectRaceStage, completeRaceStage, completeTraining, completeWorlds, addRide } = useCareer()
+  const {canAccess}=useAuth()
   const [screen, setScreen] = useState<Screen>('hq')
   const [selectedSeason, setSelectedSeason] = useState(2026)
   const [selectedRace, setSelectedRace] = useState('tour-2026')
@@ -63,6 +66,9 @@ function RideTheRacesApp() {
   const vueltaActionable=actionableStage(career.races.vuelta,Array.from({length:9},(_,index)=>index+1))
 
   if (!career.onboardingComplete) return <OnboardingScreen />
+  const protectedRaceScreen=['season','race','worldsBriefing','stageDetail'].includes(screen)||(screen==='tactics'&&selectedRace!=='training')||(screen==='ride'&&(ride?.library??selectedRace)!=='training')
+  if(protectedRaceScreen&&!canAccess('rtr-standard'))return <section className="auth-screen"><div className="auth-card" role="alert"><p className="eyebrow">PROGRAM ACCESS</p><h1>Program not assigned</h1><p>This account is not entitled to this protected RtR program. Request it from the Intro Cycling dashboard or contact the owner.</p><button type="button" onClick={()=>setScreen('hq')}>Return to dashboard</button></div></section>
+  if(screen==='femmes'&&!canAccess('rtr-femmes'))return <section className="auth-screen"><div className="auth-card" role="alert"><h1>RtR Femmes not assigned</h1><p>Local-development owner approval is required.</p><button type="button" onClick={()=>setScreen('hq')}>Return to dashboard</button></div></section>
 
   function handleFinishRide(cooldown={officialRaceDurationSeconds:0,cooldownDurationSeconds:0,cooldownSkipped:false}) {
     const stage = ride?.stageNumber ?? career.season.currentStage
@@ -88,6 +94,8 @@ function RideTheRacesApp() {
       {screen === 'hq' && (
         <TeamHQScreen
           onContinue={() => setScreen('teamBus')}
+          onStartIntro={(workoutId)=>{setSelectedRace('training');setSelectedWorkout(workoutId);setScreen('tactics')}}
+          onOpenFemmes={()=>setScreen('femmes')}
           onOpenHealth={() => setScreen('health')}
           onOpenProfile={() => setScreen('profile')}
           onOpenSettings={() => setScreen('settings')}
@@ -95,6 +103,7 @@ function RideTheRacesApp() {
       )}
 
       {screen === 'rideData' && <RideDataScreen onBack={() => setScreen('hq')} />}
+      {screen === 'femmes'&&<section className="dashboard-card"><p className="eyebrow">PROTECTED PROGRAM</p><h1>RtR Femmes</h1><p>Your account is approved. The full ride library is intentionally not authored in Alpha 4.0.24.</p><button type="button" onClick={()=>setScreen('hq')}>Return to dashboard</button></section>}
       {screen === 'health' && <HealthScreen onBack={() => setScreen('hq')} />}
       {screen === 'profile' && <RiderProfileScreen onBack={() => setScreen('hq')} />}
       {screen === 'settings' && <SettingsScreen onBack={() => setScreen('hq')} />}
@@ -162,7 +171,9 @@ function RideTheRacesApp() {
 }
 
 function App() {
-  return <CareerProvider><ActiveRideProvider><RideTheRacesApp /></ActiveRideProvider></CareerProvider>
+  return <AuthProvider><AuthenticatedApp/></AuthProvider>
 }
+
+function AuthenticatedApp(){const {account}=useAuth();if(!account)return <AuthScreen/>;return <CareerProvider key={account.id}><ActiveRideProvider key={account.id}><RideTheRacesApp /></ActiveRideProvider></CareerProvider>}
 
 export default App

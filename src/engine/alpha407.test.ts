@@ -15,8 +15,9 @@ test('Jean is relocated from rider Home to the opening Team Bus experience',()=>
 })
 
 test('all four training workouts have exact durations, targets, and FTP scaling',()=>{
-  assert.equal(trainingRides.length,4)
-  assert.deepEqual(trainingRides.map(r=>r.durationMinutes),[30,45,30,45])
+  const legacy=trainingRides.filter(ride=>!ride.id.startsWith('intro-'))
+  assert.equal(legacy.length,4)
+  assert.deepEqual(legacy.map(r=>r.durationMinutes),[30,45,30,45])
   for(const ride of trainingRides) assert.ok(ride.stage.segments.every(s=>s.power&&s.cadence&&s.resistance))
   const base=adaptSegments(trainingRides[0].stage.segments,206,'Balanced')[0].power
   const stronger=adaptSegments(trainingRides[0].stage.segments,250,'Balanced')[0].power
