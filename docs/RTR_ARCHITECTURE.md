@@ -267,3 +267,9 @@ FTP absence is modeled as `null` plus explicit provenance. `release4024.ts` owns
 Season closure archives an immutable result reference without reopening or mutating classifications. Stage replays are new `STAGE_REPLAY` activities using canonical stage definitions and current rider targets by default. Favorite stages are references, not copied definitions. The Off-Season folder remains locked at the Jean review handoff; questionnaire, camps, VO₂ development and adaptive sequencing remain Alpha 4.0.25.
 
 Automated checks are Node engine/scheduler tests and static server/source checks, not mounted-browser tests. Widths, touch behavior, wake-lock release/reacquisition, and safe-area layout at 320/375/390/430 CSS pixels still require browser and physical-iPhone Safari verification.
+
+### Alpha 4.0.24 immutable activity boundary
+
+`RideMetricEntry.targetSnapshots` is the immutable replay prescription ledger. It is captured at original completion and never derived from FTP during an Original Targets replay. `correctedEntry` is a separate editable overlay; `originalUserEntry`, activity identity, canonical stage metadata, planned duration, target ledger and archived classification snapshot are protected inputs. Both Current Season and Past Seasons route to the same Stage Results activity record.
+
+No-FTP progression consumes a persisted Intro Effort Baseline with checkpoint count, RPE, timestamp and rule version. `noFtpTarget` deterministically applies conservative/default, high-RPE easing, appropriate-RPE hold, or low-RPE bounded progression per equipment capability; it never promotes the baseline to measured or estimated FTP.

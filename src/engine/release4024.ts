@@ -1,24 +1,35 @@
 import type { EquipmentInstance } from './manualBike.ts'
 import type { LivePrescription } from './terrainModifier.ts'
 import type { RideSegment } from '../data/raceStages.ts'
+import type { EditableRideResult, RideMetricEntry } from '../types/career.ts'
 
 export type FtpProvenance='MEASURED'|'RIDER_ENTERED'|'ESTIMATED'|'INTRO_EFFORT_BASELINE'|'UNKNOWN'
 export type CoachingContext='PROFESSIONAL_RACE'|'WORLDS'|'RECOVERY'|'LEG_OPENER'|'INTRO_CYCLING'|'CALIBRATION'|'STAGE_REPLAY'|'OFF_SEASON'
+export const PRESCRIPTION_RULE_VERSION='alpha4024.2'
 export type PrescriptionSnapshot={authoredId:string;resolvedId:string;name:string;duration:number;zone:string;power:string;cadence:string;resistance:string;reason:'SECTION_BOUNDARY'|'TACTICAL_INPUT_CHANGED'|'RIDER_INPUT_CHANGED'|'RESTORED'}
+export type OriginalTargetSnapshot=PrescriptionSnapshot&{sectionIndex:number;equipmentId:string;equipmentMode:string;calibrationConfidence:string;ftp:number|null;ftpProvenance:FtpProvenance;tacticalModifier:number;ruleVersion:string}
 
 export function prescriptionSnapshot(index:number,segment:RideSegment,resolved:LivePrescription,reason:PrescriptionSnapshot['reason']='SECTION_BOUNDARY'):PrescriptionSnapshot{
  return {authoredId:`section-${index}-${segment.name}`,resolvedId:`${resolved.prescriptionId}|${resolved.manualTarget.calibrationConfidence}|${resolved.authoritativeGradient}`,name:segment.name,duration:segment.sec,zone:resolved.zone,power:resolved.power,cadence:resolved.cadence,resistance:resolved.resistance.replace(/ · START \d+% @ \d+ rpm| · Start \d+%/i,''),reason}
 }
 
-export type NoFtpTarget={power:string;cadence:string;resistance:string;rpe:string;provisional:boolean}
+export type IntroEffortBaseline={rpe:number;cadence:number;load:string;completedSteps:number;recordedAt:string;ruleVersion:string}
+export type NoFtpTarget={power:string;cadence:string;resistance:string;rpe:string;provisional:boolean;ruleVersion:string;adjustmentReason:string;readyForNextRide:boolean}
 /** No-FTP guidance is equipment-specific and never invents watt precision. */
-export function noFtpTarget(segment:RideSegment,equipment:EquipmentInstance):NoFtpTarget{
+export function noFtpTarget(segment:RideSegment,equipment:EquipmentInstance,baseline?:IntroEffortBaseline):NoFtpTarget{
  const recovery=/recovery|cooldown|easy finish/i.test(`${segment.name} ${segment.type}`),calibration=/calibration/i.test(segment.type)
- const cadence=recovery?'60–75 rpm':calibration?'65–80 rpm':'65–80 rpm'
- const rpe=recovery?'RPE 1–2 / 10':'RPE 2–3 / 10'
- if(equipment.calibrationProfileId==='peloton-bike-manual-reference')return {power:equipment.powerAvailable?'PROVISIONAL — calibrating':'POWER GUIDANCE AFTER CALIBRATION',cadence,resistance:recovery?'20–25%':'25–30%',rpe,provisional:true}
- return {power:equipment.powerAvailable?'PROVISIONAL POWER — follow RPE':'POWER NOT PRESCRIBED',cadence,resistance:equipment.resistanceAvailable?'Light–Moderate load':'Light load',rpe,provisional:true}
+ const complete=Boolean(baseline&&baseline.completedSteps>=2),high=complete&&baseline!.rpe>=7,low=complete&&baseline!.rpe<=3
+ const cadence=recovery?'60–75 rpm':high?'60–72 rpm':low?'68–82 rpm':calibration?'65–80 rpm':'65–80 rpm'
+ const rpe=recovery?'RPE 1–2 / 10':high?'RPE 2 / 10':low?'RPE 3–4 / 10':'RPE 2–3 / 10'
+ const adjustmentReason=!complete?'No complete Intro Effort Baseline; conservative defaults retained.':high?'High checkpoint RPE; cadence and load held equal or easier.':low?'Controlled steps completed at low RPE; one small bounded progression applied.':'Appropriate checkpoint RPE; foundation targets retained.'
+ const shared={rpe,provisional:true,ruleVersion:PRESCRIPTION_RULE_VERSION,adjustmentReason,readyForNextRide:complete&&!high}
+ if(equipment.calibrationProfileId==='peloton-bike-manual-reference')return {...shared,power:equipment.powerAvailable?'PROVISIONAL — calibrating':'POWER GUIDANCE AFTER CALIBRATION',cadence,resistance:recovery?'20–25%':high?'23–28%':low?'27–32%':'25–30%'}
+ return {...shared,power:equipment.powerAvailable?'PROVISIONAL POWER — follow RPE':'POWER NOT PRESCRIBED',cadence,resistance:equipment.resistanceAvailable?(high?'Light load':low?'Moderate load':'Light–Moderate load'):'Light load'}
 }
+
+export function originalTargetsAvailable(value:{targetSnapshots?:OriginalTargetSnapshot[]}){return Boolean(value.targetSnapshots?.length&&value.targetSnapshots.every((snapshot,index)=>snapshot.sectionIndex===index&&snapshot.ruleVersion&&snapshot.authoredId))}
+export function validateRideCorrections(patch:Partial<EditableRideResult>){const bounded=(value:number|undefined,min:number,max:number)=>value===undefined||(Number.isFinite(value)&&value>=min&&value<=max);return bounded(patch.durationMinutes,1,1440)&&bounded(patch.totalOutputKj,0,10000)&&bounded(patch.averagePower,0,2500)&&bounded(patch.peakPower,0,3000)&&bounded(patch.averageCadence,20,200)&&bounded(patch.averageResistance,0,100)&&bounded(patch.averageHeartRate,30,250)&&bounded(patch.maximumHeartRate,30,250)&&bounded(patch.distanceKm,0,1000)&&bounded(patch.calories,0,20000)&&bounded(patch.striveScore,0,1000)&&bounded(patch.rpe,1,10)&&!(patch.averagePower!==undefined&&patch.peakPower!==undefined&&patch.peakPower<patch.averagePower)&&!(patch.averageHeartRate!==undefined&&patch.maximumHeartRate!==undefined&&patch.maximumHeartRate<patch.averageHeartRate)}
+export function applyRideCorrection(ride:RideMetricEntry,patch:Partial<EditableRideResult>,updatedAt:string):RideMetricEntry{if(!validateRideCorrections(patch))throw new Error('Ride correction is outside the accepted range.');const original=ride.originalUserEntry??{durationMinutes:ride.durationMinutes,actualEngineDurationSeconds:ride.actualEngineDurationSeconds,totalOutputKj:ride.totalOutputKj,averagePower:ride.averagePower,peakPower:ride.peakPower,averageCadence:ride.averageCadence,averageResistance:ride.averageResistance,averageHeartRate:ride.averageHeartRate,maximumHeartRate:ride.maximumHeartRate,distanceKm:ride.distanceKm,calories:ride.calories,striveScore:ride.striveScore,rpe:ride.rpe,notes:ride.notes,equipmentId:ride.equipmentId};return {...ride,originalUserEntry:structuredClone(original),correctedEntry:{...ride.correctedEntry,...patch},updatedAt}}
 
 export function coachingContext(library:string,workoutId?:string,replay=false):CoachingContext{
  if(replay)return 'STAGE_REPLAY';if(library==='worlds-2026')return 'WORLDS';if(library!=='training')return 'PROFESSIONAL_RACE'

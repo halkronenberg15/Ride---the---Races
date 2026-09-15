@@ -34,7 +34,7 @@ import { RiderMarker4023 } from '../components/RiderMarker4023.ts'
 import { completionLabel, lifecycleJeanMessage, lifecycleProfileContext, resolveDetailGuidance4023 } from '../engine/cockpitPresentation4023.ts'
 import { climbPresentationMode, evaluateJeanCue, initialClimbPresentationState, JEAN_PRESENTATION_MS, officialStageTime, qualifiesForClimbView, scheduleJeanDismissal, transitionClimbPresentation, validJeanEvents, type JeanCueContract } from '../engine/alpha4024.ts'
 import { applyIntroPrescription } from '../engine/introCycling.ts'
-import { coachingContext, cueAllowed, noFtpTarget, normalizeJeanCopy, wakeLockMessage } from '../engine/release4024.ts'
+import { coachingContext, cueAllowed, noFtpTarget, normalizeJeanCopy, wakeLockMessage, type OriginalTargetSnapshot } from '../engine/release4024.ts'
 
 type RideScreenProps = {
   stageNumber: number
@@ -43,6 +43,7 @@ type RideScreenProps = {
   workoutId?: string
   activityType?:'RACE_STAGE'|'TRAINING'|'INTRO'|'CALIBRATION'|'STAGE_REPLAY'
   targetFtpOverride?:number
+  originalTargetSnapshots?:OriginalTargetSnapshot[]
   strategy: RaceStrategy
   durationSelection: DurationSelection
   onBack: () => void
@@ -71,7 +72,7 @@ type WakeLockSentinelLike = {
 }
 
 function RideScreen({
-  stageNumber, stageData, library='tour-2026', workoutId,activityType,targetFtpOverride,
+  stageNumber, stageData, library='tour-2026', workoutId,activityType,targetFtpOverride,originalTargetSnapshots,
   strategy, durationSelection,
   onBack,
   onFinish,
@@ -81,7 +82,7 @@ function RideScreen({
   const measurementSystem = career.settings.measurementSystem
   const stage = useMemo(() => stageData ?? getRaceStage(stageNumber), [stageNumber, stageData])
   const isWorlds=stage.raceId==='worlds-2026',targetFtp=targetFtpOverride??career.rider.ftp??150
-  const adaptedSegments = useMemo(() => {const adapted=adaptSegments(stage.segments, targetFtp, strategy);return library==='training'&&career.introCycling.plan&&career.introCycling.plan.rides.some(ride=>ride.id===workoutId)?applyIntroPrescription(adapted,career.rider.ftp||150,career.introCycling.plan):adapted}, [stage, career.rider.ftp??150, strategy,library,workoutId,career.introCycling.plan])
+  const adaptedSegments = useMemo(() => {let adapted=adaptSegments(stage.segments,targetFtp,strategy);if(activityType==='STAGE_REPLAY'&&originalTargetSnapshots?.length===adapted.length)adapted=adapted.map((segment,index)=>({...segment,sec:originalTargetSnapshots[index].duration,zone:originalTargetSnapshots[index].zone,power:originalTargetSnapshots[index].power,cadence:originalTargetSnapshots[index].cadence,resistance:originalTargetSnapshots[index].resistance}));return library==='training'&&career.introCycling.plan&&career.introCycling.plan.rides.some(ride=>ride.id===workoutId)?applyIntroPrescription(adapted,career.rider.ftp||150,career.introCycling.plan):adapted}, [stage,targetFtp,strategy,library,workoutId,career.introCycling.plan,activityType,originalTargetSnapshots])
   const resolvedDuration=useMemo(()=>durationSelectionForStage(stage,durationSelection),[stage,durationSelection])
   const timedSegments=useMemo(()=>stage.isTraining?adaptedSegments:applyDurationSelection(adaptedSegments,resolvedDuration).segments,[stage.isTraining,adaptedSegments,resolvedDuration])
   const isTimeTrial = useMemo(() => isIndividualTimeTrial(timedSegments), [timedSegments])
@@ -152,11 +153,12 @@ function RideScreen({
     ?.78+.17*(1-massStart.warmupRemaining/preRacePlan.warmupSeconds):1
   const tacticalMultiplier=activeEffort&&effortRemaining>0?1+activeEffort.powerDeltaPercent/100:tactical.effortMultiplier
   const displayedPrescription = tacticalPrescription(activePrescription,warmupMultiplier*tacticalMultiplier,equipment,bikeProfileForEquipment(equipment),career.rider.cadencePreferences)
-  const noFtp=career.rider.ftp===null&&library==='training'?noFtpTarget(currentSegment,equipment):null
-  const displayPower = noFtp?.power??displayedPrescription.power
-  const displayCadence = noFtp?.cadence??displayedPrescription.cadence
-  const displayResistance = noFtp?.resistance??(displayedPrescription.manualTarget.recommendedResistance===null?displayedPrescription.resistance:displayedPrescription.resistance.replace(/ · START \d+% @ \d+ rpm| · Start \d+%/i,''))
-  const displayZone = massStart?.phase==='PRE_RACE_WARMUP'?'Z1–Z2':activePrescription.zone
+  const noFtp=career.rider.ftp===null&&library==='training'?noFtpTarget(currentSegment,equipment,career.rider.introEffortBaseline):null
+  const originalActive=originalTargetSnapshots?.[engine.segmentIndex]
+  const displayPower = originalActive?.power??noFtp?.power??displayedPrescription.power
+  const displayCadence = originalActive?.cadence??noFtp?.cadence??displayedPrescription.cadence
+  const displayResistance = originalActive?.resistance??noFtp?.resistance??(displayedPrescription.manualTarget.recommendedResistance===null?displayedPrescription.resistance:displayedPrescription.resistance.replace(/ · START \d+% @ \d+ rpm| · Start \d+%/i,''))
+  const displayZone = originalActive?.zone??(massStart?.phase==='PRE_RACE_WARMUP'?'Z1–Z2':activePrescription.zone)
   const afterKmZero = engine.lifecycle==='OFFICIAL_RACING'
 
   const progress = coursePosition.completion
@@ -195,7 +197,7 @@ function RideScreen({
   const nextBoundaryResistance=nextBoundaryElapsed===null?'—':timeline.roadSnapshot(nextBoundaryElapsed).livePrescription.resistance.replace(/ · START \d+% @ \d+ rpm| · Start \d+%/i,'')
   const mode = jeanMode(currentSegment, isFinished)
   const resolveBoundary=(index:number)=>tacticalPrescription(timeline.roadSnapshot(timeline.segmentStarts[index]).livePrescription,1,equipment,bikeProfileForEquipment(equipment),career.rider.cadencePreferences)
-  const previewFor=(index:number)=>{const target=targetPreview4023(segments[index].name,segments[index].sec,resolveBoundary(index),index),safe=career.rider.ftp===null&&library==='training'?noFtpTarget(segments[index],equipment):null;return safe?{...target,power:safe.power,cadence:safe.cadence,resistance:safe.resistance}:target}
+  const previewFor=(index:number)=>{const original=originalTargetSnapshots?.[index];if(original)return {name:original.name,remaining:original.duration,power:original.power,cadence:original.cadence,resistance:original.resistance,openingResistance:null,authoredId:original.authoredId,resolvedId:original.resolvedId,zone:original.zone};const target=targetPreview4023(segments[index].name,segments[index].sec,resolveBoundary(index),index),safe=career.rider.ftp===null&&library==='training'?noFtpTarget(segments[index],equipment,career.rider.introEffortBaseline):null;return safe?{...target,power:safe.power,cadence:safe.cadence,resistance:safe.resistance}:target}
   const firstRaceTarget=previewFor(0)
   const kilometreZeroTarget=preRacePlan&&gateModels?targetPreview4023('KILOMETRE ZERO',preRacePlan.kilometreZeroSeconds,gateModels.kilometreZero.roadSnapshot(0).livePrescription):null
   const nextSectionIndex=engine.segmentIndex+1

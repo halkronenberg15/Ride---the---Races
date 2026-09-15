@@ -1,4 +1,4 @@
-import type { SeasonClosure } from '../engine/release4024.ts'
+import type { IntroEffortBaseline, OriginalTargetSnapshot, SeasonClosure } from '../engine/release4024.ts'
 export type RiderArchetype =
   | 'GC Contender'
   | 'Sprinter'
@@ -51,6 +51,8 @@ export type RideMetricEntry = {
   selectedDurationVersion?:string
   updatedAt?:string
   originalUserEntry?:Partial<RideMetricEntry>
+  correctedEntry?:Partial<EditableRideResult>
+  targetSnapshots?:OriginalTargetSnapshot[]
   recovery?: HealthEntry
   terminatedEarly?: boolean
   terminationReason?: string
@@ -64,6 +66,7 @@ export type RideMetricEntry = {
   cooldownDurationSeconds?:number
   cooldownSkipped?:boolean
 }
+export type EditableRideResult=Pick<RideMetricEntry,'durationMinutes'|'actualEngineDurationSeconds'|'totalOutputKj'|'averagePower'|'peakPower'|'averageCadence'|'averageResistance'|'averageHeartRate'|'maximumHeartRate'|'distanceKm'|'calories'|'striveScore'|'rpe'|'notes'|'equipmentId'>
 
 export type HealthEntry = {
   date: string
@@ -87,7 +90,7 @@ export type CareerState = {
     ftp: number | null
     ftpKnown: boolean
     ftpProvenance:FtpProvenance
-    introEffortBaseline?:{rpe:number;cadence:number;load:string;recordedAt:string}
+    introEffortBaseline?:IntroEffortBaseline
     experience: ExperienceLevel
     heightCm?: number
     weightKg?: number

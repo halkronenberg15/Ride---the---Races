@@ -3,6 +3,7 @@ import { teamLoriot } from '../game/team'
 import type { Season } from '../data/seasonCalendar'
 import { useCareer } from '../state/CareerContext'
 import { speakAsJean, stopJeanVoice, type JeanVoiceStatus } from '../services/jeanVoice'
+import { originalTargetsAvailable } from '../engine/release4024.ts'
 
 type Props = {
   onBack: () => void
@@ -11,9 +12,10 @@ type Props = {
   onOpenTraining: () => void
   onOpenRoster: () => void
   onReplayStage:(stage:number,useOriginalTargets:boolean)=>void
+  onOpenStageResults:(rideId:string)=>void
 }
 
-export default function TeamBusScreen({ onBack, seasons, onOpenSeason, onOpenTraining, onOpenRoster,onReplayStage }: Props) {
+export default function TeamBusScreen({ onBack, seasons, onOpenSeason, onOpenTraining, onOpenRoster,onReplayStage,onOpenStageResults }: Props) {
   const {career,setJeanVoiceEnabled}=useCareer()
   const [voiceStatus,setVoiceStatus]=useState<JeanVoiceStatus>('idle')
   const motto='Ride with patience. Race with purpose. Finish together.'
@@ -28,7 +30,7 @@ export default function TeamBusScreen({ onBack, seasons, onOpenSeason, onOpenTra
       {seasons.map((season) => <button type="button" key={season.year} onClick={() => onOpenSeason(season.year)}><strong>{season.year} →</strong><small>{season.races.length} professional races</small></button>)}
       <button type="button" disabled><strong>OFF-SEASON TRAINING 🔒</strong><small>Jean’s Season Review and Off-Season Goals · Alpha 4.0.25</small></button>
       <button type="button" onClick={onOpenTraining}><strong>TRAINING LIBRARY</strong><small>Recovery Rides · Intro to Cycling · Classic Rides</small></button>
-      {career.pastSeasons.length>0&&<section className="dashboard-card"><h2>Past Seasons</h2>{career.pastSeasons.map(archive=><details key={`${archive.year}-${archive.race}`}><summary>{archive.year} → {archive.race}</summary>{archive.stages.map(stage=><div key={stage.stageNumber}><strong>Stage {stage.stageNumber}</strong> · {stage.completed?'Completed':'Not completed'} · {stage.result??'Result unavailable'}{stage.completed&&<><button type="button" onClick={()=>onReplayStage(stage.stageNumber,false)}>Ride Again</button>{stage.rideId&&career.rideHistory.find(ride=>ride.id===stage.rideId)?.ftp&&<button type="button" onClick={()=>onReplayStage(stage.stageNumber,true)}>Use Original Targets</button>}</>}</div>)}</details>)}</section>}
+      {career.pastSeasons.length>0&&<section className="dashboard-card"><h2>Past Seasons</h2>{career.pastSeasons.map(archive=><details key={`${archive.year}-${archive.race}`}><summary>{archive.year} → {archive.race}</summary>{archive.stages.map(stage=><div key={stage.stageNumber}><strong>Stage {stage.stageNumber}</strong> · {stage.completed?'Completed':'Not completed'} · {stage.result??'Result unavailable'}{stage.completed&&<>{stage.rideId&&<button type="button" onClick={()=>onOpenStageResults(stage.rideId!)}>Stage Results</button>}<button type="button" onClick={()=>onReplayStage(stage.stageNumber,false)}>Ride Again</button>{stage.rideId&&originalTargetsAvailable(career.rideHistory.find(ride=>ride.id===stage.rideId)??{})?<button type="button" onClick={()=>onReplayStage(stage.stageNumber,true)}>Use Original Targets</button>:stage.completed&&<small>Original Targets unavailable for this historical activity</small>}</>}</div>)}</details>)}</section>}
       <button type="button" onClick={onOpenRoster}><strong>TEAM ROSTER</strong><small>{teamLoriot.riders.length} Team Loriot riders</small></button>
     </nav>
   </section>

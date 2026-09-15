@@ -33,6 +33,10 @@ import WorldsBriefingScreen from './screens/WorldsBriefingScreen'
 import { worldsStage } from './data/uciWorlds2026'
 import { AuthProvider, useAuth } from './state/AuthContext.tsx'
 import AuthScreen from './screens/AuthScreen.tsx'
+import { createRoadModel } from './engine/roadModel.ts'
+import { bikeProfileForEquipment, GENERIC_MANUAL_EQUIPMENT } from './engine/manualBike.ts'
+import { tacticalPrescription } from './engine/alpha4021.ts'
+import { PRESCRIPTION_RULE_VERSION, noFtpTarget, prescriptionSnapshot, type OriginalTargetSnapshot } from './engine/release4024.ts'
 
 type Screen = 'hq' | 'teamBus' | 'season' | 'race' | 'worldsBriefing' | 'stageDetail' | 'training' | 'roster' | 'tactics' | 'ride' | 'restDay' | 'rideData' | 'health' | 'profile' | 'settings' | 'finale'|'femmes'
 
@@ -47,7 +51,7 @@ function RideTheRacesApp() {
   const [raceStrategy, setRaceStrategy] = useState<RaceStrategy>('Balanced')
   const [rideDuration,setRideDuration]=useState<DurationSelection>({mode:'RECOMMENDED'})
   const [stageReplay,setStageReplay]=useState(false)
-  const [replayOriginal,setReplayOriginal]=useState<{rideId:string;ftp:number}|null>(null)
+  const [replayOriginal,setReplayOriginal]=useState<{rideId:string;ftp:number|null;targetSnapshots:OriginalTargetSnapshot[]}|null>(null)
   const { ride, elapsed, end } = useActiveRide()
 
   useEffect(() => {
@@ -77,8 +81,11 @@ function RideTheRacesApp() {
     if (ride) {
       const stageData = getLibraryStage(ride.library,ride.stageNumber,ride.workoutId) ?? getRaceStage(ride.stageNumber)
       const selection=durationSelectionForStage(stageData,{mode:ride.durationMode,customMinutes:ride.customDurationMinutes,targetMinutes:ride.targetDurationMinutes})
-      const plannedDurationSeconds = createStageTimeline(applyDurationSelection(adaptSegments(stageData.segments, career.rider.ftp??150, ride.strategy),selection).segments, stageData.distanceKm).duration
-      addRide({ id: crypto.randomUUID(), activityType:ride.activityType??(ride.library==='training'?(ride.workoutId==='intro-calibration'?'CALIBRATION':ride.workoutId?.startsWith('intro-')?'INTRO':'TRAINING'):'RACE_STAGE'), date: new Date().toISOString(), source: 'Manual', durationMinutes: Math.round(elapsed / 60), distanceKm: stageData.distanceKm, race: career.season.currentRace, stageNumber: ride.stageNumber, stageName: stageData.title, plannedDurationSeconds, actualEngineDurationSeconds: Math.round(elapsed), tactic: ride.strategy, ftp: career.rider.ftp??undefined,ftpProvenance:career.rider.ftpProvenance,equipmentId:career.equipment.activeEquipmentId??undefined,selectedDurationVersion:ride.durationMode,originalRideId:ride.activityType==='STAGE_REPLAY'?replayOriginal?.rideId:undefined, recovery: career.health,earnedMarkerIds:ride.earnedMarkerIds,officialRaceDurationSeconds:cooldown.officialRaceDurationSeconds,cooldownDurationSeconds:cooldown.cooldownDurationSeconds,cooldownSkipped:cooldown.cooldownSkipped })
+      const adapted=adaptSegments(stageData.segments,career.rider.ftp??150,ride.strategy),resolvedSegments=stageData.isTraining?adapted:applyDurationSelection(adapted,selection).segments
+      const plannedDurationSeconds=createStageTimeline(resolvedSegments,stageData.distanceKm).duration
+      const equipment=career.equipment.instances.find(item=>item.id===career.equipment.activeEquipmentId)??GENERIC_MANUAL_EQUIPMENT,model=createRoadModel(stageData.number,resolvedSegments,stageData.distanceKm,undefined,stageData.profilePoints,stageData.officialCourseMarkers,stageData.raceId,career.rider.ftp??150,equipment,career.rider.cadencePreferences)
+      const targetSnapshots:OriginalTargetSnapshot[]=resolvedSegments.map((segment,index)=>{const base=prescriptionSnapshot(index,segment,tacticalPrescription(model.roadSnapshot(model.segmentStarts[index]).livePrescription,1,equipment,bikeProfileForEquipment(equipment),career.rider.cadencePreferences)),safe=career.rider.ftp===null&&ride.library==='training'?noFtpTarget(segment,equipment,career.rider.introEffortBaseline):null;return {...base,...(safe?{power:safe.power,cadence:safe.cadence,resistance:safe.resistance}:{}),sectionIndex:index,equipmentId:equipment.id,equipmentMode:equipment.calibrationProfileId?'PELOTON_COMPATIBLE':equipment.powerAvailable?'POWER_GUIDED':'RPE_LOAD',calibrationConfidence:equipment.calibrationConfidence,ftp:career.rider.ftp,ftpProvenance:career.rider.ftpProvenance,tacticalModifier:1,ruleVersion:PRESCRIPTION_RULE_VERSION}})
+      addRide({ id: crypto.randomUUID(), activityType:ride.activityType??(ride.library==='training'?(ride.workoutId==='intro-calibration'?'CALIBRATION':ride.workoutId?.startsWith('intro-')?'INTRO':'TRAINING'):'RACE_STAGE'), date: new Date().toISOString(), source: 'Manual', durationMinutes: Math.round(elapsed / 60), distanceKm: stageData.distanceKm, race: career.season.currentRace, stageNumber: ride.stageNumber, stageName: stageData.title, plannedDurationSeconds, actualEngineDurationSeconds: Math.round(elapsed), tactic: ride.strategy, ftp: career.rider.ftp??undefined,ftpProvenance:career.rider.ftpProvenance,equipmentId:career.equipment.activeEquipmentId??undefined,selectedDurationVersion:ride.durationMode,targetSnapshots:ride.activityType==='STAGE_REPLAY'&&replayOriginal?replayOriginal.targetSnapshots:targetSnapshots,originalRideId:ride.activityType==='STAGE_REPLAY'?replayOriginal?.rideId:undefined, recovery: career.health,earnedMarkerIds:ride.earnedMarkerIds,officialRaceDurationSeconds:cooldown.officialRaceDurationSeconds,cooldownDurationSeconds:cooldown.cooldownDurationSeconds,cooldownSkipped:cooldown.cooldownSkipped })
     }
     end()
     if(ride?.library==='training') completeTraining(ride.workoutId??'training',Math.round(elapsed/60))
@@ -117,14 +124,15 @@ function RideTheRacesApp() {
           onOpenSeason={(year) => { setSelectedSeason(year); setScreen('season') }}
           onOpenTraining={() => { setSelectedRace('training'); setScreen('training') }}
           onOpenRoster={() => setScreen('roster')}
-          onReplayStage={(stage,useOriginal)=>{const original=career.rideHistory.find(item=>item.stageNumber===stage&&item.activityType!=='STAGE_REPLAY'&&item.ftp);setReplayOriginal(useOriginal&&original?.ftp?{rideId:original.id,ftp:original.ftp}:null);setStageReplay(true);setSelectedRace('tour-2026');setSelectedStageNumber(stage);setScreen('tactics')}}
+          onOpenStageResults={()=>setScreen('rideData')}
+          onReplayStage={(stage,useOriginal)=>{const original=career.rideHistory.find(item=>item.stageNumber===stage&&item.activityType!=='STAGE_REPLAY'&&item.targetSnapshots?.length);setReplayOriginal(useOriginal&&original?.targetSnapshots?.length?{rideId:original.id,ftp:original.ftp??null,targetSnapshots:original.targetSnapshots}:null);setStageReplay(true);setSelectedRace('tour-2026');setSelectedStageNumber(stage);setScreen('tactics')}}
         />
       )}
 
       {screen === 'season' && getSeason(selectedSeason) && <SeasonCalendarScreen season={getSeason(selectedSeason)!} currentRace={career.season.currentRace} onBack={() => setScreen('teamBus')} onOpenRace={(raceId) => { setSelectedRace(raceId); setScreen('race') }} />}
       {screen === 'race' && (selectedRace==='worlds-2026'?<WorldsHubScreen onBack={()=>setScreen('season')} onOpen={(event)=>{setSelectedStageNumber(event);setScreen('worldsBriefing')}}/>:<RaceOverviewScreen library={selectedRace} actionable={selectedRace==='vuelta-2026'?vueltaActionable:tourActionable} onBack={() => setScreen('season')} onOpenStage={(stage)=>{setSelectedStageNumber(stage);setScreen('stageDetail')}} />)}
       {screen === 'worldsBriefing'&&<WorldsBriefingScreen event={selectedStageNumber as 1|2} onBack={()=>setScreen('race')} onStart={(minutes)=>{setRideDuration({mode:'CUSTOM',customMinutes:minutes,targetMinutes:minutes});setRaceStrategy('Balanced');setScreen('ride')}}/>}
-      {screen === 'stageDetail' && <StageDetailScreen library={selectedRace} stageNumber={selectedStageNumber} durationSelection={ride?.stageNumber===selectedStageNumber?{mode:ride.durationMode,customMinutes:ride.customDurationMinutes,targetMinutes:ride.targetDurationMinutes}:undefined} onBack={()=>setScreen('race')} onBriefing={()=>{selectRaceStage(selectedRace==='vuelta-2026'?'vuelta':'tour',selectedStageNumber);setScreen('tactics')}} />}
+      {screen === 'stageDetail' && <StageDetailScreen library={selectedRace} stageNumber={selectedStageNumber} durationSelection={ride?.stageNumber===selectedStageNumber?{mode:ride.durationMode,customMinutes:ride.customDurationMinutes,targetMinutes:ride.targetDurationMinutes}:undefined} onBack={()=>setScreen('race')} onOpenResults={()=>setScreen('rideData')} onBriefing={()=>{selectRaceStage(selectedRace==='vuelta-2026'?'vuelta':'tour',selectedStageNumber);setScreen('tactics')}} />}
       {screen === 'training' && <RaceLibraryScreen library="training" selectedStageNumber={tourActionable} onSelectStage={()=>{}} onSelectWorkout={setSelectedWorkout} onBack={() => setScreen('teamBus')} onContinue={() => setScreen('tactics')} onOpenRestDay={() => setScreen('restDay')} />}
       {screen === 'roster' && <TeamRosterScreen onBack={() => setScreen('teamBus')} />}
 
@@ -151,7 +159,8 @@ function RideTheRacesApp() {
           library={ride?.library??selectedRace}
           workoutId={ride?.workoutId??(selectedRace==='training'?selectedWorkout:undefined)}
           activityType={ride?.activityType??(stageReplay?'STAGE_REPLAY':selectedRace==='training'?(selectedWorkout==='intro-calibration'?'CALIBRATION':selectedWorkout.startsWith('intro-')?'INTRO':'TRAINING'):'RACE_STAGE')}
-          targetFtpOverride={stageReplay?replayOriginal?.ftp:undefined}
+          targetFtpOverride={stageReplay?replayOriginal?.ftp??undefined:undefined}
+          originalTargetSnapshots={stageReplay?replayOriginal?.targetSnapshots:undefined}
           strategy={ride?.strategy ?? raceStrategy}
           durationSelection={ride?{mode:ride.durationMode,customMinutes:ride.customDurationMinutes,targetMinutes:ride.targetDurationMinutes}:rideDuration}
           onBack={() => setScreen(selectedRace==='worlds-2026'?'worldsBriefing':'tactics')}

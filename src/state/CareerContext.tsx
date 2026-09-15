@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components -- Provider and its typed hook form one public state module. */
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import type { CareerState, HealthEntry, IntroCyclingAnswers, IntroCyclingPlan, MeasurementSystem, RideMetricEntry } from '../types/career'
+import type { CareerState, EditableRideResult, HealthEntry, IntroCyclingAnswers, IntroCyclingPlan, MeasurementSystem, RideMetricEntry } from '../types/career'
 import { equipmentForDevices, initialCareer, migrateCareer } from './careerPersistence.ts'
 import { useAuth } from './AuthContext.tsx'
 import { careerStorageKey } from '../services/accountStore.ts'
@@ -28,7 +28,7 @@ type CareerContextValue = {
   toggleOutdoorChecklist:(itemId:string)=>void
   endSeason:(ownerEarlyEnd:boolean)=>void
   toggleFavoriteStage:(library:string,stageNumber:number)=>void
-  updateRideEntry:(id:string,patch:Partial<RideMetricEntry>)=>void
+  updateRideEntry:(id:string,patch:Partial<EditableRideResult>)=>void
   restartOnboarding: () => void
   setJeanVoiceEnabled: (enabled: boolean) => void
   setMeasurementSystem: (system: MeasurementSystem) => void
@@ -90,7 +90,7 @@ export function CareerProvider({ children }: { children: React.ReactNode }) {
     toggleOutdoorChecklist(itemId){setCareer(current=>{const selected=current.introCycling.outdoorChecklistIds.includes(itemId);return {...current,introCycling:{...current.introCycling,outdoorChecklistIds:selected?current.introCycling.outdoorChecklistIds.filter(id=>id!==itemId):[...current.introCycling.outdoorChecklistIds,itemId]}}})},
     endSeason(ownerEarlyEnd){setCareer(current=>{if(current.season.closure.status==='ENDED')return current;const closure=closeSeason(current.season.closure,{now:new Date().toISOString(),finalStageCompleted:Math.max(0,...current.season.completedStages),ownerEarlyEnd,results:{races:current.races,rideIds:current.rideHistory.filter(ride=>ride.activityType==='RACE_STAGE').map(ride=>ride.id)}});const archived={year:current.season.year,race:current.season.currentRace,closure,stages:Array.from({length:21},(_,index)=>{const stageNumber=index+1,ride=current.rideHistory.find(item=>item.stageNumber===stageNumber&&item.activityType!=='STAGE_REPLAY');return {stageNumber,rideId:ride?.id,completed:current.season.completedStages.includes(stageNumber),result:ride?.terminatedEarly?'Ended early':ride?'Completed':undefined}})};return {...current,season:{...current.season,closure},pastSeasons:[...current.pastSeasons,archived]}})},
     toggleFavoriteStage(library,stageNumber){setCareer(current=>{const exists=current.favoriteStageRefs.some(item=>item.library===library&&item.stageNumber===stageNumber);return {...current,favoriteStageRefs:exists?current.favoriteStageRefs.filter(item=>item.library!==library||item.stageNumber!==stageNumber):[...current.favoriteStageRefs,{library,stageNumber}]}})},
-    updateRideEntry(id,patch){setCareer(current=>{const source=current.rideHistory.find(ride=>ride.id===id),updatedAt=new Date().toISOString();return {...current,rider:source?.activityType==='CALIBRATION'&&patch.rpe?{...current.rider,ftpProvenance:'INTRO_EFFORT_BASELINE',introEffortBaseline:{rpe:patch.rpe,cadence:70,load:'Rider-recorded conservative calibration steps',recordedAt:updatedAt}}:current.rider,rideHistory:current.rideHistory.map(ride=>ride.id===id?{...ride,...patch,id:ride.id,originalUserEntry:ride.originalUserEntry??{...ride},updatedAt}:ride)}})},
+    updateRideEntry(id,patch){setCareer(current=>{const source=current.rideHistory.find(ride=>ride.id===id),updatedAt=new Date().toISOString(),original=source?.originalUserEntry??(source?{durationMinutes:source.durationMinutes,actualEngineDurationSeconds:source.actualEngineDurationSeconds,totalOutputKj:source.totalOutputKj,averagePower:source.averagePower,peakPower:source.peakPower,averageCadence:source.averageCadence,averageResistance:source.averageResistance,averageHeartRate:source.averageHeartRate,maximumHeartRate:source.maximumHeartRate,distanceKm:source.distanceKm,calories:source.calories,striveScore:source.striveScore,rpe:source.rpe,notes:source.notes,equipmentId:source.equipmentId}:undefined);return {...current,rider:source?.activityType==='CALIBRATION'&&patch.rpe?{...current.rider,ftpProvenance:'INTRO_EFFORT_BASELINE',introEffortBaseline:{rpe:patch.rpe,cadence:70,load:'Rider-recorded conservative calibration steps',completedSteps:2,recordedAt:updatedAt,ruleVersion:'alpha4024.2'}}:current.rider,rideHistory:current.rideHistory.map(ride=>ride.id===id?{...ride,originalUserEntry:original,correctedEntry:{...ride.correctedEntry,...patch},updatedAt}:ride)}})},
     restartOnboarding() {
       setCareer((current) => ({ ...current, onboardingComplete: false }))
     },

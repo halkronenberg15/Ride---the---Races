@@ -20,3 +20,7 @@ console.log('Alpha 4.0.24 audit passed: hierarchy, stage time, Jean lifecycle, a
 for(const token of ['prescriptionSnapshot','noFtpTarget','coachingContext','closeSeason','wakeLockMessage'])assert.match(readFileSync(new URL('../src/engine/release4024.ts',import.meta.url),'utf8'),new RegExp(token))
 assert.match(ride,/upNext\.resistance/)
 assert.match(library,/Intro Calibration Ride/)
+
+for(const token of ['OriginalTargetSnapshot','originalTargetsAvailable','applyRideCorrection','completedSteps','alpha4024.2'])assert.match(readFileSync(new URL('../src/engine/release4024.ts',import.meta.url),'utf8'),new RegExp(token))
+assert.match(readFileSync(new URL('../src/screens/TeamBusScreen.tsx',import.meta.url),'utf8'),/Original Targets unavailable/)
+assert.match(readFileSync(new URL('../src/screens/RideDataScreen.tsx',import.meta.url),'utf8'),/Compare original submitted entry/)
