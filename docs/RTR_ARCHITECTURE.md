@@ -257,3 +257,13 @@ The profile visualization owns a bounded drawable region followed by a normal-fl
 Detail consumes only the canonical next meaningful gradient boundary; Finish and workout-section transitions are separate concepts. Worlds group geography also distinguishes race state from label layout: while the rider is in `PELOTON`, rider and peloton share one course coordinate and only their visual labels may be offset.
 
 Non-uniform SVG scaling is limited to course geometry. Endpoint labels are projected HTML overlays, so typography never inherits the profile's `preserveAspectRatio="none"` stretch; the canonical endpoint line remains in the SVG coordinate domain.
+
+## Alpha 4.0.24 phone-verification continuation
+
+`targetPreview4023` carries authored and resolved identities and the complete resolved power/cadence/resistance/zone/duration snapshot. `RideScreen` resolves a boundary once through the same equipment path used at activation and renders that resistance verbatim; UI code cannot synthesize one metric separately.
+
+FTP absence is modeled as `null` plus explicit provenance. `release4024.ts` owns equipment-aware no-FTP targets, coaching contexts, copy normalization, truthful wake-lock labels, and the idempotent season-closure transition. Intro Calibration is non-maximal and records an Intro Effort Baseline only from rider-entered RPE; formal testing remains scheduled later.
+
+Season closure archives an immutable result reference without reopening or mutating classifications. Stage replays are new `STAGE_REPLAY` activities using canonical stage definitions and current rider targets by default. Favorite stages are references, not copied definitions. The Off-Season folder remains locked at the Jean review handoff; questionnaire, camps, VO₂ development and adaptive sequencing remain Alpha 4.0.25.
+
+Automated checks are Node engine/scheduler tests and static server/source checks, not mounted-browser tests. Widths, touch behavior, wake-lock release/reacquisition, and safe-area layout at 320/375/390/430 CSS pixels still require browser and physical-iPhone Safari verification.

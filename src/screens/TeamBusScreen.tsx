@@ -10,9 +10,10 @@ type Props = {
   onOpenSeason: (year: number) => void
   onOpenTraining: () => void
   onOpenRoster: () => void
+  onReplayStage:(stage:number,useOriginalTargets:boolean)=>void
 }
 
-export default function TeamBusScreen({ onBack, seasons, onOpenSeason, onOpenTraining, onOpenRoster }: Props) {
+export default function TeamBusScreen({ onBack, seasons, onOpenSeason, onOpenTraining, onOpenRoster,onReplayStage }: Props) {
   const {career,setJeanVoiceEnabled}=useCareer()
   const [voiceStatus,setVoiceStatus]=useState<JeanVoiceStatus>('idle')
   const motto='Ride with patience. Race with purpose. Finish together.'
@@ -23,9 +24,11 @@ export default function TeamBusScreen({ onBack, seasons, onOpenSeason, onOpenTra
     <header className="compact-page-header"><p className="eyebrow">{teamLoriot.name.toUpperCase()}</p><h1>Team Bus</h1><p>Plan the season, prepare the team, and choose where we race.</p></header>
     <article className="jean-command-card team-bus-jean"><div className="jean-identity"><div className="jean-avatar" aria-hidden="true">JM</div><div><p className="eyebrow">DIRECTEUR SPORTIF</p><h2>Jean Moreau</h2><span>Live from the Team Loriot car</span></div></div><div className="radio-message team-motto"><span className="radio-indicator"><i/> TEAM PHILOSOPHY</span><blockquote>“{motto}”</blockquote></div><div className="jean-voice-controls"><button type="button" className="voice-button" onClick={hearJean} disabled={!career.settings.jeanVoiceEnabled}>{voiceStatus==='speaking'?'■ Stop Jean':'▶ Hear Jean'}</button><label><input type="checkbox" checked={career.settings.jeanVoiceEnabled} onChange={event=>{stopJeanVoice();setVoiceStatus('idle');setJeanVoiceEnabled(event.target.checked)}}/> Jean voice</label></div></article>
     <nav className="team-bus-destinations" aria-label="Team Bus destinations">
-      <p className="eyebrow destination-heading">SEASONS</p>
+      <p className="eyebrow destination-heading">CURRENT SEASON</p>
       {seasons.map((season) => <button type="button" key={season.year} onClick={() => onOpenSeason(season.year)}><strong>{season.year} →</strong><small>{season.races.length} professional races</small></button>)}
-      <button type="button" onClick={onOpenTraining}><strong>TRAINING RIDES</strong><small>Recovery and leg openers</small></button>
+      <button type="button" disabled><strong>OFF-SEASON TRAINING 🔒</strong><small>Jean’s Season Review and Off-Season Goals · Alpha 4.0.25</small></button>
+      <button type="button" onClick={onOpenTraining}><strong>TRAINING LIBRARY</strong><small>Recovery Rides · Intro to Cycling · Classic Rides</small></button>
+      {career.pastSeasons.length>0&&<section className="dashboard-card"><h2>Past Seasons</h2>{career.pastSeasons.map(archive=><details key={`${archive.year}-${archive.race}`}><summary>{archive.year} → {archive.race}</summary>{archive.stages.map(stage=><div key={stage.stageNumber}><strong>Stage {stage.stageNumber}</strong> · {stage.completed?'Completed':'Not completed'} · {stage.result??'Result unavailable'}{stage.completed&&<><button type="button" onClick={()=>onReplayStage(stage.stageNumber,false)}>Ride Again</button>{stage.rideId&&career.rideHistory.find(ride=>ride.id===stage.rideId)?.ftp&&<button type="button" onClick={()=>onReplayStage(stage.stageNumber,true)}>Use Original Targets</button>}</>}</div>)}</details>)}</section>}
       <button type="button" onClick={onOpenRoster}><strong>TEAM ROSTER</strong><small>{teamLoriot.riders.length} Team Loriot riders</small></button>
     </nav>
   </section>

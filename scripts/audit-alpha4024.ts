@@ -16,3 +16,7 @@ assert.match(auth,/PBKDF2/);assert.match(auth,/Owner access is required/);assert
 assert.match(auth,/MULTI_DEVICE_ENROLLMENT_AVAILABLE=false/)
 const library=readFileSync(new URL('../src/data/raceLibrary.ts',import.meta.url),'utf8');for(const title of ['Bike and Rhythm Foundations','Cadence and Resistance Control','Preparing for Longer and Outdoor Rides'])assert.match(library,new RegExp(title))
 console.log('Alpha 4.0.24 audit passed: hierarchy, stage time, Jean lifecycle, and climb gate are connected.')
+
+for(const token of ['prescriptionSnapshot','noFtpTarget','coachingContext','closeSeason','wakeLockMessage'])assert.match(readFileSync(new URL('../src/engine/release4024.ts',import.meta.url),'utf8'),new RegExp(token))
+assert.match(ride,/upNext\.resistance/)
+assert.match(library,/Intro Calibration Ride/)

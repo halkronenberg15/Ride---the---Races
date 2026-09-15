@@ -1,3 +1,4 @@
+import type { SeasonClosure } from '../engine/release4024.ts'
 export type RiderArchetype =
   | 'GC Contender'
   | 'Sprinter'
@@ -16,6 +17,7 @@ export type ConnectionMethod = 'manual-guidance'|'post-ride-import'
 export type PreferredRideDurationMode = 'RECOMMENDED'|'QUICK'|'STANDARD'|'EXTENDED'|'EPIC'
 export type IntroCyclingAnswers={cyclingExperience:'New'|'Returning'|'Experienced';indoorExperience:'None'|'Some'|'Regular';outdoorExperience:'None'|'Some'|'Regular';ftpKnown:boolean;weeklyDays:number;comfortableMinutes:number;primaryGoal:'Build confidence'|'Outdoor ride preparation'|'Fitness'|'Return to cycling';cadenceResistanceConfidence:'Low'|'Growing'|'Confident';shiftingBrakingConfidence:'Low'|'Growing'|'Confident';bikeAccess:'Indoor'|'Outdoor'|'Both';outdoorConfidence:'Low'|'Growing'|'Confident';limitations:string;preferredNextProgram:'Undecided'|'Outdoor Ride Readiness'|'RtR Femmes'|'Standard RtR'}
 export type IntroCyclingPlan={startingDurationMinutes:number;powerCeilingPercent:number;recoveryEveryRides:number;instructionDensity:'high'|'standard';cadenceComplexity:'FOUNDATION'|'PROGRESSIVE';climbingIntroducedAfterRide:number;readinessAssessmentAfterRide:number;weeklyDays:number;comfortableMinutes:number;deliveryMode:'INDOOR'|'OUTDOOR_GUIDED'|'HYBRID';outdoorChecklistStartsAfterRide:number;rides:Array<{id:string;title:string;durationMinutes:number;focus:string;scheduledDay:number;recoveryAfter:boolean}>}
+export type FtpProvenance='MEASURED'|'RIDER_ENTERED'|'ESTIMATED'|'INTRO_EFFORT_BASELINE'|'UNKNOWN'
 
 export type RideMetricEntry = {
   id: string
@@ -24,8 +26,14 @@ export type RideMetricEntry = {
   durationMinutes: number
   distanceKm: number
   averagePower?: number
+  peakPower?:number
+  totalOutputKj?:number
   averageHeartRate?: number
   averageCadence?: number
+  averageResistance?:number
+  maximumHeartRate?:number
+  striveScore?:number
+  rpe?:number
   elevationM?: number
   calories?: number
   notes?: string
@@ -36,6 +44,13 @@ export type RideMetricEntry = {
   actualEngineDurationSeconds?: number
   tactic?: string
   ftp?: number
+  ftpProvenance?:FtpProvenance
+  equipmentId?:string
+  activityType?:'RACE_STAGE'|'TRAINING'|'INTRO'|'CALIBRATION'|'STAGE_REPLAY'
+  originalRideId?:string
+  selectedDurationVersion?:string
+  updatedAt?:string
+  originalUserEntry?:Partial<RideMetricEntry>
   recovery?: HealthEntry
   terminatedEarly?: boolean
   terminationReason?: string
@@ -69,8 +84,10 @@ export type CareerState = {
     nationality: string
     team: string
     archetype: RiderArchetype
-    ftp: number
+    ftp: number | null
     ftpKnown: boolean
+    ftpProvenance:FtpProvenance
+    introEffortBaseline?:{rpe:number;cadence:number;load:string;recordedAt:string}
     experience: ExperienceLevel
     heightCm?: number
     weightKg?: number
@@ -89,7 +106,10 @@ export type CareerState = {
     currentRace: string
     currentStage: number
     completedStages: number[]
+    closure:SeasonClosure
   }
+  pastSeasons:Array<{year:number;race:string;closure:SeasonClosure;stages:Array<{stageNumber:number;rideId?:string;completed:boolean;result?:string}>}>
+  favoriteStageRefs:Array<{library:string;stageNumber:number}>
   races: {
     tour: { currentStage: number; completedStages: number[] }
     vuelta: { currentStage: number; completedStages: number[] }

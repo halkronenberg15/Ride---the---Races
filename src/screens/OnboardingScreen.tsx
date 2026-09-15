@@ -67,7 +67,7 @@ export default function OnboardingScreen() {
 
   const numbers={numberText,heightText,weightText,ftpText}
   const canContinue=canAdvanceOnboarding(step,rider,numbers)
-  function submit(event:React.FormEvent){event.preventDefault();if(!canContinue)return;commitNumbers();setMeasurementSystem(system);if(step<stepTitles.length-1)setStep(current=>advanceOnboarding(current,rider,numbers));else {const answers={...intro,ftpKnown:rider.ftpKnown};enroll(program==='standard'?'rtr-standard':'intro-cycling');completeOnboarding({ ...rider, number:Number(numberText),ftp:Number(ftpText)||0,heightCm:system==='imperial'?inToCm(Number(heightText)):Number(heightText),weightKg:system==='imperial'?lbToKg(Number(weightText)):Number(weightText) },program==='intro-cycling'?{answers,plan:createIntroCyclingPlan(answers)}:null)}}
+  function submit(event:React.FormEvent){event.preventDefault();if(!canContinue)return;commitNumbers();setMeasurementSystem(system);if(step<stepTitles.length-1)setStep(current=>advanceOnboarding(current,rider,numbers));else {const answers={...intro,ftpKnown:rider.ftpKnown};enroll(program==='standard'?'rtr-standard':'intro-cycling');completeOnboarding({ ...rider, number:Number(numberText),ftp:Number(ftpText)>0?Number(ftpText):null,ftpProvenance:Number(ftpText)>0?'RIDER_ENTERED':'UNKNOWN',heightCm:system==='imperial'?inToCm(Number(heightText)):Number(heightText),weightKg:system==='imperial'?lbToKg(Number(weightText)):Number(weightText) },program==='intro-cycling'?{answers,plan:createIntroCyclingPlan(answers)}:null)}}
 
   return (
     <section className="onboarding-screen">
@@ -103,7 +103,7 @@ export default function OnboardingScreen() {
             <h2>How do you ride today?</h2>
             <div className="choice-grid">{experiences.map((experience) => <button type="button" className={rider.experience === experience ? 'selected' : ''} onClick={() => patch({ experience })} key={experience}>{experience}</button>)}</div>
             <div className="ftp-panel">
-              <label><input type="checkbox" checked={!rider.ftpKnown} onChange={(event) => { patch({ ftpKnown: !event.target.checked }); if (event.target.checked) setFtpText('150') }} /> I do not know my FTP yet</label>
+              <label><input type="checkbox" checked={!rider.ftpKnown} onChange={(event) => { patch({ ftpKnown: !event.target.checked }); if (event.target.checked) setFtpText('') }} /> I do not know my FTP yet</label>
               <label>Current or estimated FTP<input inputMode="numeric" pattern="[0-9]*" value={ftpText} onChange={(event) => setFtpText(event.target.value.replace(/\D/g, ''))} onBlur={commitNumbers} /></label>
               <p>FTP sets the scale, not your worth. Every stage adapts to your current fitness.</p>
             </div>

@@ -1,16 +1,17 @@
 import { useState } from 'react'
 import { useCareer } from '../state/CareerContext'
 import type { RideMetricEntry } from '../types/career'
-import { formatDistance, formatElevation, ftToM, miToKm, mToFt, kmToMi } from '../utils/units'
+import { formatDistance, ftToM, miToKm, mToFt, kmToMi } from '../utils/units'
 
 type Props = { onBack: () => void }
 
 function RideDataScreen({ onBack }: Props) {
-  const { career, addRide } = useCareer()
+  const { career, addRide,updateRideEntry } = useCareer()
   const system = career.settings.measurementSystem
   const [saved, setSaved] = useState(false)
   const [form, setForm] = useState({ durationMinutes: '45', distance: system === 'imperial' ? '12.4' : '20', averagePower: '', averageHeartRate: '', averageCadence: '', elevation: '', calories: '', notes: '' })
   const [formSystem, setFormSystem] = useState(system)
+  const [editing,setEditing]=useState<string|null>(null)
 
   if (formSystem !== system) {
     setFormSystem(system)
@@ -52,7 +53,7 @@ function RideDataScreen({ onBack }: Props) {
       <button className="primary-button wide-field" type="submit">Save ride metrics</button>
       {saved && <p className="success-message wide-field">Ride saved to the career record.</p>}
     </form>
-    <section className="history-list"><h2>Recent rides</h2>{career.rideHistory.length === 0 ? <p>No rides logged yet.</p> : career.rideHistory.slice(0, 5).map((ride) => <article key={ride.id}><strong>{formatDistance(ride.distanceKm, system)} • {ride.durationMinutes} min</strong><span>{ride.elevationM ? `${formatElevation(ride.elevationM, system)} climbing • ` : ''}{ride.averagePower ? `${ride.averagePower} W avg • ` : ''}{new Date(ride.date).toLocaleDateString()}</span></article>)}</section>
+    <section className="history-list"><h2>Training and activity history</h2>{career.rideHistory.length === 0 ? <p>No rides logged yet.</p> : career.rideHistory.map((ride) => <details key={ride.id}><summary><strong>{ride.stageName??ride.activityType??'Ride'} · {ride.durationMinutes} min</strong></summary><dl>{[['Planned duration',ride.plannedDurationSeconds&&`${ride.plannedDurationSeconds}s`],['Actual duration',`${ride.durationMinutes} min`],['Total output',ride.totalOutputKj&&`${ride.totalOutputKj} kJ`],['Average power',ride.averagePower&&`${ride.averagePower} W`],['Peak power',ride.peakPower&&`${ride.peakPower} W`],['Average cadence',ride.averageCadence&&`${ride.averageCadence} rpm`],['Average resistance',ride.averageResistance&&`${ride.averageResistance}%`],['Average heart rate',ride.averageHeartRate&&`${ride.averageHeartRate} bpm`],['Maximum heart rate',ride.maximumHeartRate&&`${ride.maximumHeartRate} bpm`],['Distance',formatDistance(ride.distanceKm,system)],['Calories',ride.calories],['Strive Score',ride.striveScore],['RPE',ride.rpe],['Notes',ride.notes],['Completed',new Date(ride.date).toLocaleString()],['Duration version',ride.selectedDurationVersion],['FTP',ride.ftp?`${ride.ftp} W (${ride.ftpProvenance??'Unknown provenance'})`:'Unavailable'],['Equipment',ride.equipmentId??'Unavailable'],['Activity',ride.activityType??'Original activity']].map(([label,value])=><div key={String(label)}><dt>{label}</dt><dd>{value??'Unavailable'}</dd></div>)}</dl>{editing===ride.id?<form onSubmit={event=>{event.preventDefault();const data=new FormData(event.currentTarget),rpe=Number(data.get('rpe'));if(rpe<1||rpe>10)return;updateRideEntry(ride.id,{rpe,notes:String(data.get('notes')??'')});setEditing(null)}}><label>RPE (1–10)<input name="rpe" type="number" min="1" max="10" defaultValue={ride.rpe??5}/></label><label>Rider notes<textarea name="notes" defaultValue={ride.notes}/></label><button>Save corrected entry</button></form>:<button type="button" onClick={()=>setEditing(ride.id)}>Edit Entry</button>}</details>)}</section>
   </section>
 }
 export default RideDataScreen

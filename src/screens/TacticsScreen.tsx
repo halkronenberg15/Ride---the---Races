@@ -28,7 +28,7 @@ function TacticsScreen({ stageNumber, stageData, onBack, onStartRide }: TacticsS
   const durationOptions=useMemo(()=>courseDurationOptions(stage),[stage])
   const [customMinutes,setCustomMinutes]=useState(durationPlan.minutes.RECOMMENDED)
   const durationSelection=useMemo(()=>durationSelectionForStage(stage,durationMode==='CUSTOM'?{mode:'CUSTOM',customMinutes}:{mode:durationMode}),[stage,durationMode,customMinutes])
-  const baseSegments = useMemo(() => stage.segments.map((segment) => adaptSegment(segment, career.rider.ftp, 'Balanced')), [stage, career.rider.ftp])
+  const baseSegments = useMemo(() => stage.segments.map((segment) => adaptSegment(segment, career.rider.ftp??150, 'Balanced')), [stage, career.rider.ftp])
   const durationResult=useMemo(()=>stage.isTraining?null:applyDurationSelection(baseSegments,durationSelection),[stage.isTraining,baseSegments,durationSelection])
   const adaptedSegments = durationResult?.segments??baseSegments
   const preRacePlan=!stage.isTraining?createPreRacePlan(adaptedSegments,durationSelection.targetMinutes??durationSelection.customMinutes??durationPlan.minutes.RECOMMENDED):null

@@ -11,7 +11,7 @@ test('Jean is relocated from rider Home to the opening Team Bus experience',()=>
   assert.doesNotMatch(source('../screens/TeamHQScreen.tsx'),/Jean Moreau|Hear Jean|TEAM PHILOSOPHY/)
   const bus=source('../screens/TeamBusScreen.tsx')
   assert.match(bus,/Jean Moreau/); assert.match(bus,/TEAM PHILOSOPHY/); assert.match(bus,/Hear Jean/)
-  assert.match(bus,/SEASONS/); assert.match(bus,/TRAINING RIDES/); assert.match(bus,/TEAM ROSTER/)
+  assert.match(bus,/CURRENT SEASON/); assert.match(bus,/TRAINING LIBRARY/); assert.match(bus,/TEAM ROSTER/)
 })
 
 test('all four training workouts have exact durations, targets, and FTP scaling',()=>{
@@ -19,8 +19,9 @@ test('all four training workouts have exact durations, targets, and FTP scaling'
   assert.equal(legacy.length,4)
   assert.deepEqual(legacy.map(r=>r.durationMinutes),[30,45,30,45])
   for(const ride of trainingRides) assert.ok(ride.stage.segments.every(s=>s.power&&s.cadence&&s.resistance))
-  const base=adaptSegments(trainingRides[0].stage.segments,206,'Balanced')[0].power
-  const stronger=adaptSegments(trainingRides[0].stage.segments,250,'Balanced')[0].power
+  const recovery=trainingRides.find(ride=>ride.id==='recovery-30')!
+  const base=adaptSegments(recovery.stage.segments,206,'Balanced')[0].power
+  const stronger=adaptSegments(recovery.stage.segments,250,'Balanced')[0].power
   assert.notEqual(base,stronger)
 })
 

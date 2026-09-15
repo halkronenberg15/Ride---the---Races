@@ -46,6 +46,8 @@ function RideTheRacesApp() {
   const [selectedStageNumber, setSelectedStageNumber] = useState(1)
   const [raceStrategy, setRaceStrategy] = useState<RaceStrategy>('Balanced')
   const [rideDuration,setRideDuration]=useState<DurationSelection>({mode:'RECOMMENDED'})
+  const [stageReplay,setStageReplay]=useState(false)
+  const [replayOriginal,setReplayOriginal]=useState<{rideId:string;ftp:number}|null>(null)
   const { ride, elapsed, end } = useActiveRide()
 
   useEffect(() => {
@@ -75,17 +77,17 @@ function RideTheRacesApp() {
     if (ride) {
       const stageData = getLibraryStage(ride.library,ride.stageNumber,ride.workoutId) ?? getRaceStage(ride.stageNumber)
       const selection=durationSelectionForStage(stageData,{mode:ride.durationMode,customMinutes:ride.customDurationMinutes,targetMinutes:ride.targetDurationMinutes})
-      const plannedDurationSeconds = createStageTimeline(applyDurationSelection(adaptSegments(stageData.segments, career.rider.ftp, ride.strategy),selection).segments, stageData.distanceKm).duration
-      addRide({ id: crypto.randomUUID(), date: new Date().toISOString(), source: 'Manual', durationMinutes: Math.round(elapsed / 60), distanceKm: stageData.distanceKm, race: career.season.currentRace, stageNumber: ride.stageNumber, stageName: stageData.title, plannedDurationSeconds, actualEngineDurationSeconds: Math.round(elapsed), tactic: ride.strategy, ftp: career.rider.ftp, recovery: career.health,earnedMarkerIds:ride.earnedMarkerIds,officialRaceDurationSeconds:cooldown.officialRaceDurationSeconds,cooldownDurationSeconds:cooldown.cooldownDurationSeconds,cooldownSkipped:cooldown.cooldownSkipped })
+      const plannedDurationSeconds = createStageTimeline(applyDurationSelection(adaptSegments(stageData.segments, career.rider.ftp??150, ride.strategy),selection).segments, stageData.distanceKm).duration
+      addRide({ id: crypto.randomUUID(), activityType:ride.activityType??(ride.library==='training'?(ride.workoutId==='intro-calibration'?'CALIBRATION':ride.workoutId?.startsWith('intro-')?'INTRO':'TRAINING'):'RACE_STAGE'), date: new Date().toISOString(), source: 'Manual', durationMinutes: Math.round(elapsed / 60), distanceKm: stageData.distanceKm, race: career.season.currentRace, stageNumber: ride.stageNumber, stageName: stageData.title, plannedDurationSeconds, actualEngineDurationSeconds: Math.round(elapsed), tactic: ride.strategy, ftp: career.rider.ftp??undefined,ftpProvenance:career.rider.ftpProvenance,equipmentId:career.equipment.activeEquipmentId??undefined,selectedDurationVersion:ride.durationMode,originalRideId:ride.activityType==='STAGE_REPLAY'?replayOriginal?.rideId:undefined, recovery: career.health,earnedMarkerIds:ride.earnedMarkerIds,officialRaceDurationSeconds:cooldown.officialRaceDurationSeconds,cooldownDurationSeconds:cooldown.cooldownDurationSeconds,cooldownSkipped:cooldown.cooldownSkipped })
     }
     end()
     if(ride?.library==='training') completeTraining(ride.workoutId??'training',Math.round(elapsed/60))
     else if(ride?.library==='worlds-2026') completeWorlds(ride.stageNumber===1?'men-elite-itt':'men-elite-road-race',undefined,ride.earnedMarkerIds.filter(id=>id.includes('itt-split')))
-    else completeRaceStage(ride?.library==='vuelta-2026'?'vuelta':'tour',stage)
-    setScreen(ride?.library==='worlds-2026'?'season':'rideData')
+    else if(ride?.activityType!=='STAGE_REPLAY') completeRaceStage(ride?.library==='vuelta-2026'?'vuelta':'tour',stage)
+    setStageReplay(false);setScreen(ride?.library==='worlds-2026'?'season':'rideData')
   }
   function handleEndRideEarly(reason:string,snapshot:{completionPercentage:number;distanceKm:number;lifecycle:string;sector:string;completedSectors:string[];earnedMarkerIds:string[];tacticalState:string}){
-    if(ride)addRide({id:crypto.randomUUID(),date:new Date().toISOString(),source:'Manual',durationMinutes:Math.round(elapsed/60),distanceKm:snapshot.distanceKm,race:career.season.currentRace,stageNumber:ride.stageNumber,stageName:getLibraryStage(ride.library,ride.stageNumber,ride.workoutId)?.title,actualEngineDurationSeconds:Math.round(elapsed),tactic:ride.strategy,ftp:career.rider.ftp,recovery:career.health,terminatedEarly:true,terminationReason:reason,completionPercentage:snapshot.completionPercentage,lifecycleAtTermination:snapshot.lifecycle,sectorAtTermination:snapshot.sector,completedSectors:snapshot.completedSectors,earnedMarkerIds:snapshot.earnedMarkerIds,tacticalState:snapshot.tacticalState})
+    if(ride)addRide({id:crypto.randomUUID(),date:new Date().toISOString(),source:'Manual',durationMinutes:Math.round(elapsed/60),distanceKm:snapshot.distanceKm,race:career.season.currentRace,stageNumber:ride.stageNumber,stageName:getLibraryStage(ride.library,ride.stageNumber,ride.workoutId)?.title,actualEngineDurationSeconds:Math.round(elapsed),tactic:ride.strategy,ftp:career.rider.ftp??undefined,ftpProvenance:career.rider.ftpProvenance,equipmentId:career.equipment.activeEquipmentId??undefined,activityType:ride.library==='training'?'TRAINING':'RACE_STAGE',recovery:career.health,terminatedEarly:true,terminationReason:reason,completionPercentage:snapshot.completionPercentage,lifecycleAtTermination:snapshot.lifecycle,sectorAtTermination:snapshot.sector,completedSectors:snapshot.completedSectors,earnedMarkerIds:snapshot.earnedMarkerIds,tacticalState:snapshot.tacticalState})
     end();setScreen('rideData')
   }
 
@@ -115,6 +117,7 @@ function RideTheRacesApp() {
           onOpenSeason={(year) => { setSelectedSeason(year); setScreen('season') }}
           onOpenTraining={() => { setSelectedRace('training'); setScreen('training') }}
           onOpenRoster={() => setScreen('roster')}
+          onReplayStage={(stage,useOriginal)=>{const original=career.rideHistory.find(item=>item.stageNumber===stage&&item.activityType!=='STAGE_REPLAY'&&item.ftp);setReplayOriginal(useOriginal&&original?.ftp?{rideId:original.id,ftp:original.ftp}:null);setStageReplay(true);setSelectedRace('tour-2026');setSelectedStageNumber(stage);setScreen('tactics')}}
         />
       )}
 
@@ -147,6 +150,8 @@ function RideTheRacesApp() {
           stageData={ride?getLibraryStage(ride.library,ride.stageNumber,ride.workoutId):selectedRace==='worlds-2026'?worldsStage(selectedStageNumber===1?'itt':'road',rideDuration.customMinutes):getLibraryStage(selectedRace,selectedRace==='training'?trainingRides.find(r=>r.id===selectedWorkout)?.stage.number??tourActionable:selectedStageNumber,selectedWorkout)}
           library={ride?.library??selectedRace}
           workoutId={ride?.workoutId??(selectedRace==='training'?selectedWorkout:undefined)}
+          activityType={ride?.activityType??(stageReplay?'STAGE_REPLAY':selectedRace==='training'?(selectedWorkout==='intro-calibration'?'CALIBRATION':selectedWorkout.startsWith('intro-')?'INTRO':'TRAINING'):'RACE_STAGE')}
+          targetFtpOverride={stageReplay?replayOriginal?.ftp:undefined}
           strategy={ride?.strategy ?? raceStrategy}
           durationSelection={ride?{mode:ride.durationMode,customMinutes:ride.customDurationMinutes,targetMinutes:ride.targetDurationMinutes}:rideDuration}
           onBack={() => setScreen(selectedRace==='worlds-2026'?'worldsBriefing':'tactics')}

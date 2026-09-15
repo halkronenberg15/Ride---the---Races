@@ -87,7 +87,7 @@ function archetypeCue(archetype: RiderArchetype, stage: RaceStage): string {
 function targetEffort(career: CareerState, readiness: number): string {
   const multiplier = experienceMultiplier[career.rider.experience]
   const readinessFactor = readiness >= 85 ? 0.92 : readiness >= 65 ? 0.82 : 0.68
-  const target = Math.round(career.rider.ftp * multiplier * readinessFactor)
+  const target = Math.round((career.rider.ftp??150) * multiplier * readinessFactor)
   const range = Math.max(8, Math.round(target * 0.05))
   return `${target - range}-${target + range} W sustained target`
 }
