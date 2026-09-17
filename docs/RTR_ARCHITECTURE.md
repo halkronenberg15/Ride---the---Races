@@ -273,3 +273,9 @@ Automated checks are Node engine/scheduler tests and static server/source checks
 `RideMetricEntry.targetSnapshots` is the immutable replay prescription ledger. It is captured at original completion and never derived from FTP during an Original Targets replay. `correctedEntry` is a separate editable overlay; `originalUserEntry`, activity identity, canonical stage metadata, planned duration, target ledger and archived classification snapshot are protected inputs. Both Current Season and Past Seasons route to the same Stage Results activity record.
 
 No-FTP progression consumes a persisted Intro Effort Baseline with checkpoint count, RPE, timestamp and rule version. `noFtpTarget` deterministically applies conservative/default, high-RPE easing, appropriate-RPE hold, or low-RPE bounded progression per equipment capability; it never promotes the baseline to measured or estimated FTP.
+
+### Alpha 4.0.24 authoritative no-FTP presentation
+
+`noFtpPresentation` is the only presentation adapter for an unknown-FTP section. It projects section identity, rule version, zone, RPE effort, cadence and equipment-aware resistance/load together. Cockpit, Up Next, Detail, briefing, snapshot capture and restore must consume this projection; watt-oriented `LivePrescription` remains internal fallback plumbing and cannot be shown as the primary no-FTP instruction.
+
+Training Library uses a single `activeTrainingFolder` navigation state: the landing renders only compact folder rows and a folder renders only its own inventory. The training route suppresses its legacy roster toolbar. Mobile shells reserve `env(safe-area-inset-bottom) + 96px`, use 112px scroll clearance, and constrain Jean/target children with zero-minimum grid columns and explicit wrapping.
