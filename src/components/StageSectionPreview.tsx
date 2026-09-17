@@ -4,21 +4,23 @@ import { buildGradientSections } from '../engine/gradientRoad'
 import { isClimb } from '../engine/stageEngine'
 import { buildSprintPhases } from '../engine/sprintPhases'
 import { formatDistance } from '../utils/units'
+import type { IntroEffortBaseline } from '../engine/release4024.ts'
+import { noFtpPresentation } from '../engine/release4024.ts'
 import type { MeasurementSystem } from '../types/career'
 import { composeSentences } from '../utils/text'
 import type { CadencePreferences, EquipmentInstance } from '../engine/manualBike'
 import { resolvePreviewTarget } from '../engine/previewTargets'
 import { PreviewTargetValues } from './PreviewTargetValues'
 
-type Props = { stageNumber: number; segments: RideSegment[]; measurementSystem: MeasurementSystem;ftp:number;equipment:EquipmentInstance;cadencePreferences?:CadencePreferences }
+type Props = { stageNumber: number; segments: RideSegment[]; measurementSystem: MeasurementSystem;ftp:number|null;equipment:EquipmentInstance;cadencePreferences?:CadencePreferences;introEffortBaseline?:IntroEffortBaseline;training?:boolean }
 const time = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
 
-export default function StageSectionPreview({ stageNumber, segments, measurementSystem,ftp,equipment,cadencePreferences }: Props) {
+export default function StageSectionPreview({ stageNumber, segments, measurementSystem,ftp,equipment,cadencePreferences,introEffortBaseline,training=false }: Props) {
   const [selected, setSelected] = useState(0)
   const segment = segments[selected]
   const gradients = isClimb(segment) ? buildGradientSections(`${stageNumber}-${selected}-${segment.name}-${segment.type}`, segment.sec, segment.zone) : []
   const sprintPhases = buildSprintPhases(segment)
-  const target=resolvePreviewTarget(segment,ftp,equipment,cadencePreferences,gradients[0]?.gradient??0)
+  const target=ftp===null?noFtpPresentation(segment,equipment,introEffortBaseline,selected):resolvePreviewTarget(segment,ftp,equipment,cadencePreferences,gradients[0]?.gradient??0)
   return <section className="dashboard-card preview-card stage-section-preview" aria-label="Full stage section preview">
     <div className="section-preview-list">
       {segments.map((item, index) => <button key={`${item.name}-${index}`} type="button" className={`section-preview-button${selected === index ? ' previewing' : ''}`} onClick={() => setSelected(index)} aria-pressed={selected === index}>
@@ -32,9 +34,9 @@ export default function StageSectionPreview({ stageNumber, segments, measurement
         <span className="preview-stat"><small>ROAD MARKER</small><strong>{formatDistance(segment.routeKm, measurementSystem)}</strong></span>
         <PreviewTargetValues target={target}/>
       </div>
-      <p><strong>Jean / team objective:</strong> {composeSentences(segment.objective, segment.secondaryObjective)}</p>
+      <p><strong>{training?'JEAN’S GUIDANCE:':'Jean / team objective:'}</strong> {training&&/calibration/i.test(segment.type)?'Ride smoothly and record each requested effort.':composeSentences(segment.objective, segment.secondaryObjective)}</p>
       {gradients.length > 0 && <p><strong>Climb / terrain:</strong> {gradients.map((item) => `${item.gradient}%`).join(' · ')}</p>}
-      {sprintPhases.length > 0 && <div><strong>Sprint phases:</strong>{sprintPhases.map((phase) => {const phaseTarget=resolvePreviewTarget({...segment,...phase,sec:Math.max(1,phase.end-phase.start)},ftp,equipment,cadencePreferences);return <p key={phase.name}>{phase.name} · {phaseTarget.power} · {phaseTarget.cadence} · {phaseTarget.resistance}</p>})}</div>}
+      {sprintPhases.length > 0 && <div><strong>Sprint phases:</strong>{sprintPhases.map((phase) => {const phaseSegment={...segment,...phase,sec:Math.max(1,phase.end-phase.start)};const phaseTarget=ftp===null?noFtpPresentation(phaseSegment,equipment,introEffortBaseline,selected):resolvePreviewTarget(phaseSegment,ftp,equipment,cadencePreferences);return <p key={phase.name}>{phase.name} · {'mode'in phaseTarget?phaseTarget.effort:phaseTarget.power} · {phaseTarget.cadence} · {phaseTarget.resistance}</p>})}</div>}
     </div>
   </section>
 }
