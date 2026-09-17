@@ -34,7 +34,7 @@ import { RiderMarker4023 } from '../components/RiderMarker4023.ts'
 import { completionLabel, lifecycleJeanMessage, lifecycleProfileContext, resolveDetailGuidance4023 } from '../engine/cockpitPresentation4023.ts'
 import { climbPresentationMode, evaluateJeanCue, initialClimbPresentationState, JEAN_PRESENTATION_MS, officialStageTime, qualifiesForClimbView, scheduleJeanDismissal, transitionClimbPresentation, validJeanEvents, type JeanCueContract } from '../engine/alpha4024.ts'
 import { applyIntroPrescription } from '../engine/introCycling.ts'
-import { coachingContext, cueAllowed, noFtpPresentation, normalizeJeanCopy, rideOpeningMessage, wakeLockMessage, type OriginalTargetSnapshot } from '../engine/release4024.ts'
+import { coachingContext, completeSessionTime, coordinatedDistance, cueAllowed, noFtpPresentation, normalizeJeanCopy, rideOpeningMessage, wakeLockMessage, type OriginalTargetSnapshot } from '../engine/release4024.ts'
 
 type RideScreenProps = {
   stageNumber: number
@@ -78,7 +78,7 @@ function RideScreen({
   onFinish,
   onEndEarly,
 }: RideScreenProps) {
-  const { career } = useCareer()
+  const { career,recordIntroRpe } = useCareer()
   const measurementSystem = career.settings.measurementSystem
   const stage = useMemo(() => stageData ?? getRaceStage(stageNumber), [stageNumber, stageData])
   const isWorlds=stage.raceId==='worlds-2026',targetFtp=targetFtpOverride??career.rider.ftp??150
@@ -159,17 +159,19 @@ function RideScreen({
   const displayPower = originalActive?.power||displayedPrescription.power
   const displayCadence = originalActive?.cadence??noFtp?.cadence??displayedPrescription.cadence
   const displayResistance = originalActive?.resistance??noFtp?.resistance??(displayedPrescription.manualTarget.recommendedResistance===null?displayedPrescription.resistance:displayedPrescription.resistance.replace(/ · START \d+% @ \d+ rpm| · Start \d+%/i,''))
-  const displayZone = originalActive?.zone??(massStart?.phase==='PRE_RACE_WARMUP'?'Z1–Z2':activePrescription.zone)
+  const displayZone = displayEffort??originalActive?.zone??(massStart?.phase==='PRE_RACE_WARMUP'?'Z1–Z2':activePrescription.zone)
   const afterKmZero = engine.lifecycle==='OFFICIAL_RACING'
 
-  const progress = coursePosition.completion
+  const sessionFraction=stage.isTraining?Math.min(1,Math.max(0,rideElapsed/Math.max(1,timeline.duration))):coursePosition.fullProfileCoordinate
+  const progress = stage.isTraining?sessionFraction*100:coursePosition.completion
 
-  const routeKm = stage.distanceKm-coursePosition.remainingDistance
+  const routeKm = stage.isTraining?stage.distanceKm*sessionFraction:stage.distanceKm-coursePosition.remainingDistance
+  const displayedDistance=coordinatedDistance(stage.distanceKm,routeKm,measurementSystem==='imperial')
 
   const stageRemaining = engine.stageRemaining
-  const officialTime=officialStageTime(timeline.raceFinishTime,elapsedSeconds)
+  const officialTime=stage.isTraining?completeSessionTime(timeline.duration,rideElapsed):officialStageTime(timeline.raceFinishTime,elapsedSeconds)
 
-  const riderMarkerX = coursePosition.fullProfileCoordinate * 100
+  const riderMarkerX = sessionFraction * 100
   const riderMarkerY = engine.profileY
 
   const eligibleClimbs=timeline.climbs.filter(climb=>qualifiesForClimbView({
@@ -504,9 +506,7 @@ function RideScreen({
       setIsFinished(true)
       void releaseWakeLock()
 
-      speak(
-        `Stage ${stage.number} complete, Hal. Excellent work. Team Loriot is proud of that ride.`,
-      )
+      speak(stage.isTraining?'Session complete. Ease the pedals and take a moment to recover.':`Stage ${stage.number} complete. Excellent work. Team Loriot is proud of that ride.`)
       if (!didLaunchMetrics.current) {
         didLaunchMetrics.current = true
         window.setTimeout(()=>onFinish(completeCooldown(timeline.raceFinishTime,timeline.duration,elapsedSeconds,false)), 1200)
@@ -974,7 +974,7 @@ function RideScreen({
         }
         .target-grid,.next-line,.tactical-event-card,.ride-primary-control,.ride-details-toggle{scroll-margin-bottom:calc(150px + env(safe-area-inset-bottom))}.next-line{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;align-items:baseline;padding-right:48px}.next-line span{grid-column:1/-1;white-space:normal}.tactical-event-card{padding:8px 48px 8px 10px;max-height:132px}.tactical-event-card>strong{font-size:.85rem}.tactical-event-card p{display:none}.cockpit-bottom-spacer{height:calc(96px + env(safe-area-inset-bottom));pointer-events:none}.ride-cockpit{padding-bottom:calc(96px + env(safe-area-inset-bottom));scroll-padding-bottom:calc(140px + env(safe-area-inset-bottom))}.profile-control-footer{flex-shrink:0}
         @media(max-width:700px){.ride-stage-header h1{font-size:1.45rem!important}.ride-stage-header{margin-block:5px!important}.segment-clock{margin:5px 0}.cockpit-card{padding:8px}.profile-caption{font-size:.72rem;line-height:1.2;padding-block:6px}.target-tile{padding-block:8px!important}.cockpit-title{font-size:1.2rem}.cockpit-header{grid-template-columns:minmax(0,1fr) auto}.cockpit-badges{width:auto;margin-top:0}.live-profile-card{height:310px}}
-        .live-tracker-4023{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;font-size:clamp(.54rem,2.25vw,.72rem);letter-spacing:-.015em}.live-tracker-4023>strong{flex:none}.live-tracker-4023>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.live-tracker-4023>span{padding-left:5px;border-left:1px solid #777}.live-tracker-4023>b{padding:3px 5px;border-radius:999px;background:#512000;color:#fff}.compact-section-clock{display:flex;align-items:baseline;gap:6px;min-height:28px;margin:2px 0 3px}.compact-section-clock strong{font-size:1.2rem;font-variant-numeric:tabular-nums}.compact-section-clock small{font-size:.62rem;font-weight:850}.authoritative-jean{display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:2px 7px;margin-top:6px;scroll-margin-bottom:calc(150px + env(safe-area-inset-bottom))}.authoritative-jean>strong,.authoritative-jean>span{grid-column:1}.authoritative-jean>button{grid-column:2;grid-row:1/3}.target-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:0!important;border-block:1px solid rgba(255,255,255,.16)}.target-tile{min-width:0!important;padding:7px 3px!important;border-radius:0!important;border:0!important;background:transparent!important;text-align:center}.target-tile+ .target-tile{border-left:1px solid rgba(255,255,255,.16)!important}.target-tile strong{display:block;font-size:clamp(.805rem,3.35vw,1.125rem)!important;letter-spacing:-.045em;white-space:nowrap}.target-tile small{white-space:nowrap}.no-ftp-guidance{margin:4px 0;font-size:.68rem;overflow-wrap:anywhere}.authoritative-jean{min-width:0;overflow:hidden}.authoritative-jean>strong,.authoritative-jean>span{min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:normal;white-space:normal}.authoritative-jean>button{align-self:start;min-width:44px;min-height:44px}.staging-detail .detail-gradient-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.staging-detail .detail-gradient-summary>span:last-child{grid-column:1/-1}.official-stage-time{display:block;font-size:clamp(.82rem,3.5vw,1.15rem);font-variant-numeric:tabular-nums}.ride-details{display:grid;gap:8px}.ride-details>button{width:100%;min-height:44px}.cockpit-meta{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;font-size:.68rem}.bottom-leave{display:block;position:static!important;width:100%;min-height:44px;margin-top:8px}.worlds-group-marker b{min-width:0;padding:0!important;text-align:center;border:0!important;background:transparent!important}.live-profile-card{height:auto!important;min-height:0;overflow:visible!important;padding:8px 10px!important;border-radius:10px!important}.live-profile-wrap,.profile-detail-4022,.climb-profile-4023{height:126px!important;min-height:126px;max-height:126px}.climb-profile-4023{grid-template-rows:auto minmax(0,1fr)}.climb-svg-region{min-height:0}.profile-control-footer{width:100%;grid-template-columns:repeat(2,minmax(0,1fr));padding:0!important;margin:4px 0 0!important;overflow:visible}.profile-control-footer button{max-width:none!important;border-radius:4px!important}.profile-control-footer button:only-child{width:100%;grid-column:1/-1}.tactical-event-card{height:auto!important;max-height:none!important;overflow:visible}.tactical-event-card small{display:block;white-space:nowrap;font-size:clamp(.56rem,2.4vw,.72rem);letter-spacing:-.025em}.tactical-event-card>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.tactical-event-card button{min-width:0;min-height:44px;white-space:normal}.tactical-status-strip{margin:6px 0}.course-finish-svg{color:#fff}.ride-cockpit.official-cockpit{padding-top:8px!important}.cockpit-card{border-radius:10px!important;border-color:rgba(255,255,255,.16)!important;background:rgba(255,255,255,.025)!important;box-shadow:none!important}
+        .live-tracker-4023{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;font-size:clamp(.68rem,2.8vw,.84rem);letter-spacing:-.015em}.live-tracker-4023>strong{flex:none;font-size:clamp(.68rem,2.75vw,.84rem)}.live-tracker-4023>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.live-tracker-4023>span{padding-left:5px;border-left:1px solid #777}.live-tracker-4023>b{padding:3px 5px;border-radius:999px;background:#512000;color:#fff}.compact-section-clock{display:flex;align-items:baseline;gap:6px;min-height:28px;margin:2px 0 3px}.compact-section-clock strong{font-size:1.2rem;font-variant-numeric:tabular-nums}.compact-section-clock small{font-size:.62rem;font-weight:850}.authoritative-jean{display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:2px 7px;margin-top:6px;scroll-margin-bottom:calc(150px + env(safe-area-inset-bottom))}.authoritative-jean>strong,.authoritative-jean>span{grid-column:1}.authoritative-jean>button{grid-column:2;grid-row:1/3}.target-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:0!important;border-block:1px solid rgba(255,255,255,.16)}.target-tile{min-width:0!important;padding:7px 3px!important;border-radius:0!important;border:0!important;background:transparent!important;text-align:center}.target-tile+ .target-tile{border-left:1px solid rgba(255,255,255,.16)!important}.target-tile strong{display:block;font-size:clamp(.805rem,3.35vw,1.125rem)!important;letter-spacing:-.045em;white-space:nowrap}.target-tile small{white-space:nowrap}.no-ftp-guidance{margin:4px 0;font-size:.68rem;overflow-wrap:anywhere}.authoritative-jean{min-width:0;overflow:hidden}.authoritative-jean>strong,.authoritative-jean>span{min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:normal;white-space:normal}.authoritative-jean>button{align-self:start;min-width:44px;min-height:44px}.staging-detail .detail-gradient-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.staging-detail .detail-gradient-summary>span:last-child{grid-column:1/-1}.official-stage-time{display:block;font-size:clamp(.82rem,3.5vw,1.15rem);font-variant-numeric:tabular-nums}.ride-details{display:grid;gap:8px}.ride-details>button{width:100%;min-height:44px}.cockpit-meta{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;font-size:.68rem}.bottom-leave{display:block;position:static!important;width:100%;min-height:44px;margin-top:8px}.worlds-group-marker b{min-width:0;padding:0!important;text-align:center;border:0!important;background:transparent!important}.live-profile-card{height:auto!important;min-height:0;overflow:visible!important;padding:8px 10px!important;border-radius:10px!important}.live-profile-wrap,.profile-detail-4022,.climb-profile-4023{height:126px!important;min-height:126px;max-height:126px}.climb-profile-4023{grid-template-rows:auto minmax(0,1fr)}.climb-svg-region{min-height:0}.profile-control-footer{width:100%;grid-template-columns:repeat(2,minmax(0,1fr));padding:0!important;margin:4px 0 0!important;overflow:visible}.profile-control-footer button{max-width:none!important;border-radius:4px!important}.profile-control-footer button:only-child{width:100%;grid-column:1/-1}.tactical-event-card{height:auto!important;max-height:none!important;overflow:visible}.tactical-event-card small{display:block;white-space:nowrap;font-size:clamp(.56rem,2.4vw,.72rem);letter-spacing:-.025em}.tactical-event-card>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.tactical-event-card button{min-width:0;min-height:44px;white-space:normal}.tactical-status-strip{margin:6px 0}.course-finish-svg{color:#fff}.ride-cockpit.official-cockpit{padding-top:8px!important}.cockpit-card{border-radius:10px!important;border-color:rgba(255,255,255,.16)!important;background:rgba(255,255,255,.025)!important;box-shadow:none!important}
         @media (orientation:landscape) and (max-height:600px){.ride-cockpit{max-width:1100px;display:grid;grid-template-columns:minmax(420px,1.1fr) minmax(360px,.9fr);gap:10px;padding-top:calc(var(--protected-top) + 8px)}.ride-topbar,.ride-stage-header{grid-column:1/-1}.live-profile-card{grid-column:1}.cockpit-card,.ride-primary-control,.ride-details-toggle,.ride-details{grid-column:2}.cockpit-card{grid-row:3/span 2;margin-top:10px}.segment-clock strong{font-size:3.6rem}}
       `}</style>
 
@@ -1001,7 +1001,7 @@ function RideScreen({
         </h1>
 
         <p style={{ opacity: 0.7 }}>
-          {formatDistance(stage.distanceKm, measurementSystem)} •{' '}
+          {displayedDistance.total} •{' '}
           {formatElevation(stage.elevationM, measurementSystem)} D+
         </p>
         {worldsLap&&<strong className="worlds-lap">MOUNT ROYAL · LAP {worldsLap} OF 12</strong>}
@@ -1037,6 +1037,7 @@ function RideScreen({
               </div>
             </div>
             {noFtp&&<p className="no-ftp-guidance">Calibration guidance · No watt target until FTP is established.</p>}
+            {noFtp&&/RPE CHECK/i.test(currentSegment.zone)&&<fieldset className="rpe-checkpoint"><legend>How hard did that feel from 1–10?</legend><div>{Array.from({length:10},(_,index)=>index+1).map(value=><button type="button" key={value} onClick={()=>recordIntroRpe(value)}>{value}</button>)}</div></fieldset>}
             {!gateActive&&coursePosition.profileMode==='CLIMB_APPROACH'&&<div className="climb-approach"><small>NEXT CLIMB</small><strong>{upcomingClimb?.name}</strong><span>{formatDistance(coursePosition.distanceToClimbEntrance??0,measurementSystem)} to entrance</span></div>}
             {profileView.mode==='DETAIL' ? (
               <ProfileDetail4022 state={profileView} event={raceSituation} gradientBlocks={mergedGradientBlocks} gradientIndex={detailGradientIndex} currentGradient={gateActive?0:activeGradient} nextGradient={gateActive?null:detailGuidance.gradient} nextName={gateActive?(firstRaceTarget?.name??'RACING SECTION 1'):detailGuidance.name} changeDistance={massStart?.phase==='KILOMETRE_ZERO'?formatTime(massStart.kilometreZeroRemaining):gateActive?formatTime(massStart?.warmupRemaining??0):detailGuidance.distanceKm===null?null:detailGuidance.crossing?'CHANGE NOW':formatDistance(Math.max(.001,detailGuidance.distanceKm),measurementSystem)} resistance={displayResistance} effort={displayEffort} context={courseContext} staging={gateActive} firstRacingSection={firstRaceTarget?.name}/>
@@ -1090,8 +1091,8 @@ function RideScreen({
             </div>
 
             <div className="cockpit-meta">
-              <span>{completionLabel(progress,routeKm)} · {formatDistance(routeKm, measurementSystem)} traveled</span>
-              <span>{formatDistance(coursePosition.remainingDistance,measurementSystem)} left</span>
+              <span>{completionLabel(progress,routeKm)} · {displayedDistance.traveled} traveled</span>
+              <span>{displayedDistance.remaining} left</span>
             </div>
           </div>
 
@@ -1115,23 +1116,21 @@ function RideScreen({
             </button>
           )}
 
-          {engine.lifecycle==='OPTIONAL_COOLDOWN'&&<div className="tactical-actions" aria-label="Cooldown controls"><button type="button" onClick={()=>finishCooldown(true)}>Skip cooldown</button><button type="button" onClick={()=>finishCooldown(false)}>End cooldown</button><span>{formatTime(stageRemaining)} recovery remaining</span></div>}
+          {engine.lifecycle==='OPTIONAL_COOLDOWN'&&<div className="tactical-actions" aria-label="Cooldown controls">{!stage.isTraining&&<><button type="button" onClick={()=>finishCooldown(true)}>Skip cooldown</button><button type="button" onClick={()=>finishCooldown(false)}>End cooldown</button></>}<span>{formatTime(stageRemaining)} {stage.isTraining?'cooldown':'recovery'} remaining</span></div>}
 
-          <button
+          {!showDetails&&<button
             type="button"
             className="ride-details-toggle"
             onClick={() => setShowDetails((value) => !value)}
           >
-            {showDetails
-              ? '▲ Hide Ride Details'
-              : '▼ View Ride Details'}
-          </button>
+            {'▼ View Ride Details'}
+          </button>}
 
           {showDetails && (
             <div className="ride-details" aria-label="Official ride details">
-              <strong className="official-stage-time">STAGE: {formatTime(officialTime.total)} TOTAL · {formatTime(officialTime.elapsed)} ELAPSED · {formatTime(officialTime.remaining)} REMAINING</strong>
-              <span>{formatDistance(routeKm,measurementSystem)} TRAVELED · {formatDistance(coursePosition.remainingDistance,measurementSystem)} REMAINING</span>
-              <div className="ride-lifecycle-controls"><button type="button" onClick={handleRestart}>Restart Stage</button>{!endingEarly?<button type="button" onClick={()=>setEndingEarly(true)}>End Ride Early</button>:<div><strong>Why are you ending?</strong>{['Fatigue','Time constraint','Equipment issue','Pain or discomfort','Recovery/readiness','Other'].map(reason=><button type="button" key={reason} onClick={()=>window.confirm(`End ride early: ${reason}?`)&&confirmEndEarly(reason)}>{reason}</button>)}<button type="button" onClick={()=>setEndingEarly(false)}>Cancel</button></div>}</div>
+              <strong className="official-stage-time">{stage.isTraining?'SESSION':'STAGE'}: {formatTime(officialTime.total)} TOTAL · {formatTime(officialTime.elapsed)} ELAPSED · {formatTime(officialTime.remaining)} REMAINING</strong>
+              <span>{displayedDistance.traveled} TRAVELED · {displayedDistance.remaining} REMAINING</span>
+              <div className="ride-lifecycle-controls"><button type="button" onClick={handleRestart}>{stage.isTraining?'Restart Ride':'Restart Stage'}</button>{!endingEarly?<button type="button" onClick={()=>setEndingEarly(true)}>End Ride Early</button>:<div><strong>Why are you ending?</strong>{['Fatigue','Time constraint','Equipment issue','Pain or discomfort','Recovery/readiness','Other'].map(reason=><button type="button" key={reason} onClick={()=>window.confirm(`End ride early: ${reason}?`)&&confirmEndEarly(reason)}>{reason}</button>)}<button type="button" onClick={()=>setEndingEarly(false)}>Cancel</button></div>}</div>
               <button type="button" onClick={() => setShowDetails(false)}>▲ Hide Ride Details</button>
             </div>
           )}
@@ -1140,7 +1139,7 @@ function RideScreen({
       )}
 
       <div className="cockpit-bottom-spacer" aria-hidden="true" />
-      {isFinished && <div className="dashboard-card ride-complete-launch"><p className="eyebrow">COOLDOWN COMPLETE</p><h2>Opening Ride Metrics…</h2><p>Your stage has been saved. Preparing the post-ride data screen.</p></div>}
+      {isFinished && <div className="dashboard-card ride-complete-launch"><p className="eyebrow">{stage.isTraining?'SESSION COMPLETE':'COOLDOWN COMPLETE'}</p><h2>Opening Ride Metrics…</h2><p>Your {stage.isTraining?'session':'stage'} has been saved. Preparing the post-ride data screen.</p></div>}
     </section>
   )
 }

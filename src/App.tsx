@@ -73,7 +73,7 @@ function RideTheRacesApp() {
 
   if (!career.onboardingComplete) return <OnboardingScreen />
   const protectedRaceScreen=['season','race','worldsBriefing','stageDetail'].includes(screen)||(screen==='tactics'&&selectedRace!=='training')||(screen==='ride'&&(ride?.library??selectedRace)!=='training')
-  if(protectedRaceScreen&&!canAccess('rtr-standard'))return <section className="auth-screen"><div className="auth-card" role="alert"><p className="eyebrow">PROGRAM ACCESS</p><h1>Program not assigned</h1><p>This account is not entitled to this protected RtR program. Request it from the Intro Cycling dashboard or contact the owner.</p><button type="button" onClick={()=>setScreen('hq')}>Return to dashboard</button></div></section>
+  if(protectedRaceScreen&&!canAccess('rtr-standard'))return <section className="auth-screen"><div className="auth-card" role="alert"><p className="eyebrow">PROGRAM ACCESS</p><h1>Program not assigned</h1><p>This account is not entitled to this protected RtR program. Request it from the Intro to Cycling dashboard or contact the owner.</p><button type="button" onClick={()=>setScreen('hq')}>Return to dashboard</button></div></section>
   if(screen==='femmes'&&!canAccess('rtr-femmes'))return <section className="auth-screen"><div className="auth-card" role="alert"><h1>RtR Femmes not assigned</h1><p>Local-development owner approval is required.</p><button type="button" onClick={()=>setScreen('hq')}>Return to dashboard</button></div></section>
 
   function handleFinishRide(cooldown={officialRaceDurationSeconds:0,cooldownDurationSeconds:0,cooldownSkipped:false}) {
@@ -138,6 +138,7 @@ function RideTheRacesApp() {
 
       {screen === 'tactics' && (
         <TacticsScreen
+          backLabel={selectedRace==='training'?sessionStorage.getItem('rtr-training-folder')==='intro'?'Back to Intro to Cycling':sessionStorage.getItem('rtr-training-folder')==='recovery'?'Back to Recovery Rides':'Back to Training Library':undefined}
           stageNumber={selectedRace==='training'?tourActionable:selectedStageNumber}
           stageData={selectedRace==='training'?getLibraryStage('training',trainingRides.find(r=>r.id===selectedWorkout)?.stage.number??30,selectedWorkout):getLibraryStage(selectedRace,selectedStageNumber)}
           onBack={() => setScreen(selectedRace==='training'?'training':'stageDetail')}

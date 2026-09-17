@@ -13,9 +13,9 @@ export function prescriptionSnapshot(index:number,segment:RideSegment,resolved:L
  return {authoredId:`section-${index}-${segment.name}`,resolvedId:`${resolved.prescriptionId}|${resolved.manualTarget.calibrationConfidence}|${resolved.authoritativeGradient}`,name:segment.name,duration:segment.sec,zone:resolved.zone,power:resolved.power,cadence:resolved.cadence,resistance:resolved.resistance.replace(/ · START \d+% @ \d+ rpm| · Start \d+%/i,''),reason}
 }
 
-export type IntroEffortBaseline={rpe:number;cadence:number;load:string;completedSteps:number;recordedAt:string;ruleVersion:string}
+export type IntroEffortBaseline={rpe:number;cadence:number;load:string;completedSteps:number;checkpointRpe?:number[];recordedAt:string;ruleVersion:string}
 export type NoFtpTarget={power:string;cadence:string;resistance:string;rpe:string;provisional:boolean;ruleVersion:string;adjustmentReason:string;readyForNextRide:boolean}
-export type NoFtpPresentation={mode:'EFFORT';heading:'EFFORT';effort:string;cadence:string;resistance:string;zone:string;sectionId:string;ruleVersion:string}
+export type NoFtpPresentation={mode:'EFFORT';heading:'EFFORT';effort:string;rpe:string;cadence:string;resistance:string;zone:string;sectionId:string;ruleVersion:string}
 /** No-FTP guidance is equipment-specific and never invents watt precision. */
 export function noFtpTarget(segment:RideSegment,equipment:EquipmentInstance,baseline?:IntroEffortBaseline):NoFtpTarget{
  const recovery=/recovery|cooldown|easy finish/i.test(`${segment.name} ${segment.type}`),calibration=/calibration/i.test(segment.type)
@@ -28,7 +28,11 @@ export function noFtpTarget(segment:RideSegment,equipment:EquipmentInstance,base
  if(equipment.calibrationProfileId==='peloton-bike-manual-reference')return {...shared,power:equipment.powerAvailable?'PROVISIONAL — calibrating':'POWER GUIDANCE AFTER CALIBRATION',cadence,resistance:recovery?'20–25%':high?'23–28%':low?'27–32%':'25–30%'}
  return {...shared,power:equipment.powerAvailable?'PROVISIONAL POWER — follow RPE':'POWER NOT PRESCRIBED',cadence,resistance:equipment.resistanceAvailable?(high?'Light load':low?'Moderate load':'Light–Moderate load'):'Light load'}
 }
-export function noFtpPresentation(segment:RideSegment,equipment:EquipmentInstance,baseline?:IntroEffortBaseline,index=0):NoFtpPresentation{const target=noFtpTarget(segment,equipment,baseline);return {mode:'EFFORT',heading:'EFFORT',effort:target.rpe.replace(' / 10',''),cadence:target.cadence,resistance:target.resistance,zone:segment.zone,sectionId:`section-${index}-${segment.name}`,ruleVersion:target.ruleVersion}}
+export function effortLanguage(rpe:string){if(/CHECK/i.test(rpe))return 'CHECK IN';const values=rpe.replace(/\/\s*10/g,'').match(/\d+/g)?.map(Number)??[2,3],high=Math.max(...values);return high<=2?'VERY EASY':high<=3?'EASY':high<=4?'COMFORTABLE':high<=5?'MODERATE':'CONTROLLED HARD'}
+export function noFtpPresentation(segment:RideSegment,equipment:EquipmentInstance,baseline?:IntroEffortBaseline,index=0):NoFtpPresentation{const target=noFtpTarget(segment,equipment,baseline);return {mode:'EFFORT',heading:'EFFORT',effort:effortLanguage(target.rpe),rpe:target.rpe.replace(' / 10',''),cadence:target.cadence,resistance:target.resistance,zone:segment.zone,sectionId:`section-${index}-${segment.name}`,ruleVersion:target.ruleVersion}}
+
+export function coordinatedDistance(totalKm:number,traveledKm:number,imperial:boolean){const factor=imperial?.621371:1,total=Math.max(0,Math.round(totalKm*factor*10)),traveled=Math.min(total,Math.max(0,Math.round(traveledKm*factor*10))),remaining=total-traveled,unit=imperial?'mi':'km';return {total:`${(total/10).toFixed(1)} ${unit}`,traveled:`${(traveled/10).toFixed(1)} ${unit}`,remaining:`${(remaining/10).toFixed(1)} ${unit}`,totalTenths:total,traveledTenths:traveled,remainingTenths:remaining}}
+export function completeSessionTime(totalSeconds:number,elapsedSeconds:number){const total=Math.max(0,totalSeconds),elapsed=Math.min(total,Math.max(0,elapsedSeconds));return {total,elapsed,remaining:total-elapsed,complete:elapsed===total}}
 
 export function rideOpeningMessage(context:CoachingContext,title:string){if(context==='CALIBRATION')return 'Settle in. Smooth pedals—today we’re finding your comfortable baseline.';if(context==='INTRO_CYCLING')return `${title}. Start easy and follow each skill one step at a time.`;if(context==='RECOVERY')return `${title}. Keep the pressure light and breathing calm.`;if(context==='LEG_OPENER')return `${title}. Easy riding first; the short pickups stay controlled.`;return ''}
 

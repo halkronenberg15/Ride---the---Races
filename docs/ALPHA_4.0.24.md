@@ -18,11 +18,11 @@ The prior root cause was raw positive profile-run discovery plus an automatic tr
 
 Stage 10 regressions trace every supported duration, each exact boundary and the instant before it, monotonic position, the final instant, and canonical finish agreement. Display rounding is downstream of the floating-point schedule.
 
-## Intro Cycling registration and progression
+## Intro to Cycling registration and progression
 
 The follow-up specification defines Michelle as the first ordinary participant, not an application identity. A public register/sign-in surface creates independent password-authenticated local accounts, uses each preferred display name, and namespaces career and active-ride persistence by account. Existing device-local careers migrate to an owner account without losing their established data.
 
-Enrollment offers Intro Cycling to everyone alongside Standard RtR and collects cycling, indoor/outdoor, FTP-knowledge, availability, duration, goal, equipment, confidence, accommodation and progression answers. The deterministic plan changes duration, FTP-relative conservatism, cadence complexity, recovery spacing, instruction density, climbing introduction, assessment timing, scheduled days, delivery mode and checklist timing. Its authored foundation rides are Bike and Rhythm Foundations, Cadence and Resistance Control, and Preparing for Longer and Outdoor Rides; riders with unknown FTP receive Intro Calibration first.
+Enrollment offers Intro to Cycling to everyone alongside Standard RtR and collects cycling, indoor/outdoor, FTP-knowledge, availability, duration, goal, equipment, confidence, accommodation and progression answers. The deterministic plan changes duration, FTP-relative conservatism, cadence complexity, recovery spacing, instruction density, climbing introduction, assessment timing, scheduled days, delivery mode and checklist timing. Its authored foundation rides are Bike and Rhythm Foundations, Cadence and Resistance Control, and Preparing for Longer and Outdoor Rides; riders with unknown FTP receive Intro Calibration first.
 
 Intro completion separately reports indoor-program readiness, checklist-backed outdoor preparation and advanced-program readiness; it never certifies outdoor group-ride safety. The checklist covers fit/equipment, helmet, braking, shifting, looking back, signals, road awareness, group etiquette, hydration/fueling and supervised first-ride planning. A rider may request Outdoor Ride Readiness, RtR Femmes or Standard RtR without creating another account. A local owner may approve a request, and a protected RtR Femmes shell proves the entitlement boundary without inventing its ride library.
 
@@ -40,7 +40,7 @@ Up Next now renders the resistance string from the same equipment-resolved `Live
 
 Unknown FTP is `null` with provenance `UNKNOWN`, never zero. Provenance is `MEASURED`, `RIDER_ENTERED`, `ESTIMATED`, `INTRO_EFFORT_BASELINE`, or `UNKNOWN`. Before FTP exists, Peloton-compatible rides show 65–80 rpm, RPE 2–3, and 25–30% for ordinary work (60–75 rpm, RPE 1–2, 20–25% in recovery). Non-compatible percentage equipment shows cadence/RPE and Light, Moderate, or Firm load language; smart power equipment labels power provisional. No-FTP riders receive the non-maximal 30-minute Intro Calibration Ride before watt-dependent foundations. Its controlled 55–75 rpm steps and two RPE checkpoints establish an Intro Effort Baseline only after rider entry; no guessed FTP is silently stored.
 
-Jean now assigns each ride one coaching context: professional race, Worlds, recovery, leg opener, Intro Cycling, calibration, stage replay, or future off-season. Race-only sprint, peloton, attack, breakaway, and group-positioning copy is rejected outside compatible race/replay contexts. Exact `Title. Title` composition is normalized without removing legitimate repeated language. Stable cue identity, consumed expiry, and seven-second presentation remain unchanged.
+Jean now assigns each ride one coaching context: professional race, Worlds, recovery, leg opener, Intro to Cycling, calibration, stage replay, or future off-season. Race-only sprint, peloton, attack, breakaway, and group-positioning copy is rejected outside compatible race/replay contexts. Exact `Title. Title` composition is normalized without removing legitimate repeated language. Stable cue identity, consumed expiry, and seven-second presentation remain unchanged.
 
 The Team Bus order is Current Season, locked Off-Season Training, Training Library, then Team Roster. Training Library uses compact Recovery Rides, Intro to Cycling, and Classic Rides folders; assigned durations are primary and alternates sit behind Other Durations. Favorites are canonical stage references.
 
@@ -58,8 +58,18 @@ Intro Effort Baseline uses rule `alpha4024.2` and requires both recorded RPE and
 
 ## Mobile calibration closeout
 
-No-FTP rides use one authoritative effort-mode projection. The three target columns are `EFFORT`, `CADENCE`, and `RESISTANCE`; the effort value is the current section RPE (for example `RPE 2–3`), never provisional watt copy. Active targets, Up Next, Detail, briefing previews, immutable original snapshots, and restoration consume the same `noFtpPresentation` result, so RPE/cadence/resistance transition together. Riders with established FTP retain Power/Cadence/Resistance.
+No-FTP rides use one authoritative effort-mode projection. The three target columns are `EFFORT`, `CADENCE`, and `RESISTANCE`; ordinary sections show beginner language such as `VERY EASY`, never provisional watts or numeric RPE as the primary instruction. Active targets, Up Next, Detail, briefing previews, immutable original snapshots, and restoration consume the same `noFtpPresentation` result, so effort/cadence/resistance transition together. Numeric RPE remains available only at authored calibration checkpoints. Riders with established FTP retain Power/Cadence/Resistance.
 
 Intro Calibration uses a dedicated short opening: “Settle in. Smooth pedals—today we’re finding your comfortable baseline.” Training openings do not use stage numbers, race strategy, team-objective language, or duplicate the ride title. The existing seven-second presentation, manual dismissal, consumed expiry, and accessible live status remain unchanged. Banner text is constrained to its grid column and wraps clear of the 44-pixel dismiss target.
 
 Training Library is now a compact folder landing page. Recovery Rides, Intro to Cycling, Classic Rides, and Outdoor Ride Readiness each open as the sole folder inventory with Back to Training Library; Other Durations remains inside its folder. Team Roster remains on Team Bus and is not rendered on the training route. Training, briefing, onboarding, and Team HQ shells include `safe-area-inset-bottom` plus mobile Safari toolbar clearance, reduced to ordinary spacing on desktop.
+
+## Merge-candidate phone stabilization
+
+Ordinary unknown-FTP Intro to Cycling sections now present shared effort language (`VERY EASY`, `EASY`, `COMFORTABLE`, `MODERATE`, or explicitly authored `CONTROLLED HARD`) instead of numeric RPE as the primary instruction. Numeric RPE remains in the calibration model and the two `RPE CHECK` sections ask “How hard did that feel from 1–10?”; responses persist as checkpoint calibration data. The same effort projection supplies the tracker badge, active row, Up Next, Detail, briefing, restoration, and immutable original snapshots. Established-FTP rides retain Power.
+
+The Intro Calibration Ride is authoritatively 30 minutes: 27 minutes of structured calibration followed by a three-minute cooldown. Training session time, completion, progress, distance and history use the full 30-minute clock. Expanded details say `SESSION`, use `Restart Ride`, coordinate distance rounding, and contain one Hide control; race rides retain Stage terminology.
+
+Unknown FTP now reads `FTP NOT SET` and the Intro to Cycling plan reads `RPE-BASED TARGETS`. Intro-only recovery messaging is non-racing. `Intro to Cycling` is the canonical displayed program name. Training briefing guidance no longer says team objective, and its Back control restores the originating folder using session storage.
+
+Mobile tracker typography increases one step. Team HQ, Training Library/folders, briefing, onboarding, pre-start and active cockpit retain top safe-area protection and additional bottom scroll clearance for Safari chrome. Open folder views omit the repeated Training Library hero so their Back control, title and content begin near the top.

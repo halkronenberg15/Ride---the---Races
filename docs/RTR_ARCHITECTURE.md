@@ -237,11 +237,11 @@ Canonical profile discovery qualifies an inferred climb only at 1 km or longer, 
 
 Staging Detail is a compact two-column projection: Current Terrain/Resistance, Gate Change/Position, and full-width First Racing Section. Its ordinary Up Next remains the immediate lifecycle transition.
 
-### Account-scoped Intro Cycling
+### Account-scoped Intro to Cycling
 
 `accountStore.ts` is explicitly a `LOCAL_DEVELOPMENT` adapter; public multi-device enrollment is disabled. It owns browser-local rider identities, PBKDF2 password verifiers, the current session, roles, requests and program entitlements. Career and active-ride storage keys include the account id. Local owner approval and protected screen checks exercise the product contract, but localStorage is user-editable and is not a security boundary. Production must replace this adapter with remote identity, database-backed state, secure server sessions, account recovery/verification and server-side authorization.
 
-Intro Cycling is a program assignment, never a Michelle-specific branch. `createIntroCyclingPlan` deterministically projects enrollment answers into FTP-relative conservatism, starting duration, cadence complexity, recovery/instruction density, scheduled days, equipment delivery mode, climb/checklist timing and readiness assessment timing. Three dedicated beginner rides use the normal ride clock and persistence. Completion preserves the career and distinguishes indoor completion, checklist-backed outdoor preparation, advanced-program review and the explicitly false claim of group-ride certification. Outdoor Ride Readiness, RtR Femmes and Standard RtR remain forward assignments on the same account.
+Intro to Cycling is a program assignment, never a Michelle-specific branch. `createIntroCyclingPlan` deterministically projects enrollment answers into FTP-relative conservatism, starting duration, cadence complexity, recovery/instruction density, scheduled days, equipment delivery mode, climb/checklist timing and readiness assessment timing. Three dedicated beginner rides use the normal ride clock and persistence. Completion preserves the career and distinguishes indoor completion, checklist-backed outdoor preparation, advanced-program review and the explicitly false claim of group-ride certification. Outdoor Ride Readiness, RtR Femmes and Standard RtR remain forward assignments on the same account.
 
 Climb presentation is a persisted state machine over `canonicalCoursePosition`, never a second position projection. Eligible identity enters at 1%, exits at 99.5% only after eight seconds, and canonical end overrides the timer. Manual Full Stage blocks automatic entry; completed IDs block re-entry. Jean transient sources use a stable cue contract with canonical trigger/progress, valid-from, expiry, priority and consumed identity. Expired cues are consumed rather than queued.
 
@@ -276,6 +276,14 @@ No-FTP progression consumes a persisted Intro Effort Baseline with checkpoint co
 
 ### Alpha 4.0.24 authoritative no-FTP presentation
 
-`noFtpPresentation` is the only presentation adapter for an unknown-FTP section. It projects section identity, rule version, zone, RPE effort, cadence and equipment-aware resistance/load together. Cockpit, Up Next, Detail, briefing, snapshot capture and restore must consume this projection; watt-oriented `LivePrescription` remains internal fallback plumbing and cannot be shown as the primary no-FTP instruction.
+`noFtpPresentation` is the only presentation adapter for an unknown-FTP section. It projects section identity, rule version, plain-language effort, internal checkpoint RPE, cadence and equipment-aware resistance/load together. Cockpit, Up Next, Detail, briefing, snapshot capture and restore must consume this projection; watt-oriented `LivePrescription` remains internal fallback plumbing and cannot be shown as the primary no-FTP instruction.
 
 Training Library uses a single `activeTrainingFolder` navigation state: the landing renders only compact folder rows and a folder renders only its own inventory. The training route suppresses its legacy roster toolbar. Mobile shells reserve `env(safe-area-inset-bottom) + 96px`, use 112px scroll clearance, and constrain Jean/target children with zero-minimum grid columns and explicit wrapping.
+
+### Alpha 4.0.24 merge-candidate contracts
+
+`effortLanguage` is the sole rider-facing mapping from internal RPE to beginner language. `noFtpPresentation` retains internal RPE while projecting effort language, cadence and equipment load atomically. Calibration checkpoints persist numeric answers; ordinary sections never make numeric RPE the primary instruction.
+
+Training time uses `StageTimeline.duration`, including post-structure cooldown, while professional official time retains `raceFinishTime`. Training distance is a presentation of the same full-session fraction and `coordinatedDistance` rounds total/traveled first, deriving remaining as their exact difference. Training terminology is selected from `stage.isTraining` rather than a parallel route clock.
+
+Training folder origin persists in `sessionStorage` and supplies briefing Back copy after refresh. Safe-area rules cover both viewport edges and mobile scroll margins; selected folder state suppresses the landing hero without reintroducing multi-folder inventories.

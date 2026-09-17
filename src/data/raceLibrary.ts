@@ -33,6 +33,7 @@ training('intro-control-45','Cadence and Resistance Control','Deliberate cadence
 training('intro-outdoor-45','Preparing for Longer and Outdoor Rides','Sustainable pacing, rolling terrain, hydration, fueling, and outdoor preparation.','Indoor preparation does not certify outdoor group-riding safety.',[['Preparation Check','Bike and safety check',6,'Z1','75–95 W','78–88 rpm'],['Sustainable Pace','Endurance skills',10,'Z2','90–120 W','82–92 rpm'],['Gentle Rolling Road','Introductory rolling terrain',6,'Z2','95–125 W','80–92 rpm'],['Hydration and Fueling','Recovery education',5,'Z1','Under 100 W','78–88 rpm'],['Shifting and Braking Lesson','Outdoor skills education',6,'Z1–Z2','85–110 W','80–90 rpm'],['Long Steady Finish','Endurance skills',7,'Z2','90–120 W','82–92 rpm'],['Easy Finish','Cooldown',5,'Z1','Under 95 W','78–88 rpm']])]
 
 const introCue=(name:string)=>/setup|preparation check/i.test(name)?'Check that your position feels comfortable and your movement is unrestricted.'
+  :/rpe check/i.test(name)?'How hard did that feel from 1–10? Record your answer before continuing.'
   :/cadence/i.test(name)?'Cadence is pedal speed. Change speed smoothly without adding resistance.'
   :/resistance/i.test(name)?'Resistance is pedal weight. Add only a small amount and keep cadence steady.'
   :/hydration/i.test(name)?'Take a drink now. For longer rides, practice eating and drinking before you feel depleted.'

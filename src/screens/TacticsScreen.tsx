@@ -18,9 +18,10 @@ type TacticsScreenProps = {
   library?: string
   onBack: () => void
   onStartRide: (strategy: RaceStrategy, duration:DurationSelection) => void
+  backLabel?:string
 }
 
-function TacticsScreen({ stageNumber, stageData, onBack, onStartRide }: TacticsScreenProps) {
+function TacticsScreen({ stageNumber, stageData, onBack, onStartRide,backLabel }: TacticsScreenProps) {
   const { career } = useCareer()
   const [durationMode,setDurationMode]=useState<DurationMode>(career.settings.preferredRideDurationMode)
   const stage = useMemo(() => stageData ?? getRaceStage(stageNumber), [stageNumber, stageData])
@@ -40,7 +41,7 @@ function TacticsScreen({ stageNumber, stageData, onBack, onStartRide }: TacticsS
 
   return (
     <section className="tactics-screen race-briefing-screen">
-      <button type="button" onClick={onBack}>← Team Bus</button>
+      <button type="button" onClick={onBack}>← {backLabel??'Team Bus'}</button>
 
       <header className="compact-page-header">
         <p className="eyebrow">TEAM LORIOT • {stage.isTraining ? 'TODAY’S SESSION' : `STAGE ${stage.number}`}</p>
@@ -57,7 +58,7 @@ function TacticsScreen({ stageNumber, stageData, onBack, onStartRide }: TacticsS
 
         {!stage.isTraining&&durationResult&&<WorkoutAllocation totalSeconds={durationResult.map.totalDurationSeconds} raceSeconds={durationResult.map.raceDurationSeconds} cooldownSeconds={durationResult.map.cooldownSeconds}/>}
         {preRacePlan&&<div className="pre-race-briefing" aria-label="Unnumbered pre-race staging"><strong>PRE-RACE WARM-UP · {Math.round(preRacePlan.warmupSeconds/60)}:{String(preRacePlan.warmupSeconds%60).padStart(2,'0')}</strong><span>KILOMETRE ZERO · 0:{String(preRacePlan.kilometreZeroSeconds).padStart(2,'0')}</span></div>}
-        <StageSectionPreview stageNumber={stage.number} segments={briefingSegments.filter((_,index)=>segmentPurposes(briefingSegments)[index]!=='post-finish-cooldown')} measurementSystem={career.settings.measurementSystem} ftp={career.rider.ftp} equipment={equipment} cadencePreferences={career.rider.cadencePreferences} introEffortBaseline={career.rider.introEffortBaseline} />
+        <StageSectionPreview training={stage.isTraining} stageNumber={stage.number} segments={briefingSegments.filter((_,index)=>segmentPurposes(briefingSegments)[index]!=='post-finish-cooldown')} measurementSystem={career.settings.measurementSystem} ftp={career.rider.ftp} equipment={equipment} cadencePreferences={career.rider.cadencePreferences} introEffortBaseline={career.rider.introEffortBaseline} />
 
         {!stage.isTraining&&<div className="duration-picker" aria-label="Choose your ride duration"><div><p className="eyebrow">CHOOSE YOUR RIDE</p><small>How long do you want to ride this {durationPlan.classification.replaceAll('-',' ')} course?</small></div><div className="duration-options">
           {durationOptions.map(option=><button key={option.minutes} type="button" className={durationMode===option.mode?'selected':''} aria-pressed={durationMode===option.mode} onClick={()=>setDurationMode(option.mode)}><strong>{option.minutes} MIN</strong>{option.recommended&&<small>RECOMMENDED</small>}</button>)}
