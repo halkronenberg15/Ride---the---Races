@@ -35,10 +35,11 @@ export async function signInAccount(emailInput:string,password:string){
  localStorage.setItem(SESSION_KEY,account.id);return account
 }
 export function hasProgramAccess(account:RiderAccount,program:ProgramId){return account.role==='owner'||account.entitlements.includes(program)}
-export function assignEnrollmentProgram(accountId:string,program:'intro-cycling'|'rtr-standard'){const updated=accounts().map(account=>account.id===accountId&&!account.entitlements.includes(program)?{...account,entitlements:[...account.entitlements,program]}:account);save(updated);return accountById(accountId)!}
+export function assignEnrollmentProgram(accountId:string,program:'intro-cycling'|'rtr-standard'|'rtr-femmes'){const updated=accounts().map(account=>account.id===accountId&&!account.entitlements.includes(program)?{...account,entitlements:[...account.entitlements,program]}:account);save(updated);return accountById(accountId)!}
 export function requestProgram(accountId:string,program:ProgramId){const updated=accounts().map(account=>account.id===accountId&&!account.requestedPrograms.includes(program)?{...account,requestedPrograms:[...account.requestedPrograms,program]}:account);save(updated);return accountById(accountId)!}
 export function grantProgram(actor:RiderAccount,targetAccountId:string,program:ProgramId){if(actor.role!=='owner')throw new Error('Owner access is required to grant a program.');const updated=accounts().map(account=>account.id===targetAccountId?{...account,entitlements:Array.from(new Set([...account.entitlements,program])),requestedPrograms:account.requestedPrograms.filter(item=>item!==program)}:account);save(updated);return accountById(targetAccountId)!}
 export function listAccounts(actor:RiderAccount){if(actor.role!=='owner')throw new Error('Owner access is required to list accounts.');return accounts()}
+export function replaceProgramEntitlements(actor:RiderAccount,programs:string[]){if(actor.role!=='owner')throw new Error('Owner access is required.');const allowed:ProgramId[]=['intro-cycling','outdoor-readiness','rtr-femmes','rtr-standard'],entitlements=Array.from(new Set(programs.filter((item):item is ProgramId=>allowed.includes(item as ProgramId))));const updated=accounts().map(item=>item.id===actor.id?{...item,entitlements}:item);save(updated);return accountById(actor.id)!}
 
 /** Preserves an existing single-device career without converting it into a shared rider account. */
 export function migrateLegacyOwner(displayName:string){

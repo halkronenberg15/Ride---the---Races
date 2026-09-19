@@ -8,10 +8,10 @@ function HealthScreen({ onBack }: Props) {
   const { career, updateHealth } = useCareer()
   const [entry, setEntry] = useState(career.health)
   const [saved, setSaved] = useState(false)
-  function submit(event: React.FormEvent) { event.preventDefault(); const next: HealthEntry = { ...entry, date: new Date().toISOString().slice(0, 10) }; updateHealth(next); setSaved(true) }
+  function submit(event: React.FormEvent) { event.preventDefault(); const today=new Date(),localDate=[today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-'),next: HealthEntry = { ...entry, date:localDate }; updateHealth(next); setSaved(true) }
   return <section className="data-screen health-screen">
     <button className="back-button" type="button" onClick={onBack}>← Team HQ</button>
-    <header><p className="eyebrow">HEALTH ENGINE • DAILY CHECK-IN</p><h1>How is the rider today?</h1><p>Readiness will eventually combine connected recovery data with the rider's own check-in.</p></header>
+    <header><p className="eyebrow">READINESS • DAILY CHECK-IN</p><h1>How is the rider today?</h1><p>Manual inputs feed the same authoritative Readiness projection used by Team HQ, training adaptation and Jean. No direct WHOOP integration is claimed.</p></header>
     <form className="metric-form" onSubmit={submit}>
       <label>Sleep (hours)<input type="number" min="0" max="16" step="0.1" value={entry.sleepHours} onChange={(e) => setEntry({ ...entry, sleepHours: Number(e.target.value) })} /></label>
       <label>Recovery score<input type="number" min="0" max="100" value={entry.recoveryScore} onChange={(e) => setEntry({ ...entry, recoveryScore: Number(e.target.value) })} /></label>

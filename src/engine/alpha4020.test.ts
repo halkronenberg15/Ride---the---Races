@@ -37,5 +37,5 @@ test('Team Radio timing, priority queue, and v3 career migration are safe',()=>{
  assert.equal(captionDurationMs('Short message'),6000);assert.ok(captionDurationMs('word '.repeat(40))<=10000)
  const coaching={id:'c',text:'Coach',priority:'coaching' as const,createdAt:'2026-01-01'};const safety={id:'s',text:'Stop',priority:'safety' as const,createdAt:'2026-01-02'}
  assert.deepEqual(enqueueRadio([coaching],safety).map(item=>item.id),['s','c'])
- const migrated=migrateCareer({schemaVersion:3} as never);assert.equal(migrated.schemaVersion,5);assert.deepEqual(migrated.alpha4020.earnedMarkerIds,[])
+ const migrated=migrateCareer({schemaVersion:3} as never);assert.equal(migrated.schemaVersion,6);assert.deepEqual(migrated.alpha4020.earnedMarkerIds,[])
 })
