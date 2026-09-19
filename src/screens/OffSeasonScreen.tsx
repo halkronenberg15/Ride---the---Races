@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useCareer } from '../state/CareerContext.tsx'
 import { useAuth } from '../state/AuthContext.tsx'
-import { canUseOwnerOffSeasonPreview, createDevelopmentProfile, ensureHalOffSeasonPlan, generatePlan, HAL_GOALS, isHalOffSeasonCareer, projectReadiness, recommendCamps, type GoalsQuestionnaire, type PersonalizationInput, type ReadinessEntry } from '../engine/alpha4025.ts'
+import { createDevelopmentProfile, ensureHalOffSeasonPlan, generatePlan, HAL_GOALS, isHalOffSeasonCareer, projectReadiness, recommendCamps, type GoalsQuestionnaire, type PersonalizationInput, type ReadinessEntry } from '../engine/alpha4025.ts'
 
 export default function OffSeasonScreen({onBack}:{onBack:()=>void}){
  const {career,updateAlpha4025}=useCareer(),state=career.alpha4025
- const {account}=useAuth(),ownerPreview=!state.offSeasonUnlocked&&canUseOwnerOffSeasonPreview({role:account?.role,riderName:career.rider.name,riderNumber:career.rider.number,ftp:career.rider.ftp}),hasAccess=state.offSeasonUnlocked||ownerPreview
+ const {account,isOwner}=useAuth(),ownerPreview=!state.offSeasonUnlocked&&isOwner,hasAccess=state.offSeasonUnlocked||ownerPreview
  const halCareer=isHalOffSeasonCareer({role:account?.role,riderName:career.rider.name,riderNumber:career.rider.number,ftp:career.rider.ftp})
  useEffect(()=>{if(ownerPreview&&halCareer&&!state.trainingPlan)updateAlpha4025(ensureHalOffSeasonPlan)},[halCareer,ownerPreview,state.trainingPlan,updateAlpha4025])
  const defaults:PersonalizationInput=state.intake??{category:state.riderCategory??'Prefer not to answer',seriesPreference:state.seriesPreference??'Help me choose',experience:career.rider.experience,ftp:career.rider.ftp,weeklyDays:4,weeklyMinutes:300,longRideDays:['Saturday'],preferredRestDay:'Monday',comfortableMinutes:60,indoorExperience:'Some',outdoorExperience:'Some',equipment:career.rider.devices,outdoorPowerMeter:false,heartRateAvailable:true,cadenceResistanceConfidence:'Growing',shiftingConfidence:'Growing',brakingConfidence:'Growing',outdoorConfidence:'Growing',accommodations:'',painConcerns:'',primaryGoal:'Improve fitness',secondaryGoal:'Ride longer',targetEvent:'',progression:'Balanced',recoveryDays:2,strengthDays:2,role:career.rider.archetype}

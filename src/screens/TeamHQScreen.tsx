@@ -4,15 +4,15 @@ import { createCoachBriefing } from '../services/coachEngine'
 import { useCareer } from '../state/CareerContext'
 import { useAuth } from '../state/AuthContext.tsx'
 import { introReadiness, OUTDOOR_READINESS_ITEMS } from '../engine/introCycling.ts'
-import { canUseOwnerOffSeasonPreview, legacyHealthReadiness, projectReadiness, type ReadinessPhase } from '../engine/alpha4025.ts'
+import { legacyHealthReadiness, projectReadiness, type ReadinessPhase } from '../engine/alpha4025.ts'
 
 type Props = { onContinue: () => void; onStartIntro:(workoutId:string)=>void; onOpenFemmes:()=>void; onOpenOffSeason:()=>void; onOpenHealth: () => void; onOpenProfile: () => void; onOpenSettings: () => void }
 
 export default function TeamHQScreen({ onContinue,onStartIntro,onOpenFemmes,onOpenOffSeason, onOpenHealth, onOpenProfile, onOpenSettings }: Props) {
   const { career, restartOnboarding, requestNextProgram,toggleOutdoorChecklist } = useCareer()
-  const {account,signOut,canAccess,requestAccess,pendingAccounts,approve}=useAuth()
-  const approvals=account?.role==='owner'?pendingAccounts():[],ownerPreview=!career.alpha4025.offSeasonUnlocked&&canUseOwnerOffSeasonPreview({role:account?.role,riderName:career.rider.name,riderNumber:career.rider.number,ftp:career.rider.ftp})
-  const showFemmes=career.alpha4025.seriesPreference==='RtR Femmes'||(account?.role!=='owner'&&canAccess('rtr-femmes'))
+  const {account,isOwner,signOut,canAccess,requestAccess,pendingAccounts,approve}=useAuth()
+  const approvals=isOwner?pendingAccounts():[],ownerPreview=!career.alpha4025.offSeasonUnlocked&&isOwner
+  const showFemmes=career.alpha4025.seriesPreference==='RtR Femmes'||(!isOwner&&canAccess('rtr-femmes'))
   const introOnly=career.introCycling.selected&&!canAccess('rtr-standard')
   const coach = useMemo(() => createCoachBriefing(career, getRaceStage(career.season.currentStage)), [career])
   const readinessPhase:ReadinessPhase=career.alpha4025.offSeasonUnlocked?'OFF_SEASON':introOnly?'INTRO':career.season.active&&career.season.closure.status==='ACTIVE'?'RACING':'TRAINING'

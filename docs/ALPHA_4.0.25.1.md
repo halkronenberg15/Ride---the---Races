@@ -13,3 +13,7 @@ The September 21, 2026 twelve-week plan is restored only when absent. Stable ass
 ## Follow-up
 
 The migrated-season `active`/closure/official-race reconciliation and the genuine End Season visibility repair remain intentionally outside this stabilization release.
+
+## Owner authority correction
+
+Owner preview authority is resolved from the persisted local account matching the active session, never from imported career fields or rider identity. An established `legacy-owner` account that predates the `role` field is additively normalized to `role: owner` and written back once; all other missing or invalid roles normalize to `rider`. Team HQ, Team Bus, and Off-Season Training consume the same `AuthContext.isOwner` selector. Career import replaces only account-scoped career data and therefore cannot add or remove owner authority.

@@ -10,8 +10,13 @@ export const careerStorageKey=(accountId:string)=>accountId==='legacy-owner'?'ri
 export const activeRideStorageKey=(accountId:string)=>`ride-the-races-active-ride-v4.0.1:${accountId}`
 const encoder=new TextEncoder()
 const hex=(bytes:ArrayBuffer)=>Array.from(new Uint8Array(bytes),value=>value.toString(16).padStart(2,'0')).join('')
-const accounts=()=>{try{return (JSON.parse(localStorage.getItem(ACCOUNTS_KEY)??'[]') as RiderAccount[]).map(account=>({...account,entitlements:account.entitlements??[],requestedPrograms:account.requestedPrograms??[]}))}catch{return []}}
 const save=(items:RiderAccount[])=>localStorage.setItem(ACCOUNTS_KEY,JSON.stringify(items))
+const accounts=()=>{try{
+ const raw=JSON.parse(localStorage.getItem(ACCOUNTS_KEY)??'[]') as Array<Partial<RiderAccount>&{id:string}>
+ const migrated=raw.map(account=>({...account,role:account.role==='owner'||account.id==='legacy-owner'?'owner' as const:'rider' as const,entitlements:account.entitlements??[],requestedPrograms:account.requestedPrograms??[]})) as RiderAccount[]
+ if(JSON.stringify(raw)!==JSON.stringify(migrated))save(migrated)
+ return migrated
+}catch{return []}}
 
 async function passwordHash(password:string,salt:string){
  const key=await crypto.subtle.importKey('raw',encoder.encode(password),'PBKDF2',false,['deriveBits'])
@@ -20,6 +25,8 @@ async function passwordHash(password:string,salt:string){
 
 export function currentAccountId(){return localStorage.getItem(SESSION_KEY)}
 export function accountById(id:string|null){return id?accounts().find(account=>account.id===id)??null:null}
+/** Authority comes only from the persisted account matching the active session. */
+export function isAuthenticatedLocalOwner(account:RiderAccount|null){return Boolean(account&&currentAccountId()===account.id&&accountById(account.id)?.role==='owner')}
 export function signOutAccount(){localStorage.removeItem(SESSION_KEY)}
 export function resumeLegacyOwner(){const owner=accountById('legacy-owner');if(!owner)return null;localStorage.setItem(SESSION_KEY,owner.id);return owner}
 export async function registerAccount(input:{email:string;displayName:string;password:string}){
