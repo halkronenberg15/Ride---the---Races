@@ -2,7 +2,7 @@
 import { createContext,useContext,useState } from 'react'
 import { accountById,assignEnrollmentProgram,currentAccountId,grantProgram,listAccounts,migrateLegacyOwner,registerAccount,requestProgram,resumeLegacyOwner,signInAccount,signOutAccount,type ProgramId,type RiderAccount } from '../services/accountStore.ts'
 
-type AuthValue={account:RiderAccount|null;register:(input:{email:string;displayName:string;password:string})=>Promise<void>;signIn:(email:string,password:string)=>Promise<void>;resumeLegacyOwner:()=>void;signOut:()=>void;canAccess:(program:ProgramId)=>boolean;enroll:(program:'intro-cycling'|'rtr-standard')=>void;requestAccess:(program:ProgramId)=>void;pendingAccounts:()=>RiderAccount[];approve:(accountId:string,program:ProgramId)=>void}
+type AuthValue={account:RiderAccount|null;register:(input:{email:string;displayName:string;password:string})=>Promise<void>;signIn:(email:string,password:string)=>Promise<void>;resumeLegacyOwner:()=>void;signOut:()=>void;canAccess:(program:ProgramId)=>boolean;enroll:(program:'intro-cycling'|'rtr-standard'|'rtr-femmes')=>void;requestAccess:(program:ProgramId)=>void;pendingAccounts:()=>RiderAccount[];approve:(accountId:string,program:ProgramId)=>void}
 const AuthContext=createContext<AuthValue|null>(null)
 export function AuthProvider({children}:{children:React.ReactNode}){
  const [account,setAccount]=useState(()=>{const sessionId=currentAccountId();try{const legacy=migrateLegacyOwner(JSON.parse(localStorage.getItem('ride-the-races-v2-career')??'{}').rider?.name??'');return accountById(sessionId)??legacy}catch{return accountById(sessionId)}})

@@ -37,8 +37,9 @@ import { createRoadModel } from './engine/roadModel.ts'
 import { bikeProfileForEquipment, GENERIC_MANUAL_EQUIPMENT } from './engine/manualBike.ts'
 import { tacticalPrescription } from './engine/alpha4021.ts'
 import { PRESCRIPTION_RULE_VERSION, noFtpPresentation, prescriptionSnapshot, type OriginalTargetSnapshot } from './engine/release4024.ts'
+import OffSeasonScreen from './screens/OffSeasonScreen.tsx'
 
-type Screen = 'hq' | 'teamBus' | 'season' | 'race' | 'worldsBriefing' | 'stageDetail' | 'training' | 'roster' | 'tactics' | 'ride' | 'restDay' | 'rideData' | 'health' | 'profile' | 'settings' | 'finale'|'femmes'
+type Screen = 'hq' | 'teamBus' | 'season' | 'race' | 'worldsBriefing' | 'stageDetail' | 'training' | 'offseason' | 'roster' | 'tactics' | 'ride' | 'restDay' | 'rideData' | 'health' | 'profile' | 'settings' | 'finale'|'femmes'
 
 function RideTheRacesApp() {
   const { career, selectRaceStage, completeRaceStage, completeTraining, completeWorlds, addRide } = useCareer()
@@ -112,7 +113,7 @@ function RideTheRacesApp() {
       )}
 
       {screen === 'rideData' && <RideDataScreen onBack={() => setScreen('hq')} />}
-      {screen === 'femmes'&&<section className="dashboard-card"><p className="eyebrow">PROTECTED PROGRAM</p><h1>RtR Femmes</h1><p>Your account is approved. The full ride library is intentionally not authored in Alpha 4.0.24.</p><button type="button" onClick={()=>setScreen('hq')}>Return to dashboard</button></section>}
+      {screen === 'femmes'&&<section className="dashboard-card femmes-shell"><p className="eyebrow">RTR FEMMES · DEVELOPMENT FOUNDATION</p><h1>RtR Femmes Calendar</h1><p>Your account is enrolled in the Femmes pathway. No production races are listed until official event and profile research passes the verification boundary.</p><p>Standings architecture, progression, persistence and Jean context are ready. The complete researched race library remains Alpha 4.0.26 scope.</p><button type="button" onClick={()=>setScreen('hq')}>Return to dashboard</button></section>}
       {screen === 'health' && <HealthScreen onBack={() => setScreen('hq')} />}
       {screen === 'profile' && <RiderProfileScreen onBack={() => setScreen('hq')} />}
       {screen === 'settings' && <SettingsScreen onBack={() => setScreen('hq')} />}
@@ -123,11 +124,14 @@ function RideTheRacesApp() {
           seasons={seasons}
           onOpenSeason={(year) => { setSelectedSeason(year); setScreen('season') }}
           onOpenTraining={() => { setSelectedRace('training'); setScreen('training') }}
+          onOpenOffSeason={()=>setScreen('offseason')}
+          onOpenFemmes={()=>setScreen('femmes')}
           onOpenRoster={() => setScreen('roster')}
           onOpenStageResults={()=>setScreen('rideData')}
           onReplayStage={(stage,useOriginal)=>{const original=career.rideHistory.find(item=>item.stageNumber===stage&&item.activityType!=='STAGE_REPLAY'&&item.targetSnapshots?.length);setReplayOriginal(useOriginal&&original?.targetSnapshots?.length?{rideId:original.id,ftp:original.ftp??null,targetSnapshots:original.targetSnapshots}:null);setStageReplay(true);setSelectedRace('tour-2026');setSelectedStageNumber(stage);setScreen('tactics')}}
         />
       )}
+      {screen==='offseason'&&<OffSeasonScreen onBack={()=>setScreen('teamBus')}/>} 
 
       {screen === 'season' && getSeason(selectedSeason) && <SeasonCalendarScreen season={getSeason(selectedSeason)!} currentRace={career.season.currentRace} onBack={() => setScreen('teamBus')} onOpenRace={(raceId) => { setSelectedRace(raceId); setScreen('race') }} />}
       {screen === 'race' && (selectedRace==='worlds-2026'?<WorldsHubScreen onBack={()=>setScreen('season')} onOpen={(event)=>{setSelectedStageNumber(event);setScreen('worldsBriefing')}}/>:<RaceOverviewScreen library={selectedRace} actionable={selectedRace==='vuelta-2026'?vueltaActionable:tourActionable} onBack={() => setScreen('season')} onOpenStage={(stage)=>{setSelectedStageNumber(stage);setScreen('stageDetail')}} />)}

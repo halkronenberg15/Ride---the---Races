@@ -6,6 +6,7 @@ import { advanceOnboarding, canAdvanceOnboarding } from '../engine/onboardingFlo
 import { createIntroCyclingPlan } from '../engine/introCycling.ts'
 import type { IntroCyclingAnswers } from '../types/career.ts'
 import { useAuth } from '../state/AuthContext.tsx'
+import { createDevelopmentProfile, recommendSeries, type PersonalizationInput, type RiderCategory, type SeriesPathway } from '../engine/alpha4025.ts'
 
 const archetypes: RiderArchetype[] = ['GC Contender', 'Sprinter', 'Climber', 'Puncheur', 'Time Trial Specialist', 'All-Rounder', 'Domestique']
 const experiences: ExperienceLevel[] = ['Beginner', 'Recreational', 'Intermediate', 'Advanced', 'Competitive']
@@ -22,7 +23,7 @@ const connectionChoices:Array<{id:ConnectionMethod;label:string;status:string;de
 const stepTitles = ['Meet the rider', 'Your engine', 'Season objective', 'Connected kit', 'Rider identity', 'Welcome to the team']
 
 export default function OnboardingScreen() {
-  const { career, completeOnboarding, setMeasurementSystem } = useCareer()
+  const { career, completeOnboarding, setMeasurementSystem,updateAlpha4025 } = useCareer()
   const {enroll}=useAuth()
   const [system, setSystem] = useState<MeasurementSystem>(career.settings.measurementSystem)
   const [step, setStep] = useState(0)
@@ -31,7 +32,9 @@ export default function OnboardingScreen() {
   const [heightText, setHeightText] = useState(career.rider.heightCm ? String(system === 'imperial' ? Math.round(cmToIn(career.rider.heightCm)) : Math.round(career.rider.heightCm)) : '')
   const [weightText, setWeightText] = useState(career.rider.weightKg ? String(system === 'imperial' ? Math.round(kgToLb(career.rider.weightKg)) : Math.round(career.rider.weightKg)) : '')
   const [ftpText, setFtpText] = useState(String(career.rider.ftp || ''))
-  const [program,setProgram]=useState<'intro-cycling'|'standard'>('intro-cycling')
+  const [program,setProgram]=useState<'intro-cycling'|'standard'|'femmes'>('intro-cycling')
+  const [category,setCategory]=useState<RiderCategory>('Prefer not to answer')
+  const [series,setSeries]=useState<SeriesPathway>('Help me choose')
   const [intro,setIntro]=useState<IntroCyclingAnswers>({cyclingExperience:'New',indoorExperience:'None',outdoorExperience:'None',ftpKnown:false,weeklyDays:2,comfortableMinutes:30,primaryGoal:'Build confidence',cadenceResistanceConfidence:'Low',shiftingBrakingConfidence:'Low',bikeAccess:'Both',outdoorConfidence:'Low',limitations:'',preferredNextProgram:'Undecided'})
 
   function patch(values: Partial<CareerState['rider']>) {
@@ -67,7 +70,7 @@ export default function OnboardingScreen() {
 
   const numbers={numberText,heightText,weightText,ftpText}
   const canContinue=canAdvanceOnboarding(step,rider,numbers)
-  function submit(event:React.FormEvent){event.preventDefault();if(!canContinue)return;commitNumbers();setMeasurementSystem(system);if(step<stepTitles.length-1)setStep(current=>advanceOnboarding(current,rider,numbers));else {const answers={...intro,ftpKnown:rider.ftpKnown};enroll(program==='standard'?'rtr-standard':'intro-cycling');completeOnboarding({ ...rider, number:Number(numberText),ftp:Number(ftpText)>0?Number(ftpText):null,ftpProvenance:Number(ftpText)>0?'RIDER_ENTERED':'UNKNOWN',heightCm:system==='imperial'?inToCm(Number(heightText)):Number(heightText),weightKg:system==='imperial'?lbToKg(Number(weightText)):Number(weightText) },program==='intro-cycling'?{answers,plan:createIntroCyclingPlan(answers)}:null)}}
+  function submit(event:React.FormEvent){event.preventDefault();if(!canContinue)return;commitNumbers();setMeasurementSystem(system);if(step<stepTitles.length-1)setStep(current=>advanceOnboarding(current,rider,numbers));else {const answers={...intro,ftpKnown:rider.ftpKnown},pathway=series==='Help me choose'?(recommendSeries(category)??'Intro to Cycling'):series,entitlement=pathway==='RtR Femmes'?'rtr-femmes':pathway==='Standard RtR'?'rtr-standard':'intro-cycling';enroll(entitlement);const finished={ ...rider, number:Number(numberText),ftp:Number(ftpText)>0?Number(ftpText):null,ftpProvenance:Number(ftpText)>0?'RIDER_ENTERED' as const:'UNKNOWN' as const,heightCm:system==='imperial'?inToCm(Number(heightText)):Number(heightText),weightKg:system==='imperial'?lbToKg(Number(weightText)):Number(weightText) };completeOnboarding(finished,program==='intro-cycling'?{answers,plan:createIntroCyclingPlan(answers)}:null);const intake:PersonalizationInput={category,seriesPreference:pathway,experience:finished.experience,ftp:finished.ftp,weeklyDays:intro.weeklyDays,weeklyMinutes:intro.weeklyDays*intro.comfortableMinutes,longRideDays:['Saturday'],preferredRestDay:'Monday',comfortableMinutes:intro.comfortableMinutes,indoorExperience:intro.indoorExperience,outdoorExperience:intro.outdoorExperience,equipment:finished.devices,outdoorPowerMeter:false,heartRateAvailable:false,cadenceResistanceConfidence:intro.cadenceResistanceConfidence,shiftingConfidence:intro.shiftingBrakingConfidence,brakingConfidence:intro.shiftingBrakingConfidence,outdoorConfidence:intro.outdoorConfidence,accommodations:intro.limitations,painConcerns:'',primaryGoal:intro.primaryGoal,secondaryGoal:finished.seasonGoal,targetEvent:'',progression:'Balanced',recoveryDays:2,strengthDays:2,role:finished.archetype};updateAlpha4025(old=>({...old,riderCategory:category,seriesPreference:pathway,seriesConfirmed:true,seriesEntitlements:Array.from(new Set([...old.seriesEntitlements,pathway])),intake,developmentProfile:createDevelopmentProfile(intake)}))}}
 
   return (
     <section className="onboarding-screen">
@@ -82,7 +85,8 @@ export default function OnboardingScreen() {
         </header>
         <div className="onboarding-card">
           {step === 0 && <>
-            <h2>Choose a starting program</h2><div className="choice-grid program-choice"><button type="button" className={program==='intro-cycling'?'selected':''} onClick={()=>setProgram('intro-cycling')}><strong>Intro to Cycling</strong><span>For new or returning riders, or preparation for outdoor riding.</span></button><button type="button" className={program==='standard'?'selected':''} onClick={()=>setProgram('standard')}><strong>Standard RtR</strong><span>Enter the current stage-racing pathway.</span></button></div>
+            <h2>Choose a starting program</h2><div className="choice-grid program-choice"><button type="button" className={program==='intro-cycling'?'selected':''} onClick={()=>{setProgram('intro-cycling');setSeries('Intro to Cycling')}}><strong>Intro to Cycling</strong><span>Universal foundations and outdoor readiness.</span></button><button type="button" className={program==='standard'?'selected':''} onClick={()=>{setProgram('standard');setSeries('Standard RtR')}}><strong>Standard RtR</strong><span>Enter the current stage-racing pathway.</span></button><button type="button" className={program==='femmes'?'selected':''} onClick={()=>{setProgram('femmes');setSeries('RtR Femmes')}}><strong>RtR Femmes</strong><span>Femmes progression and calendar foundation.</span></button></div>
+            <div className="responsive-form"><label>Rider category<select value={category} onChange={event=>{const next=event.target.value as RiderCategory;setCategory(next);const recommendation=recommendSeries(next);if(recommendation)setSeries(recommendation)}}><option>Male</option><option>Female</option><option>Prefer not to answer</option></select></label><label>Series preference<select value={series} onChange={event=>setSeries(event.target.value as SeriesPathway)}><option>Standard RtR</option><option>RtR Femmes</option><option>Intro to Cycling</option><option>Help me choose</option></select></label></div><p><strong>Recommended series: {recommendSeries(category)??'Select explicitly'}</strong><br/>Based on your rider profile and selected category. You may choose another available pathway.</p>
             <div className="unit-choice-panel">
               <span>Preferred measurements</span>
               <div className="unit-choice-buttons">
