@@ -36,6 +36,8 @@ function RaceLibraryScreen({
   const { career } = useCareer()
   const [expandedStage, setExpandedStage] = useState(selectedStageNumber)
   const [showRoster, setShowRoster] = useState(false)
+  const [activeTrainingFolder,setActiveTrainingFolder]=useState<'recovery'|'intro'|'classic'|'outdoor'|null>(()=>{const saved=typeof sessionStorage==='undefined'?null:sessionStorage.getItem('rtr-training-folder');return saved==='recovery'||saved==='intro'||saved==='classic'||saved==='outdoor'?saved:null})
+  useEffect(()=>{if(typeof sessionStorage==='undefined')return;if(activeTrainingFolder)sessionStorage.setItem('rtr-training-folder',activeTrainingFolder);else sessionStorage.removeItem('rtr-training-folder')},[activeTrainingFolder])
   const actionableRef = useRef<HTMLDivElement>(null)
   useEffect(() => { actionableRef.current?.scrollIntoView({ block: 'center' }) }, [library])
   const raceMetadata = seasons.flatMap((season) => season.races).find((race) => race.raceLibraryId === library)
@@ -48,15 +50,14 @@ function RaceLibraryScreen({
 
   return (
     <section className="team-bus-screen alpha38-team-bus">
-      <button type="button" onClick={onBack}>← Back</button>
-
+      {(library!=='training'||activeTrainingFolder===null)&&<><button type="button" onClick={onBack}>← Back</button>
       <header className="compact-page-header">
         <p className="eyebrow">{teamLoriot.name.toUpperCase()}</p>
-        <h1>{library === 'training' ? 'Training Rides' : raceMetadata?.name ?? 'Race Roadbook'}</h1>
+        <h1>{library === 'training' ? 'Training Library' : raceMetadata?.name ?? 'Race Roadbook'}</h1>
         <p>Dedicated roadbook • One unified ride engine</p>
-      </header>
+      </header></>}
 
-      <div className="bus-toolbar">
+      {library!=='training'&&<div className="bus-toolbar">
         <button type="button" onClick={() => setShowRoster((value) => !value)}>
           👥 Team Roster <span>{teamLoriot.riders.length} riders</span>
         </button>
@@ -64,9 +65,9 @@ function RaceLibraryScreen({
           <span>Selected</span>
           <strong>Stage {selectedStage.number}</strong>
         </div>
-      </div>
+      </div>}
 
-      {showRoster && (
+      {library!=='training'&&showRoster && (
         <section className="dashboard-card compact-roster">
           <div className="section-title-row">
             <div><p className="eyebrow">TEAM LORIOT</p><h2>Roster</h2></div>
@@ -135,9 +136,8 @@ function RaceLibraryScreen({
 
 
 
-      {library === 'training' && <section className="dashboard-card roadbook-calendar">
-        <div className="section-title-row"><div><p className="eyebrow">TEAM LORIOT TRAINING</p><h2>Recovery & Leg Openers</h2></div><small>Does not advance race progress</small></div>
-        <div className="training-library-grid">{trainingRides.map((ride) => <article className="training-ride-card" key={ride.id}><p className="eyebrow">{ride.difficulty} • {ride.zones}</p><h3>{ride.name}</h3><strong>{ride.durationMinutes} MINUTES</strong><p>{ride.purpose}</p><blockquote>Jean: “{ride.jeanDescription}”</blockquote><button type="button" className="primary-cta" onClick={()=>{onSelectWorkout?.(ride.id);onContinue()}}>Open Briefing →</button></article>)}</div>
+      {library==='training'&&<section className="dashboard-card roadbook-calendar training-library-shell">
+        {activeTrainingFolder===null?<><div className="section-title-row"><div><p className="eyebrow">TEAM LORIOT TRAINING</p><h2>Training Library</h2></div><small>Choose one folder</small></div><nav className="training-folder-list" aria-label="Training Library folders">{[['recovery','↻','Recovery Rides','Recovery, easy spins, and leg activation'],['intro','◎','Intro to Cycling','Calibration, foundations, and ride preparation'],['classic','★','Classic Rides','Your favorite canonical stages'],['outdoor','◇','Outdoor Ride Readiness','Skills checklist and supervised-ride preparation']].map(([id,icon,title,purpose])=><button type="button" className="training-folder-row is-enabled" key={id} onClick={()=>setActiveTrainingFolder(id as 'recovery'|'intro'|'classic'|'outdoor')}><span className="training-folder-icon" aria-hidden="true">{icon}</span><span><strong className="training-folder-title">{title}</strong><small className="training-folder-description">{purpose}</small></span><b className="training-folder-action">Open folder →</b></button>)}</nav></>:<><button type="button" className="back-to-training-library" onClick={()=>setActiveTrainingFolder(null)}>← Back to Training Library</button><header className="training-folder-header"><p className="eyebrow">TRAINING LIBRARY</p><h2>{activeTrainingFolder==='recovery'?'Recovery Rides':activeTrainingFolder==='intro'?'Intro to Cycling':activeTrainingFolder==='classic'?'Classic Rides':'Outdoor Ride Readiness'}</h2><p>{activeTrainingFolder==='recovery'?'Easy recovery and controlled activation that never advances race progress.':activeTrainingFolder==='intro'?'Beginner calibration, control, sustainable rhythm, and outdoor preparation.':activeTrainingFolder==='classic'?'Canonical stage references saved for replay.':'Preparation checklist; indoor completion is not outdoor certification.'}</p></header>{activeTrainingFolder==='classic'?<div className="training-library-grid">{career.favoriteStageRefs.length?career.favoriteStageRefs.map(ref=><article className="training-ride-card" key={`${ref.library}-${ref.stageNumber}`}><h3>{ref.library} · Stage {ref.stageNumber}</h3><p>Canonical stage reference. Existing history is preserved.</p></article>):<p>No favorite stages yet.</p>}</div>:activeTrainingFolder==='outdoor'?<div className="training-library-grid"><article className="training-ride-card"><h3>Outdoor Ride Readiness</h3><p>Continue the guided checklist from your Intro to Cycling dashboard and plan a supervised first ride.</p></article></div>:(()=>{const rides=trainingRides.filter(ride=>activeTrainingFolder==='recovery'?/^recovery-|^opener-/.test(ride.id):/^intro-/.test(ride.id)),assigned=new Set(career.introCycling.plan?.rides.map(ride=>ride.id)??[]),primary=rides.filter(ride=>assigned.has(ride.id)||ride.id==='intro-calibration'||ride.id==='recovery-45'||ride.id==='opener-30'),alternates=rides.filter(ride=>!primary.includes(ride)),card=(ride:typeof rides[number])=><article className="training-ride-card" key={ride.id}><p className="eyebrow">{ride.difficulty} · {ride.zones}</p><h3>{ride.name}</h3><strong>{ride.durationMinutes} MINUTES</strong><p>{ride.purpose}</p><button type="button" onClick={()=>{onSelectWorkout?.(ride.id);onContinue()}}>Open Briefing →</button></article>;return <><div className="training-library-grid">{primary.map(card)}</div>{alternates.length>0&&<section className="other-durations"><h3>Other Durations</h3><div className="training-library-grid">{alternates.map(card)}</div></section>}</>})()}</>}
       </section>}
 
       {library === 'tour-2026' && <section className="dashboard-card compact-start-list">

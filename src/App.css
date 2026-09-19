@@ -543,6 +543,7 @@ footer {
 .onboarding-header > p:last-child { max-width: 680px; color: #aaa; line-height: 1.55; }
 .onboarding-card { min-height: 410px; padding: clamp(22px, 5vw, 42px); border: 1px solid #303030; border-radius: 26px; background: rgba(22,22,22,.94); box-shadow: 0 28px 80px rgba(0,0,0,.35); text-align: left; }
 .onboarding-card h2,.onboarding-card h3 { margin: 0 0 22px; color:#fff; }
+.program-choice{margin-bottom:22px}.program-choice button{display:grid;gap:6px}.program-choice span{color:#aaa}.intro-intake{margin:24px 0 0;padding:18px;border:1px solid #3c3c3c;border-radius:16px}.intro-intake legend{padding:0 8px;font-weight:900}.wizard-grid select,.wizard-grid textarea,.auth-card input,.intro-dashboard select{width:100%;padding:14px;border:1px solid #444;border-radius:12px;background:#0d0d0d;color:#fff;font:inherit}.auth-screen{min-height:100svh;display:grid;place-items:center;padding:calc(var(--safe-top) + 20px) max(18px,var(--safe-right)) calc(var(--safe-bottom) + 20px)}.auth-card{display:grid;gap:14px;width:min(460px,100%);padding:clamp(24px,6vw,44px);border:1px solid #343434;border-radius:24px;background:#161616}.auth-card label{display:grid;gap:7px;font-weight:750}.auth-card h1{margin:0}.auth-error{color:#ffb0a0}.intro-dashboard{margin-bottom:18px}.intro-dashboard progress{width:100%;accent-color:#ff7a16}.intro-dashboard article{padding:14px;border-radius:14px;background:#111}.intro-dashboard label{display:grid;gap:7px;margin-top:14px}
 .wizard-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
 .wizard-grid label, .ftp-panel label { display: grid; gap: 8px; color: #ddd; font-weight: 700; }
 .wizard-grid input, .ftp-panel input { padding: 14px; border: 1px solid #444; border-radius: 12px; background: #0d0d0d; color: #fff; font: inherit; }
@@ -1070,3 +1071,60 @@ html[data-motion="reduced"] .ride-screen svg,html[data-motion="reduced"] .race-m
 .course-finish-label{position:absolute;right:3px;z-index:18;display:inline-block;box-sizing:border-box;max-width:calc(100% - 6px);padding:2px 4px;transform:translateY(-100%);border-radius:3px;background:rgba(5,5,5,.78);color:#fff;font:800 9px/1.15 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:.02em;white-space:nowrap;text-shadow:0 1px 1px rgba(0,0,0,.8);pointer-events:none}
 .profile-detail-4022 .detail-gradient-summary{grid-template-columns:repeat(5,minmax(0,1fr))}
 @media(max-width:520px){.profile-detail-4022 .detail-gradient-summary{grid-template-columns:repeat(3,minmax(0,1fr));height:auto}}
+
+/* Alpha 4.0.24 mobile training-library and Safari clearance. */
+.training-library-shell,.training-folder-header,.training-library-grid,.other-durations,.race-briefing-screen,.onboarding-screen,.team-hq-screen{scroll-padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 112px)}
+.training-library-shell,.race-briefing-screen,.onboarding-screen,.team-hq-screen{padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 96px)}
+.training-folder-list{display:grid;gap:8px;margin-top:12px}
+.training-folder-row{width:100%;min-height:64px;display:grid!important;grid-template-columns:28px minmax(0,1fr) auto;align-items:center!important;gap:10px;padding:11px 12px!important;text-align:left}
+.training-folder-row>span:nth-child(2){display:grid;gap:3px;min-width:0}.training-folder-row strong,.training-folder-row small{overflow-wrap:anywhere}.training-folder-row b{font-size:.72rem;white-space:nowrap}
+.back-to-training-library{min-height:44px;margin-bottom:12px}.training-folder-header{margin-bottom:12px}.other-durations{margin-top:18px;border-top:1px solid #414149;padding-top:14px}
+@media(min-width:701px){.training-library-shell,.race-briefing-screen,.onboarding-screen,.team-hq-screen{padding-bottom:32px}}
+@media(max-width:430px){.training-folder-row{grid-template-columns:24px minmax(0,1fr);}.training-folder-row b{grid-column:2;white-space:normal}.training-library-grid{grid-template-columns:1fr}.training-ride-card{min-width:0}.preview-target-values.no-ftp-preview{grid-template-columns:repeat(3,minmax(0,1fr))}.preview-target-values.no-ftp-preview strong{overflow-wrap:normal;word-break:normal}}
+/* Alpha 4.0.24 final Safari viewport contract. */
+.hq-screen,.team-bus-screen,.race-briefing-screen,.onboarding-screen{padding-top:max(var(--safe-top),env(safe-area-inset-top,0px));scroll-padding-top:calc(max(var(--safe-top),env(safe-area-inset-top,0px)) + 12px);scroll-padding-bottom:calc(env(safe-area-inset-bottom,0px) + 136px)}
+.hq-screen,.team-bus-screen,.race-briefing-screen,.onboarding-screen{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 112px)}
+.enter-team-bus,.training-ride-card button,.race-briefing-screen .primary-cta,.back-to-training-library{scroll-margin-bottom:calc(env(safe-area-inset-bottom,0px) + 128px)}
+@media(min-width:701px){.hq-screen,.team-bus-screen,.race-briefing-screen,.onboarding-screen{padding-top:24px;padding-bottom:36px;scroll-padding-bottom:48px}}
+@media(max-width:430px){.training-library-shell:has(.back-to-training-library){padding-top:4px}.training-folder-header{margin-top:0}.training-folder-header h2{font-size:1.35rem;margin:.2rem 0}.training-folder-header p{margin:.25rem 0 .65rem}.live-tracker-4023{font-size:clamp(.68rem,2.8vw,.84rem)}}
+
+/* Alpha 4.0.24.1 semantic contrast contract. These surfaces are intentionally
+   independent of the rider's dashboard theme and browser default colors. */
+:root {
+  --auth-panel-foreground: #f7f7f8;
+  --auth-panel-secondary: #c7c7cf;
+  --auth-link: #ffad73;
+  --auth-link-focus: #ffd1b0;
+  --auth-input-background: #0d0d0f;
+  --auth-input-foreground: #ffffff;
+  --auth-input-placeholder: #9b9ba5;
+  --auth-error: #ffb4a8;
+  --auth-focus: #ff7a16;
+  --folder-card-background: #f4f1eb;
+  --folder-card-border: #b8b2a8;
+  --folder-title: #171717;
+  --folder-description: #4a4a52;
+  --folder-accent: #7a3500;
+  --folder-disabled-background: #dedbd5;
+  --folder-disabled-foreground: #74747c;
+}
+.auth-screen,.auth-card{color:var(--auth-panel-foreground)}
+:root .auth-card h1,:root .auth-card label{color:var(--auth-panel-foreground)}
+.auth-card>p:not(.eyebrow),.auth-card>small{color:var(--auth-panel-secondary)}
+.auth-card input{color:var(--auth-input-foreground);caret-color:var(--auth-focus);background:var(--auth-input-background);border-color:#62626b}
+.auth-card input::placeholder{color:var(--auth-input-placeholder);opacity:1}
+.auth-card input:focus-visible{outline:3px solid var(--auth-focus);outline-offset:2px;border-color:var(--auth-focus)}
+.auth-card input:disabled,.auth-card button:disabled{opacity:.62;cursor:not-allowed}
+.auth-card .primary-button{background:#ff7a16;color:#111}
+.auth-card .text-button{color:var(--auth-link)!important;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
+.auth-card .text-button:hover,.auth-card .text-button:focus-visible{color:var(--auth-link-focus)!important;outline:2px solid var(--auth-focus);outline-offset:3px}
+.auth-card .auth-error{color:var(--auth-error);font-weight:750}
+.auth-card input:-webkit-autofill,.auth-card input:-webkit-autofill:hover,.auth-card input:-webkit-autofill:focus{-webkit-text-fill-color:var(--auth-input-foreground);caret-color:var(--auth-input-foreground);box-shadow:0 0 0 1000px var(--auth-input-background) inset;transition:background-color 9999s ease-out 0s}
+.training-folder-row.is-enabled{color:var(--folder-title);background:var(--folder-card-background);border:1px solid var(--folder-card-border)}
+.training-folder-row.is-enabled .training-folder-title{color:var(--folder-title)}
+.training-folder-row.is-enabled .training-folder-description{color:var(--folder-description);opacity:1}
+.training-folder-row.is-enabled .training-folder-icon,.training-folder-row.is-enabled .training-folder-action{color:var(--folder-accent)}
+.training-folder-row.is-enabled:hover,.training-folder-row.is-enabled:active{background:#fff;border-color:var(--folder-accent)}
+.training-folder-row:focus-visible{outline:3px solid var(--auth-focus);outline-offset:3px}
+.training-folder-row:disabled,.training-folder-row[aria-disabled='true']{color:var(--folder-disabled-foreground);background:var(--folder-disabled-background);border-color:#c9c5be;cursor:not-allowed;opacity:1}
+.training-folder-row:disabled .training-folder-description,.training-folder-row[aria-disabled='true'] .training-folder-description{color:var(--folder-disabled-foreground)}

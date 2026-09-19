@@ -14,7 +14,7 @@ function RiderProfileScreen({ onBack }: Props) {
   const system = career.settings.measurementSystem
   const [name, setName] = useState(career.rider.name)
   const [number, setNumber] = useState(career.rider.number)
-  const [ftp, setFtp] = useState(career.rider.ftp)
+  const [ftp, setFtp] = useState(career.rider.ftp??150)
   const [height, setHeight] = useState(career.rider.heightCm ? (system === 'imperial' ? cmToIn(career.rider.heightCm) : career.rider.heightCm) : 0)
   const [weight, setWeight] = useState(career.rider.weightKg ? (system === 'imperial' ? kgToLb(career.rider.weightKg) : career.rider.weightKg) : 0)
   const [archetype, setArchetype] = useState<RiderArchetype>(career.rider.archetype)

@@ -228,8 +228,80 @@ The Montréal Worlds integration and its official/authored boundary, scoped Team
 
 The Alpha 4.0.23 correction adds `createPreRacePlan`/`preRaceSnapshot` ahead of the road timeline. Gate time is persisted as a clock offset, while `RoadModel` receives official racing sections only. `ClimbProfile4023` draws connected source-profile paths; `ProfileControls4023` keeps geographic scale independent from information density. Tactical offer timestamps and consumed decisions are authoritative persisted inputs, never SVG state.
 Alpha 4.0.23 presents the canonical road through one mobile Live Tracker. Mass-start warm-up and Kilometre Zero are staging projections, never numbered official sections; the post-GO profile, Detail, targets, Up Next, progress and endpoint markers all consume the same normalized road timeline. Overview/Detail and Full Stage/Climb remain independent persisted dimensions.
+
+## Alpha 4.0.24 Stage 10 correction
+
+`alpha4024.ts` adds presentation policy without creating another race clock. Official Detail time clamps total/elapsed/remaining to `RoadModel.raceFinishTime`. Jean events have stable timeline keys and bounded 5–20 second validity windows; expired crossings are consumed rather than queued. Jean's visual sentence lasts seven seconds independently of radio history and persistent tactical/race situation state.
+
+Canonical profile discovery qualifies an inferred climb only at 1 km or longer, 30 m gain or more, and at least 2% average gradient. The qualified window supplies one identity, entrance, summit and exit to course position and Climb View, preventing profile interpolation rollers from flickering. Profile geography and density selections remain orthogonal persisted user choices.
+
+Staging Detail is a compact two-column projection: Current Terrain/Resistance, Gate Change/Position, and full-width First Racing Section. Its ordinary Up Next remains the immediate lifecycle transition.
+
+### Account-scoped Intro to Cycling
+
+`accountStore.ts` is explicitly a `LOCAL_DEVELOPMENT` adapter; public multi-device enrollment is disabled. It owns browser-local rider identities, PBKDF2 password verifiers, the current session, roles, requests and program entitlements. Career and active-ride storage keys include the account id. Local owner approval and protected screen checks exercise the product contract, but localStorage is user-editable and is not a security boundary. Production must replace this adapter with remote identity, database-backed state, secure server sessions, account recovery/verification and server-side authorization.
+
+Intro to Cycling is a program assignment, never a Michelle-specific branch. `createIntroCyclingPlan` deterministically projects enrollment answers into FTP-relative conservatism, starting duration, cadence complexity, recovery/instruction density, scheduled days, equipment delivery mode, climb/checklist timing and readiness assessment timing. Three dedicated beginner rides use the normal ride clock and persistence. Completion preserves the career and distinguishes indoor completion, checklist-backed outdoor preparation, advanced-program review and the explicitly false claim of group-ride certification. Outdoor Ride Readiness, RtR Femmes and Standard RtR remain forward assignments on the same account.
+
+Climb presentation is a persisted state machine over `canonicalCoursePosition`, never a second position projection. Eligible identity enters at 1%, exits at 99.5% only after eight seconds, and canonical end overrides the timer. Manual Full Stage blocks automatic entry; completed IDs block re-entry. Jean transient sources use a stable cue contract with canonical trigger/progress, valid-from, expiry, priority and consumed identity. Expired cues are consumed rather than queued.
+
+## Alpha 4.0.25 roadmap
+
+The Rider Personalization Engine will use FTP for watt scale; experience for intensity ceiling, interval density, recovery, progression and tactical frequency; season goal for long-term emphasis; and peloton role for terrain emphasis, plan structure, coaching and tactical eligibility. Role must not indiscriminately increase every target, and resistance remains derived from prescription, cadence and equipment behavior. Supported roles are GC Contender, Sprinter, Climber, Puncheur, Time Trial Specialist, All-Rounder and Domestique. The engine connects Race Book recommendations, Climb/Sprint prescriptions, Jean coaching, tactics, classifications and stage summaries.
+
+The Alpha 4.0.25 Jean overhaul adds role-aware coaching, message variety, priority/interruption rules, reduced repetition, team-objective context, tactical consequences and stage-summary coaching. Race Book, Climb Preview, Sprint View, intermediate sprint/KOM points and classification work also remain planned for 4.0.25.
+
+Alpha 4.0.25 also holds end-of-season rider review, an off-season goals questionnaire, rider-specific professional camp sequencing, Jean camp assessments, and VO₂-max development/reassessment. Planned camps: Transition, Aerobic Base, Altitude-inspired, VO₂ Development, Mountain, Classics, Threshold, Sprint, Time Trial, Lead-Out, Domestique, Race Craft, Outdoor Skills, Grand Tour Preparation and Pre-Season Race.
 The profile visualization owns a bounded drawable region followed by a normal-flow control footer. Finish geometry is rendered inside the course SVG at the final canonical elevation sample; HTML overlays cannot reposition that endpoint. Persisted tactical efforts carry their authored Attack/Chase identity and percentage modifier so restoration cannot rename or double-resolve an effort.
 
 Detail consumes only the canonical next meaningful gradient boundary; Finish and workout-section transitions are separate concepts. Worlds group geography also distinguishes race state from label layout: while the rider is in `PELOTON`, rider and peloton share one course coordinate and only their visual labels may be offset.
 
 Non-uniform SVG scaling is limited to course geometry. Endpoint labels are projected HTML overlays, so typography never inherits the profile's `preserveAspectRatio="none"` stretch; the canonical endpoint line remains in the SVG coordinate domain.
+
+## Alpha 4.0.24 phone-verification continuation
+
+`targetPreview4023` carries authored and resolved identities and the complete resolved power/cadence/resistance/zone/duration snapshot. `RideScreen` resolves a boundary once through the same equipment path used at activation and renders that resistance verbatim; UI code cannot synthesize one metric separately.
+
+FTP absence is modeled as `null` plus explicit provenance. `release4024.ts` owns equipment-aware no-FTP targets, coaching contexts, copy normalization, truthful wake-lock labels, and the idempotent season-closure transition. Intro Calibration is non-maximal and records an Intro Effort Baseline only from rider-entered RPE; formal testing remains scheduled later.
+
+Season closure archives an immutable result reference without reopening or mutating classifications. Stage replays are new `STAGE_REPLAY` activities using canonical stage definitions and current rider targets by default. Favorite stages are references, not copied definitions. The Off-Season folder remains locked at the Jean review handoff; questionnaire, camps, VO₂ development and adaptive sequencing remain Alpha 4.0.25.
+
+Automated checks are Node engine/scheduler tests and static server/source checks, not mounted-browser tests. Widths, touch behavior, wake-lock release/reacquisition, and safe-area layout at 320/375/390/430 CSS pixels still require browser and physical-iPhone Safari verification.
+
+### Alpha 4.0.24 immutable activity boundary
+
+`RideMetricEntry.targetSnapshots` is the immutable replay prescription ledger. It is captured at original completion and never derived from FTP during an Original Targets replay. `correctedEntry` is a separate editable overlay; `originalUserEntry`, activity identity, canonical stage metadata, planned duration, target ledger and archived classification snapshot are protected inputs. Both Current Season and Past Seasons route to the same Stage Results activity record.
+
+No-FTP progression consumes a persisted Intro Effort Baseline with checkpoint count, RPE, timestamp and rule version. `noFtpTarget` deterministically applies conservative/default, high-RPE easing, appropriate-RPE hold, or low-RPE bounded progression per equipment capability; it never promotes the baseline to measured or estimated FTP.
+
+### Alpha 4.0.24 authoritative no-FTP presentation
+
+`noFtpPresentation` is the only presentation adapter for an unknown-FTP section. It projects section identity, rule version, plain-language effort, internal checkpoint RPE, cadence and equipment-aware resistance/load together. Cockpit, Up Next, Detail, briefing, snapshot capture and restore must consume this projection; watt-oriented `LivePrescription` remains internal fallback plumbing and cannot be shown as the primary no-FTP instruction.
+
+Training Library uses a single `activeTrainingFolder` navigation state: the landing renders only compact folder rows and a folder renders only its own inventory. The training route suppresses its legacy roster toolbar. Mobile shells reserve `env(safe-area-inset-bottom) + 96px`, use 112px scroll clearance, and constrain Jean/target children with zero-minimum grid columns and explicit wrapping.
+
+### Alpha 4.0.24 merge-candidate contracts
+
+`effortLanguage` is the sole rider-facing mapping from internal RPE to beginner language. `noFtpPresentation` retains internal RPE while projecting effort language, cadence and equipment load atomically. Calibration checkpoints persist numeric answers; ordinary sections never make numeric RPE the primary instruction.
+
+Training time uses `StageTimeline.duration`, including post-structure cooldown, while professional official time retains `raceFinishTime`. Training distance is a presentation of the same full-session fraction and `coordinatedDistance` rounds total/traveled first, deriving remaining as their exact difference. Training terminology is selected from `stage.isTraining` rather than a parallel route clock.
+
+Training folder origin persists in `sessionStorage` and supplies briefing Back copy after refresh. Safe-area rules cover both viewport edges and mobile scroll margins; selected folder state suppresses the landing hero without reintroducing multi-folder inventories.
+
+### Alpha 4.0.24.1 phone patch contracts
+
+`beginnerSectionIntent` is the authoritative no-FTP physical-step table. It keys stable authored section identities to effort, cadence, and equipment-aware load together; checkpoint sections deliberately retain the immediately preceding physical target while changing the interaction to `CHECK IN`. Both `noFtpPresentation` and immutable completion snapshots consume that same resolver, so a boundary cannot combine stale cadence with a new resistance target.
+
+`completeSessionTime` is a display projection over the canonical clock. It floors elapsed once, clamps it to the integer session total, and derives remaining by subtraction. Timeline section selection and completion continue to operate on raw canonical elapsed time, preserving exact boundaries and background restoration without a duplicated rendered second.
+
+The countdown group is centered independently of the grid-based tracker header. Alpha 4.0.24.1 intentionally adds no Safari-preview-toolbar spacer; installed Home Screen behavior remains the supported phone presentation.
+
+### Alpha 4.0.24.1 semantic contrast boundary
+
+Authentication and light Training Library folder cards define local semantic CSS tokens at the application stylesheet boundary. These rules occur after theme overrides so the dark authentication panel cannot inherit a light-theme black heading, and they explicitly cover labels, supporting text, inputs, placeholders, errors, links, focus, disabled state, and WebKit autofill. Enabled folder title/description/action tokens are distinct from the disabled folder palette. Cockpit presentation remains outside this change.
+
+### Alpha 4.0.24.1 Jean context boundary
+
+`coachingContext` classifies the active activity independently of profile rendering. `jeanTimelineEventAllowed` applies event-type eligibility to canonical crossed events, and `cueAllowed` applies the same boundary to fixed, ambient, final-countdown, section, tactical, and restored copy before `JeanEventBus.dispatch`. `explicitlyAuthoredTerrain` can permit terrain guidance for an authored climbing workout but never grants race tactics. Decorative profile elevation is not an authorization input.
+
+Ineligible crossed event IDs are appended to the persisted consumed set, while compatible messages store `coachingContext` and `activityKey` in radio history. Restoration retains only matching activity/context messages and rejects incompatible legacy race copy. Race-situation state continues through its independent Worlds projection and is not erased with a transient sentence.
