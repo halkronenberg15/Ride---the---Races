@@ -1087,3 +1087,44 @@ html[data-motion="reduced"] .ride-screen svg,html[data-motion="reduced"] .race-m
 .enter-team-bus,.training-ride-card button,.race-briefing-screen .primary-cta,.back-to-training-library{scroll-margin-bottom:calc(env(safe-area-inset-bottom,0px) + 128px)}
 @media(min-width:701px){.hq-screen,.team-bus-screen,.race-briefing-screen,.onboarding-screen{padding-top:24px;padding-bottom:36px;scroll-padding-bottom:48px}}
 @media(max-width:430px){.training-library-shell:has(.back-to-training-library){padding-top:4px}.training-folder-header{margin-top:0}.training-folder-header h2{font-size:1.35rem;margin:.2rem 0}.training-folder-header p{margin:.25rem 0 .65rem}.live-tracker-4023{font-size:clamp(.68rem,2.8vw,.84rem)}}
+
+/* Alpha 4.0.24.1 semantic contrast contract. These surfaces are intentionally
+   independent of the rider's dashboard theme and browser default colors. */
+:root {
+  --auth-panel-foreground: #f7f7f8;
+  --auth-panel-secondary: #c7c7cf;
+  --auth-link: #ffad73;
+  --auth-link-focus: #ffd1b0;
+  --auth-input-background: #0d0d0f;
+  --auth-input-foreground: #ffffff;
+  --auth-input-placeholder: #9b9ba5;
+  --auth-error: #ffb4a8;
+  --auth-focus: #ff7a16;
+  --folder-card-background: #f4f1eb;
+  --folder-card-border: #b8b2a8;
+  --folder-title: #171717;
+  --folder-description: #4a4a52;
+  --folder-accent: #7a3500;
+  --folder-disabled-background: #dedbd5;
+  --folder-disabled-foreground: #74747c;
+}
+.auth-screen,.auth-card{color:var(--auth-panel-foreground)}
+:root .auth-card h1,:root .auth-card label{color:var(--auth-panel-foreground)}
+.auth-card>p:not(.eyebrow),.auth-card>small{color:var(--auth-panel-secondary)}
+.auth-card input{color:var(--auth-input-foreground);caret-color:var(--auth-focus);background:var(--auth-input-background);border-color:#62626b}
+.auth-card input::placeholder{color:var(--auth-input-placeholder);opacity:1}
+.auth-card input:focus-visible{outline:3px solid var(--auth-focus);outline-offset:2px;border-color:var(--auth-focus)}
+.auth-card input:disabled,.auth-card button:disabled{opacity:.62;cursor:not-allowed}
+.auth-card .primary-button{background:#ff7a16;color:#111}
+.auth-card .text-button{color:var(--auth-link)!important;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
+.auth-card .text-button:hover,.auth-card .text-button:focus-visible{color:var(--auth-link-focus)!important;outline:2px solid var(--auth-focus);outline-offset:3px}
+.auth-card .auth-error{color:var(--auth-error);font-weight:750}
+.auth-card input:-webkit-autofill,.auth-card input:-webkit-autofill:hover,.auth-card input:-webkit-autofill:focus{-webkit-text-fill-color:var(--auth-input-foreground);caret-color:var(--auth-input-foreground);box-shadow:0 0 0 1000px var(--auth-input-background) inset;transition:background-color 9999s ease-out 0s}
+.training-folder-row.is-enabled{color:var(--folder-title);background:var(--folder-card-background);border:1px solid var(--folder-card-border)}
+.training-folder-row.is-enabled .training-folder-title{color:var(--folder-title)}
+.training-folder-row.is-enabled .training-folder-description{color:var(--folder-description);opacity:1}
+.training-folder-row.is-enabled .training-folder-icon,.training-folder-row.is-enabled .training-folder-action{color:var(--folder-accent)}
+.training-folder-row.is-enabled:hover,.training-folder-row.is-enabled:active{background:#fff;border-color:var(--folder-accent)}
+.training-folder-row:focus-visible{outline:3px solid var(--auth-focus);outline-offset:3px}
+.training-folder-row:disabled,.training-folder-row[aria-disabled='true']{color:var(--folder-disabled-foreground);background:var(--folder-disabled-background);border-color:#c9c5be;cursor:not-allowed;opacity:1}
+.training-folder-row:disabled .training-folder-description,.training-folder-row[aria-disabled='true'] .training-folder-description{color:var(--folder-disabled-foreground)}

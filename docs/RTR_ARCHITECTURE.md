@@ -295,3 +295,7 @@ Training folder origin persists in `sessionStorage` and supplies briefing Back c
 `completeSessionTime` is a display projection over the canonical clock. It floors elapsed once, clamps it to the integer session total, and derives remaining by subtraction. Timeline section selection and completion continue to operate on raw canonical elapsed time, preserving exact boundaries and background restoration without a duplicated rendered second.
 
 The countdown group is centered independently of the grid-based tracker header. Alpha 4.0.24.1 intentionally adds no Safari-preview-toolbar spacer; installed Home Screen behavior remains the supported phone presentation.
+
+### Alpha 4.0.24.1 semantic contrast boundary
+
+Authentication and light Training Library folder cards define local semantic CSS tokens at the application stylesheet boundary. These rules occur after theme overrides so the dark authentication panel cannot inherit a light-theme black heading, and they explicitly cover labels, supporting text, inputs, placeholders, errors, links, focus, disabled state, and WebKit autofill. Enabled folder title/description/action tokens are distinct from the disabled folder palette. Cockpit presentation remains outside this change.

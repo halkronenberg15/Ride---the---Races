@@ -49,3 +49,8 @@ assert.match(styles,/safe-area-inset-top/);assert.match(styles,/safe-area-inset-
 assert.match(ride,/\.compact-section-clock\{[^}]*justify-content:center[^}]*text-align:center/)
 for(const token of ['beginnerSectionIntent','Light Load Step','28–33%','completeSessionTime'])assert.match(mergeCandidate,new RegExp(token,'i'))
 assert.match(mergeCandidate,/Math\.floor\(elapsedSeconds\)/)
+
+// Alpha 4.0.24.1 contrast follow-up.
+for(const token of ['--auth-panel-foreground: #f7f7f8','--auth-link: #ffad73','-webkit-text-fill-color:var(--auth-input-foreground)','--folder-description: #4a4a52','--folder-disabled-foreground: #74747c'])assert.match(styles,new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')))
+assert.match(trainingLibrary,/training-folder-description/)
+assert.match(styles,/\.training-folder-row\.is-enabled \.training-folder-description\{color:var\(--folder-description\);opacity:1\}/)
