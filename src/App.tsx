@@ -106,6 +106,7 @@ function RideTheRacesApp() {
           onContinue={() => setScreen('teamBus')}
           onStartIntro={(workoutId)=>{setSelectedRace('training');setSelectedWorkout(workoutId);setScreen('tactics')}}
           onOpenFemmes={()=>setScreen('femmes')}
+          onOpenOffSeason={()=>setScreen('offseason')}
           onOpenHealth={() => setScreen('health')}
           onOpenProfile={() => setScreen('profile')}
           onOpenSettings={() => setScreen('settings')}

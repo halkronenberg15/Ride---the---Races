@@ -1,7 +1,7 @@
 {
   "name": "ride---the---races",
   "private": true,
-  "version": "4.0.25",
+  "version": "4.0.25.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -17,7 +17,8 @@
     "audit:alpha4022": "node --experimental-strip-types scripts/audit-alpha4022.ts",
     "audit:alpha4023": "node --experimental-strip-types scripts/audit-alpha4023.ts",
     "audit:alpha4024": "node --experimental-strip-types scripts/audit-alpha4024.ts",
-    "audit:alpha4025": "node --experimental-strip-types scripts/audit-alpha4025.ts"
+    "audit:alpha4025": "node --experimental-strip-types scripts/audit-alpha4025.ts",
+    "audit:alpha40251": "node --experimental-strip-types scripts/audit-alpha40251.ts"
   },
   "dependencies": {
     "react": "^19.2.8",
