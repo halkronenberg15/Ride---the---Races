@@ -299,3 +299,9 @@ The countdown group is centered independently of the grid-based tracker header. 
 ### Alpha 4.0.24.1 semantic contrast boundary
 
 Authentication and light Training Library folder cards define local semantic CSS tokens at the application stylesheet boundary. These rules occur after theme overrides so the dark authentication panel cannot inherit a light-theme black heading, and they explicitly cover labels, supporting text, inputs, placeholders, errors, links, focus, disabled state, and WebKit autofill. Enabled folder title/description/action tokens are distinct from the disabled folder palette. Cockpit presentation remains outside this change.
+
+### Alpha 4.0.24.1 Jean context boundary
+
+`coachingContext` classifies the active activity independently of profile rendering. `jeanTimelineEventAllowed` applies event-type eligibility to canonical crossed events, and `cueAllowed` applies the same boundary to fixed, ambient, final-countdown, section, tactical, and restored copy before `JeanEventBus.dispatch`. `explicitlyAuthoredTerrain` can permit terrain guidance for an authored climbing workout but never grants race tactics. Decorative profile elevation is not an authorization input.
+
+Ineligible crossed event IDs are appended to the persisted consumed set, while compatible messages store `coachingContext` and `activityKey` in radio history. Restoration retains only matching activity/context messages and rejects incompatible legacy race copy. Race-situation state continues through its independent Worlds projection and is not erased with a transient sentence.

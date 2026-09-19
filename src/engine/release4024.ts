@@ -2,9 +2,10 @@ import type { EquipmentInstance } from './manualBike.ts'
 import type { LivePrescription } from './terrainModifier.ts'
 import type { RideSegment } from '../data/raceStages.ts'
 import type { EditableRideResult, RideMetricEntry } from '../types/career.ts'
+import type { JeanTimelineEvent } from './stageEngine.ts'
 
 export type FtpProvenance='MEASURED'|'RIDER_ENTERED'|'ESTIMATED'|'INTRO_EFFORT_BASELINE'|'UNKNOWN'
-export type CoachingContext='PROFESSIONAL_RACE'|'WORLDS'|'RECOVERY'|'LEG_OPENER'|'INTRO_CYCLING'|'CALIBRATION'|'STAGE_REPLAY'|'OFF_SEASON'
+export type CoachingContext='PROFESSIONAL_RACE'|'WORLDS'|'TRAINING'|'RECOVERY'|'LEG_OPENER'|'INTRO_CYCLING'|'CALIBRATION'|'OUTDOOR_ACTIVITY'|'FTP_ASSESSMENT'|'STAGE_REPLAY'|'OFF_SEASON'
 export const PRESCRIPTION_RULE_VERSION='alpha4024.2'
 export type PrescriptionSnapshot={authoredId:string;resolvedId:string;name:string;duration:number;zone:string;power:string;cadence:string;resistance:string;reason:'SECTION_BOUNDARY'|'TACTICAL_INPUT_CHANGED'|'RIDER_INPUT_CHANGED'|'RESTORED'}
 export type OriginalTargetSnapshot=PrescriptionSnapshot&{effort?:string;sectionIndex:number;equipmentId:string;equipmentMode:string;calibrationConfidence:string;ftp:number|null;ftpProvenance:FtpProvenance;tacticalModifier:number;ruleVersion:string}
@@ -57,11 +58,23 @@ export function applyRideCorrection(ride:RideMetricEntry,patch:Partial<EditableR
 
 export function coachingContext(library:string,workoutId?:string,replay=false):CoachingContext{
  if(replay)return 'STAGE_REPLAY';if(library==='worlds-2026')return 'WORLDS';if(library!=='training')return 'PROFESSIONAL_RACE'
- if(workoutId?.startsWith('recovery-'))return 'RECOVERY';if(workoutId?.startsWith('opener-'))return 'LEG_OPENER';if(workoutId==='intro-calibration')return 'CALIBRATION';if(workoutId?.startsWith('intro-'))return 'INTRO_CYCLING';return 'OFF_SEASON'
+ if(/ftp|assessment/i.test(workoutId??''))return 'FTP_ASSESSMENT';if(/outdoor-activity/i.test(workoutId??''))return 'OUTDOOR_ACTIVITY';if(workoutId?.startsWith('recovery-'))return 'RECOVERY';if(workoutId?.startsWith('opener-'))return 'LEG_OPENER';if(workoutId==='intro-calibration')return 'CALIBRATION';if(workoutId?.startsWith('intro-'))return 'INTRO_CYCLING';if(workoutId?.startsWith('off-season-'))return 'OFF_SEASON';return 'TRAINING'
 }
-const raceOnly=/\b(sprint|peloton|attack|breakaway|find the group|group position)\b/i
+const terrainOnly=/\b(climb(?:ing)?|summit|descent)\b/i
+const raceOnly=/\b(sprint|attack|breakaway|chase|peloton|kom|king of the mountains|find the group|group position|race(?: situation)?|stage\s+\d+)\b/i
 export function normalizeJeanCopy(title:string,copy:string){const clean=copy.trim().replace(/\s+/g,' '),a=title.trim().replace(/[.!?]+$/,'');return clean.toLocaleLowerCase()===a.toLocaleLowerCase()||clean.toLocaleLowerCase()===`${a}. ${a}`.toLocaleLowerCase()?a:clean}
-export function cueAllowed(context:CoachingContext,message:string){return ['PROFESSIONAL_RACE','WORLDS','STAGE_REPLAY'].includes(context)||!raceOnly.test(message)}
+export function cueAllowed(context:CoachingContext,message:string,explicitlyAuthoredTerrain=false){if(['PROFESSIONAL_RACE','WORLDS','STAGE_REPLAY'].includes(context))return true;if(raceOnly.test(message))return false;return !terrainOnly.test(message)||explicitlyAuthoredTerrain}
+const terrainEventTypes=new Set<JeanTimelineEvent['type']>(['climb-approach','climb-entry','summit-minute','summit','descent'])
+const raceEventTypes=new Set<JeanTimelineEvent['type']>(['kilometre-zero-warning','kilometre-zero','sprint-approach','sprint'])
+export function explicitlyAuthoredTerrain(segment:Pick<RideSegment,'name'|'type'|'description'|'objective'|'secondaryObjective'|'terrainLabel'>|undefined){if(!segment)return false;return /\b(?:climb(?:ing)?|summit|descent|mountain|ascent|hill repeats?)\b/i.test(`${segment.name} ${segment.type} ${segment.description??''} ${segment.objective??''} ${segment.secondaryObjective??''} ${segment.terrainLabel??''}`)}
+export function jeanTimelineEventAllowed(context:CoachingContext,event:JeanTimelineEvent,segments:RideSegment[]){
+ if(['PROFESSIONAL_RACE','WORLDS','STAGE_REPLAY'].includes(context))return true
+ if(raceEventTypes.has(event.type))return false
+ if(!terrainEventTypes.has(event.type))return true
+ const relevant=event.type==='summit'?segments[event.segmentIndex-1]:segments[event.segmentIndex]
+ return explicitlyAuthoredTerrain(relevant)
+}
+export function restoredJeanMessageAllowed(context:CoachingContext,message:{text:string;coachingContext?:string;activityKey?:string},activityKey:string){return (!message.activityKey||message.activityKey===activityKey)&&(!message.coachingContext||message.coachingContext===context)&&cueAllowed(context,message.text)}
 
 export type SeasonClosure={status:'ACTIVE'|'ENDED';endedAt:string|null;completionReason:'FINAL_STAGE'|'OWNER_EARLY_END'|null;finalStageCompleted:number;earlyEndOwnerOverride:boolean;finalResultsSnapshot:unknown;handoffStatus:'NOT_STARTED'|'READY_FOR_REVIEW';offSeasonFolderLocked:boolean}
 export const activeSeasonClosure=():SeasonClosure=>({status:'ACTIVE',endedAt:null,completionReason:null,finalStageCompleted:0,earlyEndOwnerOverride:false,finalResultsSnapshot:null,handoffStatus:'NOT_STARTED',offSeasonFolderLocked:true})

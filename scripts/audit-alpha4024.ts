@@ -54,3 +54,8 @@ assert.match(mergeCandidate,/Math\.floor\(elapsedSeconds\)/)
 for(const token of ['--auth-panel-foreground: #f7f7f8','--auth-link: #ffad73','-webkit-text-fill-color:var(--auth-input-foreground)','--folder-description: #4a4a52','--folder-disabled-foreground: #74747c'])assert.match(styles,new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')))
 assert.match(trainingLibrary,/training-folder-description/)
 assert.match(styles,/\.training-folder-row\.is-enabled \.training-folder-description\{color:var\(--folder-description\);opacity:1\}/)
+
+// Alpha 4.0.24.1 Jean context isolation.
+for(const token of ['jeanTimelineEventAllowed','restoredJeanMessageAllowed','explicitlyAuthoredTerrain'])assert.match(mergeCandidate,new RegExp(token))
+assert.match(ride,/ineligible\.map\(event=>`\$\{library\}-stage\$\{stage\.number\}-\$\{event\.key\}`\)/)
+assert.match(ride,/coachingContext:jeanContext,activityKey:jeanActivityKey/)

@@ -34,7 +34,7 @@ import { RiderMarker4023 } from '../components/RiderMarker4023.ts'
 import { completionLabel, lifecycleJeanMessage, lifecycleProfileContext, resolveDetailGuidance4023 } from '../engine/cockpitPresentation4023.ts'
 import { climbPresentationMode, evaluateJeanCue, initialClimbPresentationState, JEAN_PRESENTATION_MS, officialStageTime, qualifiesForClimbView, scheduleJeanDismissal, transitionClimbPresentation, validJeanEvents, type JeanCueContract } from '../engine/alpha4024.ts'
 import { applyIntroPrescription } from '../engine/introCycling.ts'
-import { coachingContext, completeSessionTime, coordinatedDistance, cueAllowed, noFtpPresentation, normalizeJeanCopy, rideOpeningMessage, wakeLockMessage, type OriginalTargetSnapshot } from '../engine/release4024.ts'
+import { coachingContext, completeSessionTime, coordinatedDistance, cueAllowed, explicitlyAuthoredTerrain, jeanTimelineEventAllowed, noFtpPresentation, normalizeJeanCopy, restoredJeanMessageAllowed, rideOpeningMessage, wakeLockMessage, type OriginalTargetSnapshot } from '../engine/release4024.ts'
 
 type RideScreenProps = {
   stageNumber: number
@@ -91,6 +91,8 @@ function RideScreen({
   const segments = useMemo(() => isTimeTrial?officialSegments(timedSegments):preRacePlan?.officialSegments??timedSegments, [timedSegments,isTimeTrial,preRacePlan])
   const equipment=(career.equipment.instances.find(item=>item.id===career.equipment.activeEquipmentId)??GENERIC_MANUAL_EQUIPMENT) as EquipmentInstance
   const activeRide = useActiveRide()
+  const jeanContext=coachingContext(library,workoutId,Boolean(activityType==='STAGE_REPLAY'||activeRide.ride?.activityType==='STAGE_REPLAY'))
+  const jeanActivityKey=`${library}:${workoutId??stage.id??stage.number}:${activityType??activeRide.ride?.activityType??(stage.isTraining?'TRAINING':'RACE_STAGE')}`
   const timeline = useMemo(() => createRoadModel(stage.number, segments, stage.distanceKm, raceIdentities[library as keyof typeof raceIdentities], stage.profilePoints, stage.officialCourseMarkers, stage.raceId, targetFtp,equipment,career.rider.cadencePreferences), [segments, stage, library, career.rider.ftp??150,equipment,career.rider.cadencePreferences])
   const gateModels=useMemo(()=>preRacePlan?{
     warmup:createRoadModel(-1,[preRacePlan.warmupSegment],1,undefined,undefined,undefined,'Pre-race warm-up',targetFtp,equipment,career.rider.cadencePreferences),
@@ -106,7 +108,7 @@ function RideScreen({
   const isRunning = rideStarted && activeRide.ride?.runningSince !== null
   const [countdown, setCountdown] = useState<number | null>(null)
   const [isFinished, setIsFinished] = useState(false)
-  const restoredRadio=activeRide.ride?.radioHistory.at(-1)
+  const restoredRadio=activeRide.ride?.radioHistory.findLast(message=>restoredJeanMessageAllowed(jeanContext,message,jeanActivityKey))
   const [radioText, setRadioText] = useState(restoredRadio?.text??'Radio connected. Press Start Ride when you are ready.')
   const [showDetails, setShowDetails] = useState(false)
   const [endingEarly,setEndingEarly]=useState(false)
@@ -247,10 +249,17 @@ function RideScreen({
     if(decision==='WAIT')return false
     activeRide.updateRide({consumedJeanCueIds:[...consumed,cue.id].slice(-300)})
     if(decision==='DROP')return false
-    const context=coachingContext(library,workoutId,Boolean(activeRide.ride?.activityType==='STAGE_REPLAY')),message=normalizeJeanCopy(currentSegment.name,cue.message)
-    if(!cueAllowed(context,message))return false
-    speak(message,cue.id);return true
+    const message=normalizeJeanCopy(currentSegment.name,cue.message)
+    if(!cueAllowed(jeanContext,message,Boolean(cue.explicitlyAuthoredTerrain)))return false
+    speak(message,cue.id,{explicitlyAuthoredTerrain:Boolean(cue.explicitlyAuthoredTerrain)});return true
   }
+
+  useEffect(()=>{
+    if(!activeRide.ride)return
+    const retained=activeRide.ride.radioHistory.filter(message=>restoredJeanMessageAllowed(jeanContext,message,jeanActivityKey)),discarded=activeRide.ride.radioHistory.filter(message=>!retained.includes(message))
+    if(discarded.length)activeRide.updateRide({radioHistory:retained,consumedJeanCueIds:Array.from(new Set([...activeRide.ride.consumedJeanCueIds,...discarded.map(message=>message.id)])).slice(-300)})
+    if(!cueAllowed(jeanContext,radioText))queueMicrotask(()=>{setRadioText('Radio connected. Press Start Ride when you are ready.');setDismissedJeanMessage(null)})
+  },[jeanActivityKey,jeanContext,activeRide.ride?.startedAt])
 
   useEffect(()=>{
     if(dismissedJeanMessage===presentedJeanMessage)return
@@ -303,9 +312,11 @@ function RideScreen({
     return `${eventSegment.name}. ${eventSegment.description}`
   }
 
-  function speak(text: string, eventId = `ride-${stage.number}-${segmentData.index}-${text}`) {
-    jeanEventBus.current.dispatch(createJeanEvent(eventId, 'coaching', text),
-      event => {setRadioText(event.message);setDismissedJeanMessage(null);const message:TeamRadioMessage={id:event.id,text:event.message,priority:'coaching',createdAt:new Date().toISOString()};if(activeRide.ride&&!activeRide.ride.radioHistory.some(item=>item.id===message.id))activeRide.updateRide({radioHistory:[...activeRide.ride.radioHistory,message].slice(-50)})},
+  function speak(text: string, eventId = `ride-${stage.number}-${segmentData.index}-${text}`,options?:{explicitlyAuthoredTerrain?:boolean}) {
+    const normalized=normalizeJeanCopy(currentSegment.name,text)
+    if(!cueAllowed(jeanContext,normalized,Boolean(options?.explicitlyAuthoredTerrain))){if(activeRide.ride&&!activeRide.ride.consumedJeanCueIds.includes(eventId))activeRide.updateRide({consumedJeanCueIds:[...activeRide.ride.consumedJeanCueIds,eventId].slice(-300)});return}
+    jeanEventBus.current.dispatch(createJeanEvent(eventId, 'coaching', normalized),
+      event => {setRadioText(event.message);setDismissedJeanMessage(null);const message:TeamRadioMessage={id:event.id,text:event.message,priority:'coaching',createdAt:new Date().toISOString(),coachingContext:jeanContext,activityKey:jeanActivityKey};if(activeRide.ride&&!activeRide.ride.radioHistory.some(item=>item.id===message.id))activeRide.updateRide({radioHistory:[...activeRide.ride.radioHistory,message].slice(-50)})},
       event => {
         if (!canUseJeanVoice()) { console.info(`[Jean] speech unavailable: ${event.id}`); return false }
         speakAsJean(event.message, undefined, career.settings.jeanVoiceVolume)
@@ -394,7 +405,7 @@ function RideScreen({
 
     if (fixedCue) {
       const cueKey=`fixed-${stage.number}-${segmentData.index}-${fixedCue.at}`
-      if(deliverCue({id:cueKey,message:fixedCue.text,validFrom:timeline.segmentStarts[segmentData.index]+fixedCue.at,expiresAt:timeline.segmentStarts[segmentData.index]+fixedCue.at+2,priority:'course',canonicalProgress:engine.courseProgress,source:'fixed'})){lastSpokenCue.current=cueKey;lastRandomCueTime.current=secondInSegment}
+      if(deliverCue({id:cueKey,message:fixedCue.text,validFrom:timeline.segmentStarts[segmentData.index]+fixedCue.at,expiresAt:timeline.segmentStarts[segmentData.index]+fixedCue.at+2,priority:'course',canonicalProgress:engine.courseProgress,source:'fixed',explicitlyAuthoredTerrain:explicitlyAuthoredTerrain(currentSegment)})){lastSpokenCue.current=cueKey;lastRandomCueTime.current=secondInSegment}
 
       return
     }
@@ -409,7 +420,7 @@ function RideScreen({
     ) {
       const randomCue = jeanCue(mode, undefined, [radioText], secondInSegment, { afterKmZero, running: isRunning, sprintPhase: sprintPhase?.name })
 
-      deliverCue({id:`ambient-${stage.number}-${segmentData.index}-${nextRandomCueTime.current}`,message:randomCue,validFrom:timeline.segmentStarts[segmentData.index]+nextRandomCueTime.current,expiresAt:timeline.segmentStarts[segmentData.index]+nextRandomCueTime.current+10,priority:'ambient',canonicalProgress:engine.courseProgress,source:'ambient'})
+      deliverCue({id:`ambient-${stage.number}-${segmentData.index}-${nextRandomCueTime.current}`,message:randomCue,validFrom:timeline.segmentStarts[segmentData.index]+nextRandomCueTime.current,expiresAt:timeline.segmentStarts[segmentData.index]+nextRandomCueTime.current+10,priority:'ambient',canonicalProgress:engine.courseProgress,source:'ambient',explicitlyAuthoredTerrain:explicitlyAuthoredTerrain(currentSegment)})
       lastRandomCueTime.current = secondInSegment
       nextRandomCueTime.current =
         secondInSegment +
@@ -433,7 +444,7 @@ function RideScreen({
     if (!isRunning || !competitiveEventsEligible(engine.lifecycle) || !name || previousSprintPhase.current === name) return
     previousSprintPhase.current = name
     const trigger=timeline.segmentStarts[engine.segmentIndex]+sprintPhase!.start
-    deliverCue({id:`sprint-${stage.number}-${engine.segmentIndex}-${name}`,message:jeanCue('sprint', undefined, [radioText], engine.segmentIndex + sprintPhase!.index, { afterKmZero, running: true, sprintPhase: name, critical: name === 'SPRINT' }),validFrom:trigger,expiresAt:trigger+Math.min(10,sprintPhase!.end-sprintPhase!.start),priority:'course',canonicalProgress:engine.courseProgress,source:'sprint'})
+    deliverCue({id:`sprint-${stage.number}-${engine.segmentIndex}-${name}`,message:jeanCue('sprint', undefined, [radioText], engine.segmentIndex + sprintPhase!.index, { afterKmZero, running: true, sprintPhase: name, critical: name === 'SPRINT' }),validFrom:trigger,expiresAt:trigger+Math.min(10,sprintPhase!.end-sprintPhase!.start),priority:'course',canonicalProgress:engine.courseProgress,source:'sprint',eventType:'sprint'})
   }, [sprintPhase?.name, isRunning])
 
   useEffect(() => {
@@ -443,7 +454,7 @@ function RideScreen({
     const cueKey = `${engine.segmentIndex}-${event}`
     if (lastSpokenCue.current === cueKey) return
     lastSpokenCue.current = cueKey
-    deliverCue({id:`final-${stage.number}-${engine.segmentIndex}-${event}`,message:jeanCue(mode,event),validFrom:elapsedSeconds,expiresAt:elapsedSeconds+2,priority:'course',canonicalProgress:engine.courseProgress,source:'final'})
+    deliverCue({id:`final-${stage.number}-${engine.segmentIndex}-${event}`,message:jeanCue(mode,event),validFrom:elapsedSeconds,expiresAt:elapsedSeconds+2,priority:'course',canonicalProgress:engine.courseProgress,source:'final',explicitlyAuthoredTerrain:explicitlyAuthoredTerrain(currentSegment)})
   }, [engine.events, engine.segmentIndex, isRunning, mode])
 
   useEffect(() => {
@@ -455,11 +466,14 @@ function RideScreen({
       .filter((event) => event.type !== 'sector-entry' && !spokenTimelineEvents.current.has(event.key))
       .filter(event=>competitiveEventsEligible(engine.lifecycle)||['kilometre-zero','kilometre-zero-warning','finish'].includes(event.type))
     crossed.forEach((item) => spokenTimelineEvents.current.add(item.key))
+    const ineligible=crossed.filter(event=>!jeanTimelineEventAllowed(jeanContext,event,segments))
+    if(ineligible.length&&activeRide.ride)activeRide.updateRide({consumedJeanCueIds:Array.from(new Set([...activeRide.ride.consumedJeanCueIds,...ineligible.map(event=>`${library}-stage${stage.number}-${event.key}`)])).slice(-300)})
     // Navigation/resume can cross historical cues. Every call has a bounded,
     // canonical window; expired calls are consumed rather than queued.
-    const event = validJeanEvents(crossed,elapsedSeconds,segments.map(segment=>segment.sec),new Set()).at(-1)
+    const event = validJeanEvents(crossed.filter(event=>jeanTimelineEventAllowed(jeanContext,event,segments)),elapsedSeconds,segments.map(segment=>segment.sec),new Set()).at(-1)
     if (!event) return
-    deliverCue({id:`${library}-stage${stage.number}-${event.key}`,message:timelineMessage(event),validFrom:event.at,expiresAt:event.at+Math.max(5,Math.min(20,segments[event.segmentIndex].sec*.25)),priority:'course',canonicalProgress:event.courseDistance??engine.courseDistance,source:'timeline'})
+    const terrainSegment=event.type==='summit'?segments[event.segmentIndex-1]:segments[event.segmentIndex]
+    deliverCue({id:`${library}-stage${stage.number}-${event.key}`,message:timelineMessage(event),validFrom:event.at,expiresAt:event.at+Math.max(5,Math.min(20,segments[event.segmentIndex].sec*.25)),priority:'course',canonicalProgress:event.courseDistance??engine.courseDistance,source:'timeline',eventType:event.type,explicitlyAuthoredTerrain:explicitlyAuthoredTerrain(terrainSegment)})
   }, [coachingTimeline, elapsedSeconds, isRunning])
 
   useEffect(() => {
@@ -480,7 +494,7 @@ function RideScreen({
 
     const announcementTimer = window.setTimeout(() => {
       const at=timeline.segmentStarts[segmentData.index]
-      deliverCue({id:`section-${stage.number}-${segmentData.index}`,message:`${currentSegment.name}. ${currentSegment.description}`,validFrom:at,expiresAt:at+5,priority:'course',canonicalProgress:engine.courseProgress,source:'timeline'})
+      deliverCue({id:`section-${stage.number}-${segmentData.index}`,message:`${currentSegment.name}. ${currentSegment.description}`,validFrom:at,expiresAt:at+5,priority:'course',canonicalProgress:engine.courseProgress,source:'timeline',explicitlyAuthoredTerrain:explicitlyAuthoredTerrain(currentSegment)})
     }, 0)
 
     return () => window.clearTimeout(announcementTimer)

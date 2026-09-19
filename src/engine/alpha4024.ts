@@ -49,7 +49,7 @@ export function validJeanEvents(events:JeanTimelineEvent[],now:number,segmentDur
 }
 
 export type JeanCuePriority='lifecycle'|'safety'|'tactical'|'course'|'ambient'
-export type JeanCueContract={id:string;message:string;validFrom:number;expiresAt:number;priority:JeanCuePriority;canonicalProgress:number;source:'timeline'|'fixed'|'ambient'|'sprint'|'final'}
+export type JeanCueContract={id:string;message:string;validFrom:number;expiresAt:number;priority:JeanCuePriority;canonicalProgress:number;source:'timeline'|'fixed'|'ambient'|'sprint'|'final';eventType?:JeanTimelineEvent['type'];explicitlyAuthoredTerrain?:boolean}
 export function evaluateJeanCue(cue:JeanCueContract,now:number,consumed:ReadonlySet<string>):'WAIT'|'DELIVER'|'DROP'{
  if(consumed.has(cue.id))return 'DROP'
  if(now<cue.validFrom)return 'WAIT'
