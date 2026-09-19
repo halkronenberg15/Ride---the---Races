@@ -106,6 +106,7 @@ export type CareerState = {
     instances:Array<{id:string;name:string;manufacturer:string;modelFamily:string;resistanceControl:'manual'|'controllable';powerAvailable:boolean;cadenceAvailable:boolean;resistanceAvailable:boolean;calibrationProfileId?:string;calibrationConfidence:'UNAVAILABLE'|'BASELINE'|'PERSONALIZED'|'CALIBRATED';calibrationSamples?:Array<{resistance:number;cadence:number;power:number;sourceType:'historical-average'|'manual-calibration'|'live-telemetry'|'imported-ride';confidence:'LOW'|'MEDIUM'|'HIGH';durationSeconds?:number;timestamp?:string;aggregate:boolean;equipmentId?:string;observedAt?:string}>}>
   }
   season: {
+    active:boolean
     year: number
     currentRace: string
     currentStage: number

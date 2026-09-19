@@ -51,3 +51,21 @@ Readiness displays source, data date, update time and the direct rider inputs. T
 Jean’s off-season context supports reviews, camp/weekly purpose, fueling, outdoor, recovery and completion guidance. Generic training rejects unauthored summit, descent, attack, peloton, sprint, KOM and breakaway calls; explicit climbing training retains climbing guidance and professional race stages retain race calls. Existing expiry, restoration rejection, accessible presentation and lifecycle behavior remain authoritative.
 
 Deferred: production identity/cloud authorization, automatic weather, direct device integrations, unrestricted AI coaching, complete Femmes race research, full Race Book, advanced Climb Preview, Sprint View overhaul, points/classifications overhaul, team-role simulation, and full Jean voice overhaul.
+
+## Preview data transfer follow-up
+
+Preview URLs have separate browser origins, so their local storage cannot see a career saved by the existing deployment. The owner-only **PREVIEW DATA TRANSFER — DEVELOPMENT ONLY** settings surface exports format `ride-the-races-career-export`, version 1. It contains the authenticated owner’s career, schema/application/timestamp metadata, rider summary, safe program entitlements, and a compatible paused active ride when available. Because the career is the account-scoped aggregate, this includes profile, FTP provenance, equipment/calibration, intake/development state, season/results/history/replays/archives, Intro/outdoor readiness, Worlds, favorites, settings, readiness, outdoor/strength activities, questionnaire, camps, plan/calendar/substitutions/fueling and FTP assessments, including unknown compatible career fields.
+
+The export never contains the account record, password verifier, salt, session key/token, browser identifier, another rider, or global administration data. It is downloaded and imported locally; RtR does not upload it or send it to analytics. The JSON contains personal training information, is not encrypted, and should be stored securely. This development utility is not cloud synchronization or production portability.
+
+Import parses and validates format/version, rejects malformed or future-schema files, shows rider identity and career counts, and requires explicit confirmation. It replaces rather than merges the destination career, rebinds it to the authenticated owner account, migrates it additively to schema 6, and preserves destination authentication credentials. Safe program entitlements transfer without granting the owner role. A Rider #1 preview can therefore become the imported Rider #15 career without duplicate identity or appended history. Repeating an import produces the same career.
+
+Immediately before replacement, the complete destination career, safe entitlements and compatible active ride are stored under a versioned per-account recovery key. Restore is owner-only and confirmed. Failed validation performs no writes; a failed write rolls back career, active ride, entitlements and the prior recovery backup. Running rides block export/import. Only a paused ride with existing authoritative runtime state is portable; an incompatible ride is excluded and identified in preview.
+
+End Season renders only when schema 6 identifies an active, unarchived season. It is absent for a new preview career with no official race history, blocked during an active ride, and becomes available after importing a qualifying career. Confirmation discloses incomplete stages; closure remains idempotent, replay-isolated, and unlocks off-season once.
+
+## Authoritative readiness follow-up
+
+Team HQ, Off-Season, Sunday adaptation and future Jean/calendar consumers use `projectReadiness`. There is no composite percentage: available sleep, external recovery, strain, fatigue, soreness, motivation and hydration inputs remain independently labeled, with source, entry date and update time. The categorical result is Ready, Proceed with control, Recovery recommended, or Update needed; it is guidance, not a medical measurement.
+
+The daily rule compares ISO local-calendar dates rather than elapsed UTC hours. Any earlier local date is stale, displays its age, and cannot adapt training. Copy is phase-aware for racing, off-season, Intro, and ordinary training; the legacy “Race with discipline” string and unexplained ring are removed.
