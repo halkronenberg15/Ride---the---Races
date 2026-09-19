@@ -16,8 +16,23 @@ export function prescriptionSnapshot(index:number,segment:RideSegment,resolved:L
 export type IntroEffortBaseline={rpe:number;cadence:number;load:string;completedSteps:number;checkpointRpe?:number[];recordedAt:string;ruleVersion:string}
 export type NoFtpTarget={power:string;cadence:string;resistance:string;rpe:string;provisional:boolean;ruleVersion:string;adjustmentReason:string;readyForNextRide:boolean}
 export type NoFtpPresentation={mode:'EFFORT';heading:'EFFORT';effort:string;rpe:string;cadence:string;resistance:string;zone:string;sectionId:string;ruleVersion:string}
+type BeginnerSectionIntent={cadence:string;rpe:string;pelotonResistance:string;load:string;reason:string}
+/** Authored beginner steps stay physically distinct without deriving watts from a missing FTP. */
+function beginnerSectionIntent(segment:RideSegment):BeginnerSectionIntent|null{
+ const name=segment.name.toLowerCase()
+ if(name==='setup and easy control')return {cadence:'55–65 rpm',rpe:'RPE 1–2 / 10',pelotonResistance:'25–30%',load:'Light load',reason:'Establish smooth control at a stable beginner-safe load.'}
+ if(name==='light load step'||name==='rpe check one')return {cadence:'55–65 rpm',rpe:name.includes('check')?'RPE CHECK':'RPE 2–3 / 10',pelotonResistance:'28–33%',load:'Light–Moderate load',reason:name.includes('check')?'Hold the completed light-load step while recording effort.':'Add one small resistance step without changing cadence.'}
+ if(name==='moderate rhythm step'||name==='rpe check two')return {cadence:'65–75 rpm',rpe:name.includes('check')?'RPE CHECK':'RPE 3–4 / 10',pelotonResistance:'27–32%',load:'Moderate load',reason:name.includes('check')?'Hold the completed moderate-rhythm step while recording effort.':'Raise cadence sustainably with a controlled load.'}
+ if(name==='controlled finish')return {cadence:'60–70 rpm',rpe:'RPE 2–3 / 10',pelotonResistance:'25–30%',load:'Light load',reason:'Return to comfortable controlled riding.'}
+ if(name==='easy recovery')return {cadence:'55–65 rpm',rpe:'RPE 1–2 / 10',pelotonResistance:'20–25%',load:'Very light load',reason:'Cooldown at an easy load.'}
+ if(name==='easy start')return {cadence:'60–70 rpm',rpe:'RPE 1–2 / 10',pelotonResistance:'25–30%',load:'Light load',reason:'Begin from smooth control.'}
+ if(name==='cadence change')return {cadence:'68–78 rpm',rpe:'RPE 2–3 / 10',pelotonResistance:'25–30%',load:'Light load',reason:'Change pedal speed while holding load stable.'}
+ return null
+}
 /** No-FTP guidance is equipment-specific and never invents watt precision. */
 export function noFtpTarget(segment:RideSegment,equipment:EquipmentInstance,baseline?:IntroEffortBaseline):NoFtpTarget{
+ const intent=beginnerSectionIntent(segment)
+ if(intent){const shared={power:equipment.powerAvailable?'PROVISIONAL — calibrating':'POWER GUIDANCE AFTER CALIBRATION',cadence:intent.cadence,rpe:intent.rpe,provisional:true,ruleVersion:PRESCRIPTION_RULE_VERSION,adjustmentReason:intent.reason,readyForNextRide:false};return {...shared,resistance:equipment.calibrationProfileId==='peloton-bike-manual-reference'?intent.pelotonResistance:intent.load}}
  const recovery=/recovery|cooldown|easy finish/i.test(`${segment.name} ${segment.type}`),calibration=/calibration/i.test(segment.type)
  const complete=Boolean(baseline&&baseline.completedSteps>=2),high=complete&&baseline!.rpe>=7,low=complete&&baseline!.rpe<=3
  const cadence=recovery?'60–75 rpm':high?'60–72 rpm':low?'68–82 rpm':calibration?'65–80 rpm':'65–80 rpm'
@@ -32,7 +47,7 @@ export function effortLanguage(rpe:string){if(/CHECK/i.test(rpe))return 'CHECK I
 export function noFtpPresentation(segment:RideSegment,equipment:EquipmentInstance,baseline?:IntroEffortBaseline,index=0):NoFtpPresentation{const target=noFtpTarget(segment,equipment,baseline);return {mode:'EFFORT',heading:'EFFORT',effort:effortLanguage(target.rpe),rpe:target.rpe.replace(' / 10',''),cadence:target.cadence,resistance:target.resistance,zone:segment.zone,sectionId:`section-${index}-${segment.name}`,ruleVersion:target.ruleVersion}}
 
 export function coordinatedDistance(totalKm:number,traveledKm:number,imperial:boolean){const factor=imperial?.621371:1,total=Math.max(0,Math.round(totalKm*factor*10)),traveled=Math.min(total,Math.max(0,Math.round(traveledKm*factor*10))),remaining=total-traveled,unit=imperial?'mi':'km';return {total:`${(total/10).toFixed(1)} ${unit}`,traveled:`${(traveled/10).toFixed(1)} ${unit}`,remaining:`${(remaining/10).toFixed(1)} ${unit}`,totalTenths:total,traveledTenths:traveled,remainingTenths:remaining}}
-export function completeSessionTime(totalSeconds:number,elapsedSeconds:number){const total=Math.max(0,totalSeconds),elapsed=Math.min(total,Math.max(0,elapsedSeconds));return {total,elapsed,remaining:total-elapsed,complete:elapsed===total}}
+export function completeSessionTime(totalSeconds:number,elapsedSeconds:number){const total=Math.max(0,Math.round(totalSeconds)),elapsed=Math.min(total,Math.max(0,Math.floor(elapsedSeconds)));return {total,elapsed,remaining:total-elapsed,complete:elapsed===total}}
 
 export function rideOpeningMessage(context:CoachingContext,title:string){if(context==='CALIBRATION')return 'Settle in. Smooth pedals—today we’re finding your comfortable baseline.';if(context==='INTRO_CYCLING')return `${title}. Start easy and follow each skill one step at a time.`;if(context==='RECOVERY')return `${title}. Keep the pressure light and breathing calm.`;if(context==='LEG_OPENER')return `${title}. Easy riding first; the short pickups stay controlled.`;return ''}
 

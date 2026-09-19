@@ -43,3 +43,9 @@ assert.equal((ride.match(/▲ Hide Ride Details/g)??[]).length,1)
 assert.match(hq,/FTP NOT SET/);assert.match(hq,/RPE-BASED TARGETS/);assert.match(hq,/Intro to Cycling/)
 assert.match(trainingLibrary,/rtr-training-folder/)
 assert.match(styles,/safe-area-inset-top/);assert.match(styles,/safe-area-inset-bottom/)
+
+// Alpha 4.0.24.1 phone patch: centered countdown, distinct beginner steps,
+// and one balanced whole-second session projection. Safari preview spacing is unchanged.
+assert.match(ride,/\.compact-section-clock\{[^}]*justify-content:center[^}]*text-align:center/)
+for(const token of ['beginnerSectionIntent','Light Load Step','28–33%','completeSessionTime'])assert.match(mergeCandidate,new RegExp(token,'i'))
+assert.match(mergeCandidate,/Math\.floor\(elapsedSeconds\)/)

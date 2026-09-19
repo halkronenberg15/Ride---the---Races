@@ -73,3 +73,11 @@ The Intro Calibration Ride is authoritatively 30 minutes: 27 minutes of structur
 Unknown FTP now reads `FTP NOT SET` and the Intro to Cycling plan reads `RPE-BASED TARGETS`. Intro-only recovery messaging is non-racing. `Intro to Cycling` is the canonical displayed program name. Training briefing guidance no longer says team objective, and its Back control restores the originating folder using session storage.
 
 Mobile tracker typography increases one step. Team HQ, Training Library/folders, briefing, onboarding, pre-start and active cockpit retain top safe-area protection and additional bottom scroll clearance for Safari chrome. Open folder views omit the repeated Training Library hero so their Back control, title and content begin near the top.
+
+## Alpha 4.0.24.1 physical-phone stabilization
+
+The section countdown is centered as one nonwrapping time-and-label group below the unchanged tracker header. No additional Safari-preview bottom spacing is introduced: the reported obstruction belongs to Safari preview chrome and is absent from the saved Home Screen experience.
+
+Unknown-FTP beginner steps now resolve through `beginnerSectionIntent` before every briefing, preview, active target, restoration, and completion snapshot. Intro Calibration progresses deliberately: Setup uses `VERY EASY · 55–65 rpm · 25–30%`; Light Load raises only load to `EASY · 55–65 rpm · 28–33%`; Check-In One holds that completed target; Moderate Rhythm moves to `COMFORTABLE · 65–75 rpm · 27–32%`; Check-In Two holds that target; Controlled Finish returns to `EASY · 60–70 rpm · 25–30%`; and cooldown settles at `VERY EASY · 55–65 rpm · 20–25%`. Non-Peloton equipment receives the equivalent Light, Light–Moderate, Moderate, or Very Light load guidance. The separate Intro `Cadence Change` moves from 60–70 to 68–78 rpm while keeping load stable.
+
+Complete-session display time now projects one integer elapsed second first and derives remaining as `total − elapsed`. Therefore rendered elapsed plus remaining always equals total, the last active state is `29:59 + 00:01`, and completion occurs once at `30:00 + 00:00`. The engine continues to use its unrounded canonical clock for section transitions, pause/resume, and restoration.

@@ -287,3 +287,11 @@ Training Library uses a single `activeTrainingFolder` navigation state: the land
 Training time uses `StageTimeline.duration`, including post-structure cooldown, while professional official time retains `raceFinishTime`. Training distance is a presentation of the same full-session fraction and `coordinatedDistance` rounds total/traveled first, deriving remaining as their exact difference. Training terminology is selected from `stage.isTraining` rather than a parallel route clock.
 
 Training folder origin persists in `sessionStorage` and supplies briefing Back copy after refresh. Safe-area rules cover both viewport edges and mobile scroll margins; selected folder state suppresses the landing hero without reintroducing multi-folder inventories.
+
+### Alpha 4.0.24.1 phone patch contracts
+
+`beginnerSectionIntent` is the authoritative no-FTP physical-step table. It keys stable authored section identities to effort, cadence, and equipment-aware load together; checkpoint sections deliberately retain the immediately preceding physical target while changing the interaction to `CHECK IN`. Both `noFtpPresentation` and immutable completion snapshots consume that same resolver, so a boundary cannot combine stale cadence with a new resistance target.
+
+`completeSessionTime` is a display projection over the canonical clock. It floors elapsed once, clamps it to the integer session total, and derives remaining by subtraction. Timeline section selection and completion continue to operate on raw canonical elapsed time, preserving exact boundaries and background restoration without a duplicated rendered second.
+
+The countdown group is centered independently of the grid-based tracker header. Alpha 4.0.24.1 intentionally adds no Safari-preview-toolbar spacer; installed Home Screen behavior remains the supported phone presentation.
