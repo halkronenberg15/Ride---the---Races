@@ -43,7 +43,7 @@ type Screen = 'hq' | 'teamBus' | 'season' | 'race' | 'worldsBriefing' | 'stageDe
 
 function RideTheRacesApp() {
   const { career, selectRaceStage, completeRaceStage, completeTraining, completeWorlds, addRide } = useCareer()
-  const {canAccess}=useAuth()
+  const {canAccess,isAuthenticated}=useAuth()
   const [screen, setScreen] = useState<Screen>('hq')
   const [selectedSeason, setSelectedSeason] = useState(2026)
   const [selectedRace, setSelectedRace] = useState('tour-2026')
@@ -76,6 +76,7 @@ function RideTheRacesApp() {
   const protectedRaceScreen=['season','race','worldsBriefing','stageDetail'].includes(screen)||(screen==='tactics'&&selectedRace!=='training')||(screen==='ride'&&(ride?.library??selectedRace)!=='training')
   if(protectedRaceScreen&&!canAccess('rtr-standard'))return <section className="auth-screen"><div className="auth-card" role="alert"><p className="eyebrow">PROGRAM ACCESS</p><h1>Program not assigned</h1><p>This account is not entitled to this protected RtR program. Request it from the Intro to Cycling dashboard or contact the owner.</p><button type="button" onClick={()=>setScreen('hq')}>Return to dashboard</button></div></section>
   if(screen==='femmes'&&!canAccess('rtr-femmes'))return <section className="auth-screen"><div className="auth-card" role="alert"><h1>RtR Femmes not assigned</h1><p>Local-development owner approval is required.</p><button type="button" onClick={()=>setScreen('hq')}>Return to dashboard</button></div></section>
+  if(screen==='offseason'&&!isAuthenticated)return <AuthScreen/>
 
   function handleFinishRide(cooldown={officialRaceDurationSeconds:0,cooldownDurationSeconds:0,cooldownSkipped:false}) {
     const stage = ride?.stageNumber ?? career.season.currentStage
@@ -194,6 +195,6 @@ function App() {
   return <AuthProvider><AuthenticatedApp/></AuthProvider>
 }
 
-function AuthenticatedApp(){const {account}=useAuth();if(!account)return <AuthScreen/>;return <CareerProvider key={account.id}><ActiveRideProvider key={account.id}><RideTheRacesApp /></ActiveRideProvider></CareerProvider>}
+function AuthenticatedApp(){const {account,isAuthenticated}=useAuth();if(!account||!isAuthenticated)return <AuthScreen/>;return <CareerProvider key={account.id}><ActiveRideProvider key={account.id}><RideTheRacesApp /></ActiveRideProvider></CareerProvider>}
 
 export default App

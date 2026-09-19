@@ -1,19 +1,19 @@
-# Alpha 4.0.25.1 — owner off-season preview stabilization
+# Alpha 4.0.25.1 — authenticated off-season preview stabilization
 
-## Why this access exists
+## Why preview access exists
 
-A migrated Rider #15 Vuelta career can display the official current race and remaining stages while the End Season visibility gate still evaluates the season as inactive. Alpha 4.0.25.1 therefore lets the **authenticated local owner**, and only that owner, inspect Hal Kronenberg's generated off-season plan while state reconciliation remains a follow-up.
+A migrated Rider #15 Vuelta career can display the official current race and remaining stages while the End Season visibility gate still evaluates the season as inactive. Alpha 4.0.25.1 therefore lets every account with a valid authenticated local session inspect the off-season experience while state reconciliation remains a follow-up.
 
 ## Access and safety contract
 
-The preview requires the authenticated local owner role. Hal-specific plan restoration additionally requires the preserved Hal Kronenberg identity (Rider #15, FTP 206 W). It is labeled **OWNER PREVIEW — OFF-SEASON PLAN**. It is a presentation/access override: it does not end the current season, create an archive, freeze or alter results, complete Vuelta stages, change replay history, or grant an imported career owner privileges. The current season and preview coexist.
+Preview access depends only on a persisted local account matching the active session. It does not depend on account role, rider identity, FTP, `season.active`, `offSeasonUnlocked`, imported career fields, or End Season completion. Unauthenticated visitors cannot enter the application or Off-Season route.
 
-The September 21, 2026 twelve-week plan is restored only when absent. Stable assignment IDs and baseline IDs make repeat access idempotent; existing plan completion, activities, strength history, assessments, and readiness remain authoritative. The September 19 outdoor baseline retains its reported heart-rate, distance, duration, speed, and elevation evidence and does not invent power.
+The preview does not end the current season, create an archive, freeze or alter results, complete Vuelta stages, change replay history, or grant an owner role. The current season and preview coexist.
+
+## Hal plan restoration
+
+When the authenticated career independently matches Hal Kronenberg, Rider #15, FTP 206 W, the September 21, 2026 twelve-week plan is restored only when absent. Stable assignment and baseline IDs make repeated access idempotent; existing plan completion, activities, strength history, assessments, fueling data, and readiness remain authoritative. The September 19 outdoor baseline retains its reported evidence and does not invent power.
 
 ## Follow-up
 
-The migrated-season `active`/closure/official-race reconciliation and the genuine End Season visibility repair remain intentionally outside this stabilization release.
-
-## Owner authority correction
-
-Owner preview authority is resolved from the persisted local account matching the active session, never from imported career fields or rider identity. An established `legacy-owner` account that predates the `role` field is additively normalized to `role: owner` and written back once; all other missing or invalid roles normalize to `rider`. Team HQ, Team Bus, and Off-Season Training consume the same `AuthContext.isOwner` selector. Career import replaces only account-scoped career data and therefore cannot add or remove owner authority.
+The migrated-season `active`/closure/official-race reconciliation and genuine End Season visibility repair remain intentionally outside this stabilization release.
