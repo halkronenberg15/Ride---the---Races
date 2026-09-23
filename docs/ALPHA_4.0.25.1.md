@@ -21,3 +21,11 @@ The migrated-season `active`/closure/official-race reconciliation and genuine En
 ## Transparent adaptive training
 
 The off-season folder uses an original, versioned RtR curated-workout catalog and deterministic coaching rules. Safety filters run before documented weighted ranking. Zone development is an explainable workout-progression measure, not a physiological score. Individual difficulty compares curated workout difficulty with valid zone evidence; missing evidence stays unknown. The four-week preview reports schedule distribution and conflicts without forecasting FTP or guaranteed gains. Curated alternatives replace one assignment in place, preserve the original in adaptation history, and never create bonus workload.
+
+## Executable off-season calendar
+
+Every cycling assignment in the twelve-week plan carries a stable curated workout ID. The referenced workout expands into timed training sections whose sum equals the displayed duration. Each section supplies zone/effort, FTP-relative targets with an effort fallback, cadence, supported resistance guidance, and training-context Jean coaching. Today’s quality action opens the existing Training Ride Briefing and its prominent Start Ride control, then uses the established live cockpit and completion lifecycle.
+
+Completion is recorded against the original calendar assignment and updates account-scoped training history, zone evidence, and the four-week schedule view. Early endings remain partial, skips remain skipped, and curated replacements remain substitutions; the original assignment identity and explanation are retained and missed work is never added later as bonus workload.
+
+Authenticated riders can open Recovery Rides, Intro to Cycling, Classic Rides, Outdoor Ride Readiness, and Off-Season Training from the Training Library. Off-Season also remains available from Team Bus and Team HQ. These training routes contain no End Season, season-state, role, FTP, rider-number, or series lock; the application-level authenticated-session boundary still protects rider data.

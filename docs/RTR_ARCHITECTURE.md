@@ -317,3 +317,9 @@ Off-season recommendations use a versioned, curated RtR workout catalog. Hard sa
 Zone levels are bounded 1.0–10.0 workout-progression measures derived only from recorded matching workouts. They are not physiological, medical, recovery, FTP-prediction, or fitness scores. Missing evidence remains explicitly insufficient. Outdoor evidence without a power meter supplies no watts and is not interchangeable with indoor power.
 
 The rolling four-week view is a schedule consequence calculation, not a forecast of physiological adaptation. Alternatives replace assignments in place and retain an adaptation record; they never add bonus work or rewrite completed history. Readiness remains categorical and can affect today only when current. This recommendation engine consists of deterministic, testable coaching rules applied to recorded or rider-entered evidence.
+
+### Off-season execution contract
+
+A calendar cycling assignment references one curated workout ID. Curated interval metadata expands deterministically into a `RaceStage`-compatible training timeline, and validation requires the section seconds to equal the displayed workout seconds exactly. The existing briefing, timeline, Current/Up Next projection, pause/resume clock, and completion path remain the sole execution pipeline; no parallel cockpit was introduced.
+
+The active off-season assignment ID travels beside the workout ID. Completion, partial/abandoned execution, skip, and replacement update that assignment in place. Completion adds zone evidence and recalculates the four-week view. Adaptations retain the original assignment and reason. No path converts missed work into a second assignment or changes season, archive, results, or replay ownership.
