@@ -17,3 +17,7 @@ When the authenticated career independently matches Hal Kronenberg, Rider #15, F
 ## Follow-up
 
 The migrated-season `active`/closure/official-race reconciliation and genuine End Season visibility repair remain intentionally outside this stabilization release.
+
+## Transparent adaptive training
+
+The off-season folder uses an original, versioned RtR curated-workout catalog and deterministic coaching rules. Safety filters run before documented weighted ranking. Zone development is an explainable workout-progression measure, not a physiological score. Individual difficulty compares curated workout difficulty with valid zone evidence; missing evidence stays unknown. The four-week preview reports schedule distribution and conflicts without forecasting FTP or guaranteed gains. Curated alternatives replace one assignment in place, preserve the original in adaptation history, and never create bonus workload.
