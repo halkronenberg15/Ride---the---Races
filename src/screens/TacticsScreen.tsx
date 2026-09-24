@@ -11,6 +11,7 @@ import { GENERIC_MANUAL_EQUIPMENT, type EquipmentInstance } from '../engine/manu
 import { WorkoutAllocation } from '../components/WorkoutAllocation'
 import { resolvePreviewTarget } from '../engine/previewTargets'
 import { createPreRacePlan } from '../engine/preRaceLifecycle'
+import { workoutById, workoutSections } from '../engine/adaptiveTraining40251.ts'
 
 type TacticsScreenProps = {
   stageNumber: number
@@ -38,6 +39,8 @@ function TacticsScreen({ stageNumber, stageData, onBack, onStartRide,backLabel }
   const decisiveSegment = adaptedSegments.find((segment) => /climb|finish|attack|sprint/i.test(`${segment.type} ${segment.name}`)) ?? adaptedSegments[0]
   const equipment=(career.equipment.instances.find(item=>item.id===career.equipment.activeEquipmentId)??GENERIC_MANUAL_EQUIPMENT) as EquipmentInstance
   const decisiveTarget=resolvePreviewTarget(decisiveSegment,career.rider.ftp||150,equipment,career.rider.cadencePreferences)
+  const curatedWorkout=workoutById(stage.id??''),curatedSections=curatedWorkout?workoutSections(curatedWorkout):[]
+  const sessionGoals=Array.from(new Map([stage.objective,...stage.teamOrders].map(text=>[text.trim().toLowerCase().replace(/[^a-z0-9]+/g,' '),text])).values())
 
   return (
     <section className="tactics-screen race-briefing-screen">
@@ -46,7 +49,7 @@ function TacticsScreen({ stageNumber, stageData, onBack, onStartRide,backLabel }
       <header className="compact-page-header">
         <p className="eyebrow">TEAM LORIOT • {stage.isTraining ? 'TODAY’S SESSION' : `STAGE ${stage.number}`}</p>
         <h1>{stage.isTraining ? 'Training Ride Briefing' : 'Race Briefing'}</h1>
-        <p>{stage.route} • {stage.distanceKm.toFixed(1)} km / {kmToMi(stage.distanceKm).toFixed(1)} mi</p>
+        <p>{stage.route} • {stage.trainingMode==='TIME_BASED'?`${minutes} minute time-based workout`:`${stage.distanceKm.toFixed(1)} km / ${kmToMi(stage.distanceKm).toFixed(1)} mi`}</p>
         <strong>SELECTED COURSE DURATION: {minutes} MIN</strong>
       </header>
 
@@ -59,6 +62,7 @@ function TacticsScreen({ stageNumber, stageData, onBack, onStartRide,backLabel }
         {!stage.isTraining&&durationResult&&<WorkoutAllocation totalSeconds={durationResult.map.totalDurationSeconds} raceSeconds={durationResult.map.raceDurationSeconds} cooldownSeconds={durationResult.map.cooldownSeconds}/>}
         {preRacePlan&&<div className="pre-race-briefing" aria-label="Unnumbered pre-race staging"><strong>PRE-RACE WARM-UP · {Math.round(preRacePlan.warmupSeconds/60)}:{String(preRacePlan.warmupSeconds%60).padStart(2,'0')}</strong><span>KILOMETRE ZERO · 0:{String(preRacePlan.kilometreZeroSeconds).padStart(2,'0')}</span></div>}
         <StageSectionPreview training={stage.isTraining} stageNumber={stage.number} segments={briefingSegments.filter((_,index)=>segmentPurposes(briefingSegments)[index]!=='post-finish-cooldown')} measurementSystem={career.settings.measurementSystem} ftp={career.rider.ftp} equipment={equipment} cadencePreferences={career.rider.cadencePreferences} introEffortBaseline={career.rider.introEffortBaseline} />
+        {curatedWorkout&&<article className="dashboard-card"><p className="eyebrow">COMPLETE WORKOUT DETAIL</p><h2>{curatedWorkout.title}</h2><p>{curatedWorkout.purpose}</p><p><strong>Structure:</strong> {curatedWorkout.repetitions} × {curatedWorkout.workIntervalMinutes} min work / {curatedWorkout.recoveryIntervalMinutes} min recovery · {curatedWorkout.durationMinutes} min total</p><p><strong>Targets:</strong> {career.rider.ftp&&curatedWorkout.ftpRange?`${Math.round(career.rider.ftp*curatedWorkout.ftpRange[0])}–${Math.round(career.rider.ftp*curatedWorkout.ftpRange[1])} W`:`${curatedWorkout.unknownFtpEffort}`} · {curatedWorkout.cadence[0]}–{curatedWorkout.cadence[1]} rpm · {curatedWorkout.resistanceGuidance}</p><p><strong>Fueling:</strong> {curatedWorkout.fueling} · <strong>Recovery cost:</strong> {curatedWorkout.recoveryCost}/5</p><details><summary>Timed sections</summary>{curatedSections.map(section=><p key={section.id}><strong>{section.title} · {Math.round(section.durationSeconds/60)} min</strong><br/>{section.zone} · {section.rpe} · {section.cadence[0]}–{section.cadence[1]} rpm · {section.resistance}</p>)}</details></article>}
 
         {!stage.isTraining&&<div className="duration-picker" aria-label="Choose your ride duration"><div><p className="eyebrow">CHOOSE YOUR RIDE</p><small>How long do you want to ride this {durationPlan.classification.replaceAll('-',' ')} course?</small></div><div className="duration-options">
           {durationOptions.map(option=><button key={option.minutes} type="button" className={durationMode===option.mode?'selected':''} aria-pressed={durationMode===option.mode} onClick={()=>setDurationMode(option.mode)}><strong>{option.minutes} MIN</strong>{option.recommended&&<small>RECOMMENDED</small>}</button>)}
@@ -69,8 +73,7 @@ function TacticsScreen({ stageNumber, stageData, onBack, onStartRide,backLabel }
           <article className="team-plan-card">
             <p className="eyebrow">{stage.isTraining?'SESSION GOALS':'JEAN’S TEAM PLAN'}</p>
             <ul>
-              <li>{stage.objective}</li>
-              {stage.teamOrders.map((order) => <li key={order}>{order}</li>)}
+              {sessionGoals.map((order) => <li key={order}>{order}</li>)}
             </ul>
           </article>
 

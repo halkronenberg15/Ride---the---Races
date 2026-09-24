@@ -20,6 +20,7 @@ async function passwordHash(password:string,salt:string){
 
 export function currentAccountId(){return localStorage.getItem(SESSION_KEY)}
 export function accountById(id:string|null){return id?accounts().find(account=>account.id===id)??null:null}
+export function hasAuthenticatedLocalSession(account:RiderAccount|null){return Boolean(account&&currentAccountId()===account.id&&accountById(account.id))}
 export function signOutAccount(){localStorage.removeItem(SESSION_KEY)}
 export function resumeLegacyOwner(){const owner=accountById('legacy-owner');if(!owner)return null;localStorage.setItem(SESSION_KEY,owner.id);return owner}
 export async function registerAccount(input:{email:string;displayName:string;password:string}){

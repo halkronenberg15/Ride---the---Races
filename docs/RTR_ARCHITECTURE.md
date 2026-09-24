@@ -309,3 +309,27 @@ Authentication and light Training Library folder cards define local semantic CSS
 `coachingContext` classifies the active activity independently of profile rendering. `jeanTimelineEventAllowed` applies event-type eligibility to canonical crossed events, and `cueAllowed` applies the same boundary to fixed, ambient, final-countdown, section, tactical, and restored copy before `JeanEventBus.dispatch`. `explicitlyAuthoredTerrain` can permit terrain guidance for an authored climbing workout but never grants race tactics. Decorative profile elevation is not an authorization input.
 
 Ineligible crossed event IDs are appended to the persisted consumed set, while compatible messages store `coachingContext` and `activityKey` in radio history. Restoration retains only matching activity/context messages and rejects incompatible legacy race copy. Race-situation state continues through its independent Worlds projection and is not erased with a transient sentence.
+
+## Alpha 4.0.25.1 deterministic adaptive-training boundary
+
+Off-season recommendations use a versioned, curated RtR workout catalog. Hard safety constraints run before ranking: duration and equipment must fit; current recovery-recommended readiness excludes intensity; stale readiness cannot change a session; consecutive high-intensity days are excluded; recovery weeks cap demand; and a struggled workout prevents simultaneous duration and difficulty increases. Valid candidates are then ranked by named weights for purpose (40), rider goal (20), supported zone level (15), duration (10), environment (8), phase (4), recovery fit (3), workload fit (3), proximity to quality (2), and recent-outdoor replacement fit (2). Ties resolve by stable workout ID.
+
+Zone levels are bounded 1.0–10.0 workout-progression measures derived only from recorded matching workouts. They are not physiological, medical, recovery, FTP-prediction, or fitness scores. Missing evidence remains explicitly insufficient. Outdoor evidence without a power meter supplies no watts and is not interchangeable with indoor power.
+
+The rolling four-week view is a schedule consequence calculation, not a forecast of physiological adaptation. Alternatives replace assignments in place and retain an adaptation record; they never add bonus work or rewrite completed history. Readiness remains categorical and can affect today only when current. This recommendation engine consists of deterministic, testable coaching rules applied to recorded or rider-entered evidence.
+
+### Off-season execution contract
+
+A calendar cycling assignment references one curated workout ID. Curated interval metadata expands deterministically into a `RaceStage`-compatible training timeline, and validation requires the section seconds to equal the displayed workout seconds exactly. The existing briefing, timeline, Current/Up Next projection, pause/resume clock, and completion path remain the sole execution pipeline; no parallel cockpit was introduced.
+
+The active off-season assignment ID travels beside the workout ID. Completion, partial/abandoned execution, skip, and replacement update that assignment in place. Completion adds zone evidence and recalculates the four-week view. Adaptations retain the original assignment and reason. No path converts missed work into a second assignment or changes season, archive, results, or replay ownership.
+
+### Alpha 4.0.25.1 authoritative plan snapshot
+
+Training-relevant intake is serialized by `planProfileFingerprint`; each `TrainingPlan` stores the source revision. Regeneration builds and validates the complete replacement before state update, carries completed or partial assignments by stable assignment ID, and replaces all unfinished derived content together. Calendar, Today, workout briefing, time-based cockpit, and four-week projection resolve the persisted assignment's curated workout ID rather than re-inferring a workout from presentation text.
+
+The plan validator rejects weekly day/minute overflow, missing workouts, displayed/prescribed duration mismatch, assignment/workout identity mismatch, excessive recovery-week demand, and easy labels paired with tempo-or-higher targets. Zero-minute rest and optional mobility are excluded. Four-week ride totals include separately declared cycling components in mixed Sunday assignments without duplicating the calendar entry.
+
+### External off-season completion boundary
+
+`recordExternalOffSeasonCompletion` accepts structured evidence only when assignment ID, curated workout ID, and date match an existing persisted plan assignment. It updates that assignment in place, stores one account-scoped external activity by stable ID, recalculates its evidence and four-week projection, and never creates calendar workload. Peak power and other isolated metrics influence only explicitly authored interpretations; external completion cannot alter FTP or become an FTP assessment implicitly.

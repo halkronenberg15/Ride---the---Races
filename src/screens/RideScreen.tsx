@@ -1143,7 +1143,7 @@ function RideScreen({
           {showDetails && (
             <div className="ride-details" aria-label="Official ride details">
               <strong className="official-stage-time">{stage.isTraining?'SESSION':'STAGE'}: {formatTime(officialTime.total)} TOTAL · {formatTime(officialTime.elapsed)} ELAPSED · {formatTime(officialTime.remaining)} REMAINING</strong>
-              <span>{displayedDistance.traveled} TRAVELED · {displayedDistance.remaining} REMAINING</span>
+              {stage.trainingMode==='TIME_BASED'?<span>TIME-BASED WORKOUT · NO SYNTHETIC DISTANCE</span>:<span>{displayedDistance.traveled} TRAVELED · {displayedDistance.remaining} REMAINING</span>}
               <div className="ride-lifecycle-controls"><button type="button" onClick={handleRestart}>{stage.isTraining?'Restart Ride':'Restart Stage'}</button>{!endingEarly?<button type="button" onClick={()=>setEndingEarly(true)}>End Ride Early</button>:<div><strong>Why are you ending?</strong>{['Fatigue','Time constraint','Equipment issue','Pain or discomfort','Recovery/readiness','Other'].map(reason=><button type="button" key={reason} onClick={()=>window.confirm(`End ride early: ${reason}?`)&&confirmEndEarly(reason)}>{reason}</button>)}<button type="button" onClick={()=>setEndingEarly(false)}>Cancel</button></div>}</div>
               <button type="button" onClick={() => setShowDetails(false)}>▲ Hide Ride Details</button>
             </div>
@@ -1153,7 +1153,7 @@ function RideScreen({
       )}
 
       <div className="cockpit-bottom-spacer" aria-hidden="true" />
-      {isFinished && <div className="dashboard-card ride-complete-launch"><p className="eyebrow">{stage.isTraining?'SESSION COMPLETE':'COOLDOWN COMPLETE'}</p><h2>Opening Ride Metrics…</h2><p>Your {stage.isTraining?'session':'stage'} has been saved. Preparing the post-ride data screen.</p></div>}
+      {isFinished && <div className="dashboard-card ride-complete-launch"><p className="eyebrow">{stage.isTraining?'WORKOUT COMPLETE':'COOLDOWN COMPLETE'}</p><h2>Opening Ride Metrics…</h2><p>Your {stage.isTraining?'session':'stage'} has been saved. Preparing the post-ride data screen.</p></div>}
     </section>
   )
 }
