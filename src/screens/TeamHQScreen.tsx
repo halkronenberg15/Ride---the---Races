@@ -4,7 +4,7 @@ import { createCoachBriefing } from '../services/coachEngine'
 import { useCareer } from '../state/CareerContext'
 import { useAuth } from '../state/AuthContext.tsx'
 import { introReadiness, OUTDOOR_READINESS_ITEMS } from '../engine/introCycling.ts'
-import { legacyHealthReadiness, projectReadiness, type ReadinessPhase } from '../engine/alpha4025.ts'
+import { authoritativeReadinessEntry, currentLocalDate, projectReadiness, type ReadinessPhase } from '../engine/alpha4025.ts'
 
 type Props = { onContinue: () => void; onStartIntro:(workoutId:string)=>void; onOpenFemmes:()=>void; onOpenOffSeason:()=>void; onOpenHealth: () => void; onOpenProfile: () => void; onOpenSettings: () => void }
 
@@ -16,8 +16,8 @@ export default function TeamHQScreen({ onContinue,onStartIntro,onOpenFemmes,onOp
   const introOnly=career.introCycling.selected&&!canAccess('rtr-standard')
   const coach = useMemo(() => createCoachBriefing(career, getRaceStage(career.season.currentStage)), [career])
   const readinessPhase:ReadinessPhase=career.alpha4025.offSeasonUnlocked?'OFF_SEASON':introOnly?'INTRO':career.season.active&&career.season.closure.status==='ACTIVE'?'RACING':'TRAINING'
-  const readinessEntry=career.alpha4025.readinessEntries[0]??legacyHealthReadiness(career.health)
-  const localDate=[new Date().getFullYear(),String(new Date().getMonth()+1).padStart(2,'0'),String(new Date().getDate()).padStart(2,'0')].join('-')
+  const readinessEntry=authoritativeReadinessEntry(career.alpha4025.readinessEntries,career.health)
+  const localDate=currentLocalDate()
   const readiness=projectReadiness(readinessEntry,localDate,readinessPhase)
   return <section className={`hq-screen hq-${coach.phase}`}>
     <header className="hq-topbar"><div><p className="eyebrow">TEAM LORIOT • RIDER #{career.rider.number}</p><h1>{coach.greeting}, {career.rider.name.split(' ')[0]}</h1><p className="subtitle">{career.rider.archetype} • {career.rider.team}</p></div>

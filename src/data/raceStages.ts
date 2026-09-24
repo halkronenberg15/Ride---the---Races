@@ -7,7 +7,7 @@ export type RideSegment = {
   secondaryObjective: string; terrainLabel: string; fixed?: StageCue[]; random?: string[]
 }
 export type RaceStage = {
-  id?: string; raceId?: string; isTraining?: boolean;
+  id?: string; raceId?: string; isTraining?: boolean; trainingMode?: 'TIME_BASED';
   number: number; route: string; title: string; distanceKm: number; elevationM: number;
   theme: string; difficulty: string; objective: string; teamOrders: string[];
   /** Official distance/elevation samples are the sole terrain source for researched courses. */

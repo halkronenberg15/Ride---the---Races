@@ -40,6 +40,7 @@ function TacticsScreen({ stageNumber, stageData, onBack, onStartRide,backLabel }
   const equipment=(career.equipment.instances.find(item=>item.id===career.equipment.activeEquipmentId)??GENERIC_MANUAL_EQUIPMENT) as EquipmentInstance
   const decisiveTarget=resolvePreviewTarget(decisiveSegment,career.rider.ftp||150,equipment,career.rider.cadencePreferences)
   const curatedWorkout=workoutById(stage.id??''),curatedSections=curatedWorkout?workoutSections(curatedWorkout):[]
+  const sessionGoals=Array.from(new Map([stage.objective,...stage.teamOrders].map(text=>[text.trim().toLowerCase().replace(/[^a-z0-9]+/g,' '),text])).values())
 
   return (
     <section className="tactics-screen race-briefing-screen">
@@ -48,7 +49,7 @@ function TacticsScreen({ stageNumber, stageData, onBack, onStartRide,backLabel }
       <header className="compact-page-header">
         <p className="eyebrow">TEAM LORIOT • {stage.isTraining ? 'TODAY’S SESSION' : `STAGE ${stage.number}`}</p>
         <h1>{stage.isTraining ? 'Training Ride Briefing' : 'Race Briefing'}</h1>
-        <p>{stage.route} • {stage.distanceKm.toFixed(1)} km / {kmToMi(stage.distanceKm).toFixed(1)} mi</p>
+        <p>{stage.route} • {stage.trainingMode==='TIME_BASED'?`${minutes} minute time-based workout`:`${stage.distanceKm.toFixed(1)} km / ${kmToMi(stage.distanceKm).toFixed(1)} mi`}</p>
         <strong>SELECTED COURSE DURATION: {minutes} MIN</strong>
       </header>
 
@@ -72,8 +73,7 @@ function TacticsScreen({ stageNumber, stageData, onBack, onStartRide,backLabel }
           <article className="team-plan-card">
             <p className="eyebrow">{stage.isTraining?'SESSION GOALS':'JEAN’S TEAM PLAN'}</p>
             <ul>
-              <li>{stage.objective}</li>
-              {stage.teamOrders.map((order) => <li key={order}>{order}</li>)}
+              {sessionGoals.map((order) => <li key={order}>{order}</li>)}
             </ul>
           </article>
 

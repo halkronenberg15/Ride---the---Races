@@ -323,3 +323,9 @@ The rolling four-week view is a schedule consequence calculation, not a forecast
 A calendar cycling assignment references one curated workout ID. Curated interval metadata expands deterministically into a `RaceStage`-compatible training timeline, and validation requires the section seconds to equal the displayed workout seconds exactly. The existing briefing, timeline, Current/Up Next projection, pause/resume clock, and completion path remain the sole execution pipeline; no parallel cockpit was introduced.
 
 The active off-season assignment ID travels beside the workout ID. Completion, partial/abandoned execution, skip, and replacement update that assignment in place. Completion adds zone evidence and recalculates the four-week view. Adaptations retain the original assignment and reason. No path converts missed work into a second assignment or changes season, archive, results, or replay ownership.
+
+### Alpha 4.0.25.1 authoritative plan snapshot
+
+Training-relevant intake is serialized by `planProfileFingerprint`; each `TrainingPlan` stores the source revision. Regeneration builds and validates the complete replacement before state update, carries completed or partial assignments by stable assignment ID, and replaces all unfinished derived content together. Calendar, Today, workout briefing, time-based cockpit, and four-week projection resolve the persisted assignment's curated workout ID rather than re-inferring a workout from presentation text.
+
+The plan validator rejects weekly day/minute overflow, missing workouts, displayed/prescribed duration mismatch, assignment/workout identity mismatch, excessive recovery-week demand, and easy labels paired with tempo-or-higher targets. Zero-minute rest and optional mobility are excluded. Four-week ride totals include separately declared cycling components in mixed Sunday assignments without duplicating the calendar entry.
