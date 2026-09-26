@@ -1241,3 +1241,261 @@ html[data-motion="reduced"] .ride-screen svg,html[data-motion="reduced"] .race-m
 .ftp-setup-card{display:grid;gap:10px}.ftp-setup-card h2,.ftp-setup-card p{margin:0}.ftp-setup-card .primary-cta{width:fit-content;min-width:190px}
 .ftp-result-card{display:grid;gap:14px;padding:22px;border:2px solid #ff7a16;border-radius:18px;background:linear-gradient(135deg,rgba(255,122,22,.14),rgba(18,18,20,.98));box-shadow:0 18px 48px rgba(0,0,0,.22)}.ftp-result-card h1{font-size:clamp(1.8rem,7vw,3rem);margin:0}.ftp-result-card p{margin:0;color:#d1d1d6}.ftp-result-card label{display:grid;gap:6px;font-weight:850}.ftp-result-card input{min-height:48px;padding:10px 12px;border:1px solid #62626a;border-radius:10px;background:#0e0e10;color:#fff;font-size:18px}.ftp-result-preview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ftp-result-preview span{display:grid;gap:3px;padding:12px;border-radius:12px;background:#202024;color:#b9b9c0}.ftp-result-preview strong{font-size:1.4rem;color:#fff}.ftp-result-card small{color:#aaaab2}
 @media(max-width:560px){.ftp-setup-card .primary-cta{width:100%}.ftp-result-preview{grid-template-columns:1fr}.intro-curriculum .intro-lesson-roadmap{padding:0 8px 8px}}
+
+
+/* 4.0.26 cockpit graphics foundation
+   A broadcast-style hierarchy for race, training, and Worlds cockpits.
+   Presentation only: no canonical ride, timing, route, or profile math is changed. */
+.ride-cockpit {
+  --cockpit-accent: #ff7518;
+  --cockpit-accent-soft: rgba(255,117,24,.18);
+  --cockpit-surface: rgba(14,15,18,.94);
+  --cockpit-panel: rgba(25,27,31,.9);
+  --cockpit-line: rgba(255,255,255,.14);
+  --cockpit-muted: rgba(255,255,255,.62);
+}
+.ride-cockpit.cockpit-worlds { --cockpit-accent:#69a7ff; --cockpit-accent-soft:rgba(105,167,255,.18); }
+.ride-cockpit.cockpit-training { --cockpit-accent:#ff8a34; --cockpit-accent-soft:rgba(255,138,52,.16); }
+
+.ride-cockpit.official-cockpit {
+  background:
+    radial-gradient(circle at 82% 0%, var(--cockpit-accent-soft), transparent 29%),
+    linear-gradient(180deg, rgba(255,255,255,.02), transparent 18%),
+    #090a0c;
+}
+.ride-cockpit.official-cockpit .live-profile-card {
+  position: relative;
+  isolation: isolate;
+  border: 1px solid rgba(255,255,255,.17) !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.035), transparent 25%),
+    linear-gradient(135deg, rgba(255,117,24,.055), transparent 46%),
+    #0d0f12 !important;
+  box-shadow: 0 18px 50px rgba(0,0,0,.28) !important;
+}
+.ride-cockpit.official-cockpit .live-profile-card::before {
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  pointer-events:none;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 17px, rgba(255,255,255,.022) 18px),
+    repeating-linear-gradient(90deg, transparent 0 34px, rgba(255,255,255,.018) 35px);
+  mask-image:linear-gradient(to bottom,rgba(0,0,0,.72),transparent 82%);
+}
+
+.live-tracker-4023 {
+  min-height:30px;
+  padding:0 2px 6px;
+  border-bottom:1px solid var(--cockpit-line);
+}
+.live-tracker-4023>strong {
+  color:var(--cockpit-accent);
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.live-tracker-4023>b {
+  background:var(--cockpit-accent-soft) !important;
+  color:#fff !important;
+  border:1px solid color-mix(in srgb,var(--cockpit-accent) 55%, transparent);
+}
+
+.cockpit-road-state {
+  display:grid;
+  grid-template-columns:1.35fr .72fr .92fr;
+  gap:1px;
+  margin:7px 0 3px;
+  overflow:hidden;
+  border:1px solid var(--cockpit-line);
+  border-radius:8px;
+  background:var(--cockpit-line);
+}
+.cockpit-road-state span {
+  min-width:0;
+  display:grid;
+  gap:2px;
+  padding:7px 8px;
+  background:rgba(10,11,13,.96);
+}
+.cockpit-road-state small {
+  color:var(--cockpit-muted);
+  font-size:.56rem;
+  font-weight:900;
+  letter-spacing:.095em;
+  text-transform:uppercase;
+}
+.cockpit-road-state strong {
+  min-width:0;
+  overflow:hidden;
+  color:#fff;
+  font-size:clamp(.72rem,3vw,.95rem);
+  line-height:1.12;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.cockpit-road-state span:nth-child(2) strong { color:var(--cockpit-accent); }
+
+.compact-section-clock {
+  margin:5px 0 4px !important;
+}
+.compact-section-clock strong {
+  font-size:clamp(1.45rem,6.4vw,2.15rem) !important;
+  line-height:.92;
+  letter-spacing:-.045em;
+}
+.compact-section-clock small {
+  color:var(--cockpit-muted);
+  letter-spacing:.08em;
+}
+
+.ride-cockpit .target-grid {
+  margin:5px 0 4px;
+  border:1px solid var(--cockpit-line) !important;
+  border-radius:8px;
+  overflow:hidden;
+  background:rgba(0,0,0,.18);
+}
+.ride-cockpit .target-tile {
+  display:grid;
+  align-content:center;
+  min-height:51px;
+}
+.ride-cockpit .target-tile small {
+  margin-bottom:3px;
+  color:var(--cockpit-muted);
+  font-size:.55rem;
+  font-weight:900;
+  letter-spacing:.09em;
+}
+.ride-cockpit .target-tile strong {
+  color:#fff;
+  font-variant-numeric:tabular-nums;
+}
+.ride-cockpit .target-tile:first-child strong { color:var(--cockpit-accent); }
+
+.live-profile-wrap {
+  position:relative;
+  overflow:hidden;
+  border-radius:7px;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.025),transparent 65%),
+    rgba(0,0,0,.12);
+}
+.live-profile-wrap::after {
+  content:"";
+  position:absolute;
+  left:0; right:0; bottom:0;
+  height:1px;
+  background:rgba(255,255,255,.22);
+  pointer-events:none;
+}
+
+.profile-rider,
+.climb-rider {
+  position:absolute;
+  z-index:24;
+  width:34px;
+  height:34px;
+  transform:translate(-50%,-74%);
+  pointer-events:none;
+  transition:left .25s linear,top .25s linear;
+  filter:drop-shadow(0 3px 5px rgba(0,0,0,.8));
+}
+.profile-rider .rider-glyph,
+.climb-rider .rider-glyph {
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  color:#fff;
+}
+.profile-rider .rider-glyph svg,
+.climb-rider .rider-glyph svg { width:31px; height:22px; overflow:visible; }
+.rider-marker-halo {
+  position:absolute;
+  left:50%;
+  top:56%;
+  width:27px;
+  height:27px;
+  transform:translate(-50%,-50%);
+  border:1px solid rgba(255,255,255,.45);
+  border-radius:50%;
+  background:color-mix(in srgb,var(--cockpit-accent) 30%, rgba(5,6,8,.9));
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--cockpit-accent) 14%, transparent),0 0 18px color-mix(in srgb,var(--cockpit-accent) 32%, transparent);
+}
+.profile-rider::after,
+.climb-rider::after {
+  content:"";
+  position:absolute;
+  left:50%;
+  top:27px;
+  width:1px;
+  height:18px;
+  background:linear-gradient(var(--cockpit-accent),transparent);
+}
+
+.profile-control-footer {
+  gap:5px !important;
+}
+.profile-control-footer button {
+  min-height:37px !important;
+  border:1px solid rgba(255,255,255,.14) !important;
+  background:rgba(255,255,255,.055) !important;
+  color:#d8dbe0 !important;
+  font-size:.64rem !important;
+  font-weight:900 !important;
+  letter-spacing:.055em;
+}
+.profile-control-footer button[aria-pressed="true"] {
+  border-color:color-mix(in srgb,var(--cockpit-accent) 62%, transparent) !important;
+  background:var(--cockpit-accent-soft) !important;
+  color:#fff !important;
+}
+
+.ride-cockpit .authoritative-jean {
+  margin-top:7px;
+  border:1px solid rgba(255,255,255,.11);
+  border-left:3px solid var(--cockpit-accent);
+  border-radius:7px;
+  background:linear-gradient(90deg,var(--cockpit-accent-soft),rgba(255,255,255,.025) 55%,transparent);
+}
+.ride-cockpit .authoritative-jean>span { color:#f0f1f3; }
+
+.ride-cockpit .next-line {
+  border-left:2px solid var(--cockpit-accent);
+  padding-left:8px;
+}
+.ride-cockpit .next-line>small {
+  color:var(--cockpit-accent);
+  font-weight:950;
+  letter-spacing:.08em;
+}
+
+.ride-cockpit .progress-track {
+  height:5px;
+  overflow:hidden;
+  border-radius:999px;
+  background:rgba(255,255,255,.08);
+}
+.ride-cockpit .progress-fill {
+  background:linear-gradient(90deg,var(--cockpit-accent),#fff3e8);
+  box-shadow:0 0 10px var(--cockpit-accent-soft);
+}
+.ride-cockpit .cockpit-meta {
+  margin-top:5px;
+  color:var(--cockpit-muted);
+}
+
+@media(max-width:700px){
+  .cockpit-road-state { grid-template-columns:1.2fr .72fr .92fr; }
+  .cockpit-road-state span { padding:6px; }
+  .cockpit-road-state strong { font-size:clamp(.66rem,2.85vw,.82rem); }
+  .profile-rider,.climb-rider { width:31px;height:31px; }
+  .profile-rider .rider-glyph svg,.climb-rider .rider-glyph svg { width:28px;height:20px; }
+}
+@media (orientation:landscape) and (max-height:600px){
+  .cockpit-road-state span { padding-block:4px; }
+  .compact-section-clock strong { font-size:1.45rem !important; }
+  .ride-cockpit .target-tile { min-height:43px; }
+}
