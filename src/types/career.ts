@@ -47,7 +47,7 @@ export type RideMetricEntry = {
   ftp?: number
   ftpProvenance?:FtpProvenance
   equipmentId?:string
-  activityType?:'RACE_STAGE'|'TRAINING'|'INTRO'|'CALIBRATION'|'STAGE_REPLAY'
+  activityType?:'RACE_STAGE'|'TRAINING'|'INTRO'|'CALIBRATION'|'FTP_ASSESSMENT'|'STAGE_REPLAY'
   originalRideId?:string
   selectedDurationVersion?:string
   updatedAt?:string
