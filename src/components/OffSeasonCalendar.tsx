@@ -14,7 +14,7 @@ export default function OffSeasonCalendar({ plan, today, activeOutdoorAssignment
     for (const assignment of assignments) map.set(assignment.date, [...(map.get(assignment.date) ?? []), assignment])
     return map
   }, [assignments])
-  const months=planMonths(plan)
+  const months=useMemo(()=>planMonths(plan),[plan])
   const initialMonthIndex=Math.max(0,months.findIndex(({key})=>today.startsWith(key)))
   const [activeMonthIndex,setActiveMonthIndex]=useState(initialMonthIndex)
   const [selectedDate, setSelectedDate] = useState<string | null>(() => byDate.has(today) ? today : assignments.find(item => item.status === 'PLANNED')?.date ?? null)
@@ -22,7 +22,7 @@ export default function OffSeasonCalendar({ plan, today, activeOutdoorAssignment
   const visibleForDate = (date:string) => { const items=byDate.get(date)??[]; return items.some(item=>item.durationMinutes>0)?items.filter(item=>item.durationMinutes>0):items }
   const selectedAssignments = selectedDate ? visibleForDate(selectedDate) : []
   const selectedWeek = plan.weeks.find(week => week.assignments.some(item => item.date === selectedDate))
-  useEffect(() => { if (selectedDate) { const index=months.findIndex(({key})=>selectedDate.startsWith(key)); if(index>=0&&index!==activeMonthIndex)setActiveMonthIndex(index); document.getElementById('training-date-details')?.scrollIntoView({ block: 'nearest' }) } }, [selectedDate,months,activeMonthIndex])
+  useEffect(() => { if (!selectedDate) return; const index=months.findIndex(({key})=>selectedDate.startsWith(key)); if(index>=0&&index!==activeMonthIndex)setActiveMonthIndex(index) }, [selectedDate,months,activeMonthIndex])
 
   const assignmentDetails = (selected: CalendarAssignment) => {
     const selectedWorkoutChanges = availableRideChanges(plan, selected.id)
