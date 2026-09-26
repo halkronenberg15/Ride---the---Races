@@ -40,10 +40,11 @@ import { PRESCRIPTION_RULE_VERSION, noFtpPresentation, prescriptionSnapshot, typ
 import OffSeasonScreen from './screens/OffSeasonScreen.tsx'
 import OutdoorBriefingScreen from './screens/OutdoorBriefingScreen.tsx'
 import OutdoorCompletionScreen from './screens/OutdoorCompletionScreen.tsx'
+import StrengthWorkoutScreen from './screens/StrengthWorkoutScreen.tsx'
 import { OutdoorRideProvider,useOutdoorRide } from './state/OutdoorRideContext.tsx'
 import { completeOutdoorRide,type OutdoorMeasurements } from './engine/outdoorRide40252.ts'
 
-type Screen = 'hq' | 'teamBus' | 'season' | 'race' | 'worldsBriefing' | 'stageDetail' | 'training' | 'offseason' | 'outdoorBriefing' | 'outdoorRide' | 'outdoorCompletion' | 'roster' | 'tactics' | 'ride' | 'restDay' | 'rideData' | 'health' | 'profile' | 'settings' | 'finale'|'femmes'
+type Screen = 'hq' | 'teamBus' | 'season' | 'race' | 'worldsBriefing' | 'stageDetail' | 'training' | 'offseason' | 'outdoorBriefing' | 'outdoorRide' | 'outdoorCompletion' | 'strengthWorkout' | 'roster' | 'tactics' | 'ride' | 'restDay' | 'rideData' | 'health' | 'profile' | 'settings' | 'finale'|'femmes'
 
 function RideTheRacesApp() {
   const { career, selectRaceStage, completeRaceStage, completeTraining, completeWorlds, addRide, recordOffSeasonAssignment,updateAlpha4025 } = useCareer()
@@ -54,6 +55,7 @@ function RideTheRacesApp() {
   const [selectedWorkout, setSelectedWorkout] = useState('recovery-30')
   const [selectedOffSeasonAssignment,setSelectedOffSeasonAssignment]=useState<string|null>(null)
   const [selectedOutdoorAssignment,setSelectedOutdoorAssignment]=useState<string|null>(null)
+  const [selectedStrengthAssignment,setSelectedStrengthAssignment]=useState<string|null>(null)
   const [selectedStageNumber, setSelectedStageNumber] = useState(1)
   const [raceStrategy, setRaceStrategy] = useState<RaceStrategy>('Balanced')
   const [rideDuration,setRideDuration]=useState<DurationSelection>({mode:'RECOMMENDED'})
@@ -140,7 +142,8 @@ function RideTheRacesApp() {
           onReplayStage={(stage,useOriginal)=>{const original=career.rideHistory.find(item=>item.stageNumber===stage&&item.activityType!=='STAGE_REPLAY'&&item.targetSnapshots?.length);setReplayOriginal(useOriginal&&original?.targetSnapshots?.length?{rideId:original.id,ftp:original.ftp??null,targetSnapshots:original.targetSnapshots}:null);setStageReplay(true);setSelectedRace('tour-2026');setSelectedStageNumber(stage);setScreen('tactics')}}
         />
       )}
-      {screen==='offseason'&&<OffSeasonScreen activeOutdoorAssignmentId={outdoor.ride?.assignmentId??null} onStartOutdoor={(assignmentId,resume)=>{setSelectedOutdoorAssignment(resume?outdoor.ride?.assignmentId??assignmentId:assignmentId);setScreen(resume?(outdoor.ride?.completionRequested?'outdoorCompletion':'outdoorRide'):'outdoorBriefing')}} onBack={()=>setScreen('teamBus')} onStartWorkout={(workoutId,assignmentId)=>{setSelectedWorkout(workoutId);setSelectedOffSeasonAssignment(assignmentId);setSelectedRace('training');setScreen('tactics')}}/>}
+      {screen==='offseason'&&<OffSeasonScreen activeOutdoorAssignmentId={outdoor.ride?.assignmentId??null} onOpenStrength={(assignmentId)=>{setSelectedStrengthAssignment(assignmentId);setScreen('strengthWorkout')}} onStartOutdoor={(assignmentId,resume)=>{setSelectedOutdoorAssignment(resume?outdoor.ride?.assignmentId??assignmentId:assignmentId);setScreen(resume?(outdoor.ride?.completionRequested?'outdoorCompletion':'outdoorRide'):'outdoorBriefing')}} onBack={()=>setScreen('teamBus')} onStartWorkout={(workoutId,assignmentId)=>{setSelectedWorkout(workoutId);setSelectedOffSeasonAssignment(assignmentId);setSelectedRace('training');setScreen('tactics')}}/>}
+      {screen==='strengthWorkout'&&selectedStrengthAssignment&&<StrengthWorkoutScreen assignmentId={selectedStrengthAssignment} onBack={()=>setScreen('offseason')} onComplete={()=>setScreen('offseason')}/>}
       {screen==='outdoorBriefing'&&<OutdoorBriefingScreen durationMinutes={career.alpha4025.trainingPlan?.weeks.flatMap(week=>week.assignments).find(item=>item.id===selectedOutdoorAssignment)?.durationMinutes??90} onBack={()=>setScreen('offseason')} onStart={()=>{outdoor.start(selectedOutdoorAssignment!);setScreen('outdoorRide')}}/>}
       {screen==='outdoorCompletion'&&outdoor.ride&&<OutdoorCompletionScreen elapsed={outdoor.elapsed} endedEarly={outdoor.ride.completionRequested==='EARLY'} onSave={(measurements:OutdoorMeasurements)=>{updateAlpha4025(old=>completeOutdoorRide(old,outdoor.ride!,measurements,new Date().toISOString(),outdoor.ride!.completionRequested==='EARLY'));outdoor.clear();setScreen('offseason')}}/>}
 

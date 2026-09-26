@@ -466,7 +466,7 @@ function StandardRideScreen({
 
   useEffect(() => {
     if (!isRunning) return
-    const event = engine.events.find((item) => item === 'final-30' || item === 'final-10')
+    const event = engine.events.find((item) => item === 'final-30')
     if (!event) return
     const cueKey = `${engine.segmentIndex}-${event}`
     if (lastSpokenCue.current === cueKey) return
