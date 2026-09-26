@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/purity, react-hooks/set-state-in-effect -- watcher lifecycle intentionally updates acquisition state. */
+/* eslint-disable react-hooks/set-state-in-effect -- watcher lifecycle intentionally updates acquisition state. */
 import { useEffect,useRef,useState } from 'react'
 import { loadGoogleMaps,locationErrorStatus,locationFixAgeSeconds,verifiedLocationFix,type GeolocationLike,type LocationStatus,type VerifiedLocationFix } from '../services/outdoorLocation.ts'
 
