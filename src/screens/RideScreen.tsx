@@ -234,7 +234,11 @@ function StandardRideScreen({
     ?kilometreZeroTarget
     :massStart&&(massStart.phase==='KILOMETRE_ZERO'||massStart.phase==='GO')
       ?firstRaceTarget:nextSectionTarget
-  const raceSituation=isWorlds&&!isTimeTrial&&!gateActive?activeRaceSituation(stage.raceId??'',engine.courseProgress):undefined
+  // Keep the Worlds peloton/breakaway framework dormant until live connected
+  // power can authoritatively move the rider and groups through the course.
+  const livePowerRacePositionEnabled=false
+  const raceSituationModel=isWorlds&&!isTimeTrial&&!gateActive?activeRaceSituation(stage.raceId??'',engine.courseProgress):undefined
+  const raceSituation=livePowerRacePositionEnabled?raceSituationModel:undefined
   const worldsLap=isWorlds&&!isTimeTrial&&!gateActive?circuitProgressToLap(engine.courseProgress):null
   const profileView=activeRide.ride?.profileView??{mode:'OVERVIEW' as const,activeRangeId:null,autoConsumedIds:[]}
   const eventDecision=raceSituation?activeRide.ride?.tacticalEventHistory.find(item=>item.id===raceSituation.id):undefined
