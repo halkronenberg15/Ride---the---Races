@@ -1234,3 +1234,10 @@ html[data-motion="reduced"] .ride-screen svg,html[data-motion="reduced"] .race-m
  .training-library-hero{display:grid;gap:8px}.training-library-hero>small{justify-self:start}
  .polished-training-card footer{display:grid;grid-template-columns:1fr}.polished-training-card footer button{width:100%}
 }
+
+/* FTP setup + compact Intro curriculum. */
+.ftp-unknown-choice{display:flex!important;align-items:flex-start;gap:10px;margin-top:2px}.ftp-unknown-choice input{flex:0 0 auto;width:20px!important;height:20px;min-height:20px;margin-top:2px}.ftp-unknown-choice:has(input:disabled){opacity:.55}
+.intro-curriculum,.intro-progression{border:1px solid #3b3b41;border-radius:12px;overflow:hidden;background:#141416}.intro-curriculum>summary,.intro-progression>summary{min-height:46px;display:flex;align-items:center;padding:10px 14px;cursor:pointer;font-weight:850}.intro-curriculum .intro-lesson-roadmap{padding:0 12px 12px}.intro-progression .intro-graduation{border:0;border-top:1px solid #35353a;border-radius:0}
+.ftp-setup-card{display:grid;gap:10px}.ftp-setup-card h2,.ftp-setup-card p{margin:0}.ftp-setup-card .primary-cta{width:fit-content;min-width:190px}
+.ftp-result-card{display:grid;gap:14px;padding:22px;border:2px solid #ff7a16;border-radius:18px;background:linear-gradient(135deg,rgba(255,122,22,.14),rgba(18,18,20,.98));box-shadow:0 18px 48px rgba(0,0,0,.22)}.ftp-result-card h1{font-size:clamp(1.8rem,7vw,3rem);margin:0}.ftp-result-card p{margin:0;color:#d1d1d6}.ftp-result-card label{display:grid;gap:6px;font-weight:850}.ftp-result-card input{min-height:48px;padding:10px 12px;border:1px solid #62626a;border-radius:10px;background:#0e0e10;color:#fff;font-size:18px}.ftp-result-preview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ftp-result-preview span{display:grid;gap:3px;padding:12px;border-radius:12px;background:#202024;color:#b9b9c0}.ftp-result-preview strong{font-size:1.4rem;color:#fff}.ftp-result-card small{color:#aaaab2}
+@media(max-width:560px){.ftp-setup-card .primary-cta{width:100%}.ftp-result-preview{grid-template-columns:1fr}.intro-curriculum .intro-lesson-roadmap{padding:0 8px 8px}}
