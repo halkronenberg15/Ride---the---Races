@@ -211,8 +211,11 @@ function StandardRideScreen({
   const geographicMode=climbPresentationMode(climbPresentation,Boolean(eligibleActiveClimb))
   const upcomingClimb=eligibleClimbs.find(climb=>climb.startDistance>routeKm+.000001)
   const climbApproachAvailable=!gateActive&&coursePosition.profileMode==='CLIMB_APPROACH'&&Boolean(upcomingClimb)
-  const climbAvailable=Boolean(eligibleActiveClimb)||climbApproachAvailable
-  const showClimbView=climbAvailable&&geographicMode==='CLIMB'
+  // Training rides do not claim a real mountain. When the authored workout enters
+  // a climb section, automatically use the climb visualization as a training aid.
+  const trainingClimbVisual=Boolean(stage.isTraining&&currentSegmentIsClimb&&coursePosition.currentClimbId!==null)
+  const climbAvailable=!stage.isTraining&&(Boolean(eligibleActiveClimb)||climbApproachAvailable)
+  const showClimbView=trainingClimbVisual||(climbAvailable&&geographicMode==='CLIMB')
   const climbRenderPosition=currentSegmentIsClimb||!upcomingClimb?coursePosition:canonicalCoursePosition(timeline,timeline.elapsedAtCourseDistance(upcomingClimb.startDistance+.00001))
   const climbStartResistance=climbRenderPosition.currentTargets.resistance.replace(/ · START \d+% @ \d+ rpm| · Start \d+%/i,'')
   const nextBoundaryElapsed=coursePosition.distanceToNextGradientBoundary===null?null:timeline.elapsedAtCourseDistance(routeKm+coursePosition.distanceToNextGradientBoundary+.00001)
@@ -1074,7 +1077,7 @@ function StandardRideScreen({
             {profileView.mode==='DETAIL' ? (
               <ProfileDetail4022 state={profileView} event={raceSituation} gradientBlocks={mergedGradientBlocks} gradientIndex={detailGradientIndex} currentGradient={gateActive?0:activeGradient} nextGradient={gateActive?null:detailGuidance.gradient} nextName={gateActive?(firstRaceTarget?.name??'RACING SECTION 1'):detailGuidance.name} changeDistance={massStart?.phase==='KILOMETRE_ZERO'?formatTime(massStart.kilometreZeroRemaining):gateActive?formatTime(massStart?.warmupRemaining??0):detailGuidance.distanceKm===null?null:detailGuidance.crossing?'CHANGE NOW':formatDistance(Math.max(.001,detailGuidance.distanceKm),measurementSystem)} resistance={displayResistance} effort={displayEffort} context={courseContext} staging={gateActive} firstRacingSection={firstRaceTarget?.name}/>
             ) : showClimbView ? (
-              <ClimbProfile4023 model={timeline} position={climbRenderPosition} approach={climbApproachAvailable&&!currentSegmentIsClimb} currentResistance={climbApproachAvailable&&!currentSegmentIsClimb?climbStartResistance:displayResistance} nextResistance={nextBoundaryResistance==='—'?climbStartResistance:nextBoundaryResistance} formatDistance={km=>formatDistance(km,measurementSystem)} formatTime={formatTime}/>
+              <ClimbProfile4023 model={timeline} position={climbRenderPosition} approach={!trainingClimbVisual&&climbApproachAvailable&&!currentSegmentIsClimb} currentResistance={climbApproachAvailable&&!currentSegmentIsClimb?climbStartResistance:displayResistance} nextResistance={nextBoundaryResistance==='—'?climbStartResistance:nextBoundaryResistance} formatDistance={km=>formatDistance(km,measurementSystem)} formatTime={formatTime}/>
             ) : (
               <>
                 <div className="live-profile-wrap">
