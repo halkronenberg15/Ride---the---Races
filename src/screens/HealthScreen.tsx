@@ -16,7 +16,8 @@ function HealthScreen({ onBack }: Props) {
       <label>Sleep (hours)<input type="number" min="0" max="16" step="0.1" value={entry.sleepHours} onChange={(e) => setEntry({ ...entry, sleepHours: Number(e.target.value) })} /></label>
       <label>Recovery score<input type="number" min="0" max="100" value={entry.recoveryScore} onChange={(e) => setEntry({ ...entry, recoveryScore: Number(e.target.value) })} /></label>
       <label>Resting heart rate<input type="number" min="0" value={entry.restingHeartRate ?? ''} onChange={(e) => setEntry({ ...entry, restingHeartRate: Number(e.target.value) })} /></label>
-      <label>HRV<input type="number" min="0" value={entry.hrv ?? ''} onChange={(e) => setEntry({ ...entry, hrv: Number(e.target.value) })} /></label>
+      <label>HRV<input type="number" min="0" value={entry.hrv ?? ''} onChange={(e) => setEntry({ ...entry, hrv: e.target.value===''?undefined:Number(e.target.value) })} /></label>
+      <label>Recent strain <small>Optional · enter your current/recent strain score if you track one.</small><input type="number" min="0" max="21" step="0.1" value={entry.recentStrain ?? ''} onChange={(e) => setEntry({ ...entry, recentStrain: e.target.value===''?undefined:Number(e.target.value) })} placeholder="e.g. 12.4" /></label>
       <label>Fatigue<input type="range" min="0" max="100" value={entry.fatigue} onChange={(e) => setEntry({ ...entry, fatigue: Number(e.target.value) })} /><span>{entry.fatigue}%</span></label>
       <label>Mood<select value={entry.mood} onChange={(e) => setEntry({ ...entry, mood: e.target.value as HealthEntry['mood'] })}><option>Low</option><option>Steady</option><option>Good</option><option>Excellent</option></select></label>
       <button className="primary-button wide-field" type="submit">Save daily check-in</button>
