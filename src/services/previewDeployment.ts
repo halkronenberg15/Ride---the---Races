@@ -5,5 +5,6 @@ export function isVercelPreview(environment:DeploymentEnvironment=(import.meta a
 }
 
 export function canUsePreviewDataTransfer(isAuthenticated:boolean,role:string|undefined,environment?:DeploymentEnvironment){
- return isAuthenticated&&(role==='owner'||isVercelPreview(environment))
+ void environment
+ return isAuthenticated&&(role==='owner'||role==='rider')
 }

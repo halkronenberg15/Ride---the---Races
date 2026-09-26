@@ -22,8 +22,9 @@ test('fresh authenticated Vercel preview rider sees and can use local import wit
  assert.doesNotMatch(settings,/account\?\.role==='owner'&&<section className="settings-card preview-transfer"/)
 })
 
-test('preview transfer remains hidden when signed out and in production',()=>{
+test('career transfer requires authentication on preview and production',()=>{
  assert.equal(canUsePreviewDataTransfer(false,undefined,{VITE_VERCEL_ENV:'preview'}),false)
- assert.equal(canUsePreviewDataTransfer(true,'rider',{VITE_VERCEL_ENV:'production'}),false)
+ assert.equal(canUsePreviewDataTransfer(true,'rider',{VITE_VERCEL_ENV:'production'}),true)
+ assert.equal(canUsePreviewDataTransfer(false,'rider',{VITE_VERCEL_ENV:'production'}),false)
  assert.equal(canUsePreviewDataTransfer(true,'owner',{VITE_VERCEL_ENV:'production'}),true)
 })
