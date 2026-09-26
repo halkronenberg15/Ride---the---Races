@@ -29,3 +29,5 @@ export function applyIntroPrescription(segments:RideSegment[],ftp:number,plan:In
 
 export const OUTDOOR_READINESS_ITEMS=[['fit','Bike fit and equipment check'],['helmet','Helmet and safety equipment'],['braking','Braking and controlled stopping'],['shifting','Shifting fundamentals'],['look-back','Looking behind while holding a line'],['signals','Hand signals'],['awareness','Road awareness'],['group','Basic group-riding etiquette'],['fuel','Hydration and fueling'],['supervised','Plan a supervised first outdoor ride']] as const
 export function introReadiness(completed:number,total:number,checklistCount=0){return {introComplete:completed>=total,indoorProgramReady:completed>=total,outdoorPreparationComplete:completed>=total&&checklistCount===OUTDOOR_READINESS_ITEMS.length,outdoorGroupRideCertified:false,advancedProgramReady:completed>=total&&checklistCount===OUTDOOR_READINESS_ITEMS.length}}
+
+export function calculateFtpFrom20MinuteAverage(averageWatts:number){if(!Number.isFinite(averageWatts)||averageWatts<50||averageWatts>1000)throw new Error('20-minute average power is outside the accepted range.');return Math.round(averageWatts*0.95)}
