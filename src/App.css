@@ -1159,3 +1159,20 @@ html[data-motion="reduced"] .ride-screen svg,html[data-motion="reduced"] .race-m
 /* Authoritative off-season mobile presentation. */
 .offseason-screen{max-width:100%;overflow-x:hidden}.offseason-screen h1,.offseason-screen h2,.offseason-screen h3{color:#fff}.owner-preview-banner{padding:10px 12px;margin:8px 0}.owner-preview-banner h2{font-size:1rem;margin:2px 0}.owner-preview-banner p{margin:3px 0}.plan-weeks details.dashboard-card:not([open]){min-height:0!important;height:auto!important;padding:10px 12px}.plan-weeks details>summary{min-height:44px;display:flex;align-items:center;white-space:normal;overflow-wrap:anywhere}.offseason-screen button,.offseason-screen summary{min-height:44px}.plan-day header,.plan-day header>*{min-width:0;overflow-wrap:anywhere}
 @media(max-width:430px){.offseason-screen{padding-left:10px;padding-right:10px}.offseason-screen .dashboard-card,.offseason-screen section{min-width:0}.offseason-screen h2{font-size:1.25rem}.owner-preview-banner p:last-child{font-size:.82rem;line-height:1.3}.plan-weeks{display:grid;gap:8px}}
+
+/* Off-season calendar-first hierarchy. */
+.offseason-secondary{margin-top:18px;padding:0!important;overflow:hidden}
+.offseason-secondary>summary{display:flex;align-items:center;min-height:56px;padding:14px 16px;cursor:pointer;font-weight:900}
+.offseason-secondary-content{display:grid;gap:16px;padding:0 14px 14px}
+.training-day-detail-heading,.training-session-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.training-day-detail-heading h2,.training-session-heading h3{margin:0}
+.training-session-list{display:grid;gap:12px}
+.training-session-card{display:grid;gap:10px;padding:14px;border:1px solid #43434a;border-radius:12px;background:#171719}
+.training-session-card p{margin:0}
+.training-session-heading>strong,.training-day-detail-heading>strong{white-space:nowrap}
+.training-double-note{padding:10px 12px;border-left:4px solid #ff7a16;background:rgba(255,122,22,.1)}
+@media(max-width:520px){
+  .training-day-detail-heading,.training-session-heading{display:grid;grid-template-columns:1fr}
+  .training-session-heading>strong,.training-day-detail-heading>strong{white-space:normal}
+  .offseason-secondary-content{padding:0 10px 10px}
+}
