@@ -35,6 +35,8 @@ import { completionLabel, lifecycleJeanMessage, lifecycleProfileContext, resolve
 import { climbPresentationMode, evaluateJeanCue, initialClimbPresentationState, JEAN_PRESENTATION_MS, officialStageTime, qualifiesForClimbView, scheduleJeanDismissal, transitionClimbPresentation, validJeanEvents, type JeanCueContract } from '../engine/alpha4024.ts'
 import { applyIntroPrescription } from '../engine/introCycling.ts'
 import { coachingContext, completeSessionTime, coordinatedDistance, cueAllowed, explicitlyAuthoredTerrain, jeanTimelineEventAllowed, noFtpPresentation, normalizeJeanCopy, restoredJeanMessageAllowed, rideOpeningMessage, wakeLockMessage, type OriginalTargetSnapshot } from '../engine/release4024.ts'
+import { outdoorWorkoutSnapshot } from '../engine/outdoorRide40252.ts'
+import { useOutdoorRide } from '../state/OutdoorRideContext.tsx'
 
 type RideScreenProps = {
   stageNumber: number
@@ -49,6 +51,8 @@ type RideScreenProps = {
   onBack: () => void
   onFinish: (cooldown:CooldownCompletion) => void
   onEndEarly: (reason:string,snapshot:{completionPercentage:number;distanceKm:number;lifecycle:string;sector:string;completedSectors:string[];earnedMarkerIds:string[];tacticalState:string}) => void
+  outdoorMode?:boolean
+  onOutdoorCompletion?:(endedEarly:boolean)=>void
 }
 
 function formatTime(totalSeconds: number) {
@@ -71,7 +75,14 @@ type WakeLockSentinelLike = {
   ) => void
 }
 
-function RideScreen({
+function OutdoorRideCockpit({onBack,onCompletion}:{onBack:()=>void;onCompletion:(endedEarly:boolean)=>void}){
+ const {ride,elapsed,pause,resume}=useOutdoorRide(),snapshot=outdoorWorkoutSnapshot(elapsed),requested=useRef(false)
+ useEffect(()=>{if(snapshot.complete&&!requested.current){requested.current=true;pause();onCompletion(false)}},[snapshot.complete,pause,onCompletion])
+ if(!ride)return <section className="ride-screen outdoor-cockpit"><h1>No active outdoor workout</h1><button type="button" onClick={onBack}>Return to Off-Season Training</button></section>
+ return <section className="ride-screen ride-cockpit outdoor-cockpit" data-presentation-mode="training/outdoor"><header><p className="eyebrow">WORKOUT · OUTDOOR</p><h1>Outdoor Endurance 90</h1><p>RtR manages the prescribed workout and elapsed time—not GPS.</p></header><div className="outdoor-cockpit-primary"><article className="cockpit-card outdoor-current"><p className="eyebrow">CURRENT INTERVAL</p><h2>{snapshot.current.title}</h2><strong>{snapshot.current.rpe} · {snapshot.current.effort}</strong><div className="outdoor-clock">{formatTime(snapshot.currentRemaining)}</div><p>{snapshot.current.guidance}</p></article><article className="cockpit-card outdoor-next"><p className="eyebrow">UP NEXT</p><h2>{snapshot.upNext?.title??'Workout Complete'}</h2><p>{snapshot.upNext?`${snapshot.upNext.rpe} · ${snapshot.upNext.effort}`:'Save genuinely measured ride information.'}</p></article><div className="outdoor-total"><span><small>TOTAL ELAPSED</small><strong>{formatTime(elapsed)}</strong></span><span><small>WORKOUT REMAINING</small><strong>{formatTime(snapshot.totalRemaining)}</strong></span></div><div className="outdoor-cockpit-controls"><button type="button" onClick={ride.runningSince===null?resume:pause}>{ride.runningSince===null?'Resume':'Pause'}</button><button type="button" onClick={()=>window.confirm('End this outdoor workout early and continue to completion?')&&onCompletion(true)}>End Early Safely</button></div></div><aside className="dashboard-card outdoor-secondary"><p><strong>Fueling:</strong> 30–45 g carbohydrate/hour · 500–750 ml fluid/hour, adjusted for Florida heat and sweat rate.</p><p>No outdoor watts are prescribed. No GPS, distance, speed, elevation or sensor values are generated.</p><small>Assignment {ride.assignmentId} · Active session {ride.id}</small></aside><button type="button" className="leave-cockpit bottom-leave" onClick={onBack}>← Leave Cockpit</button></section>
+}
+
+function StandardRideScreen({
   stageNumber, stageData, library='tour-2026', workoutId,activityType,targetFtpOverride,originalTargetSnapshots,
   strategy, durationSelection,
   onBack,
@@ -1158,4 +1169,4 @@ function RideScreen({
   )
 }
 
-export default RideScreen
+export default function RideScreen(props:RideScreenProps){return props.outdoorMode?<OutdoorRideCockpit onBack={props.onBack} onCompletion={props.onOutdoorCompletion??(()=>{})}/>:<StandardRideScreen {...props}/>}
