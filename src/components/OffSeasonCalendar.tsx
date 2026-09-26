@@ -14,12 +14,15 @@ export default function OffSeasonCalendar({ plan, today, activeOutdoorAssignment
     for (const assignment of assignments) map.set(assignment.date, [...(map.get(assignment.date) ?? []), assignment])
     return map
   }, [assignments])
+  const months=planMonths(plan)
+  const initialMonthIndex=Math.max(0,months.findIndex(({key})=>today.startsWith(key)))
+  const [activeMonthIndex,setActiveMonthIndex]=useState(initialMonthIndex)
   const [selectedDate, setSelectedDate] = useState<string | null>(() => byDate.has(today) ? today : assignments.find(item => item.status === 'PLANNED')?.date ?? null)
   const [moveDate,setMoveDate]=useState(''),[changeId,setChangeId]=useState('')
   const visibleForDate = (date:string) => { const items=byDate.get(date)??[]; return items.some(item=>item.durationMinutes>0)?items.filter(item=>item.durationMinutes>0):items }
   const selectedAssignments = selectedDate ? visibleForDate(selectedDate) : []
   const selectedWeek = plan.weeks.find(week => week.assignments.some(item => item.date === selectedDate))
-  useEffect(() => { if (selectedDate) document.getElementById('training-date-details')?.scrollIntoView({ block: 'nearest' }) }, [selectedDate])
+  useEffect(() => { if (selectedDate) { const index=months.findIndex(({key})=>selectedDate.startsWith(key)); if(index>=0&&index!==activeMonthIndex)setActiveMonthIndex(index); document.getElementById('training-date-details')?.scrollIntoView({ block: 'nearest' }) } }, [selectedDate,months,activeMonthIndex])
 
   const assignmentDetails = (selected: CalendarAssignment) => {
     const selectedWorkoutChanges = availableRideChanges(plan, selected.id)
@@ -49,30 +52,36 @@ export default function OffSeasonCalendar({ plan, today, activeOutdoorAssignment
       <div className="training-session-list">{selectedAssignments.map(assignmentDetails)}</div>
     </article>
 
+  const activeMonth=months[activeMonthIndex]??months[0]
+  if(!activeMonth)return null
+  const {key,year,month}=activeMonth
+  const {leadingDays,dayCount}=getCalendarMonth(year,month)
+  const cells=[...Array(leadingDays).fill(null),...Array.from({length:dayCount},(_,index)=>index+1)]
+
   return <section className="offseason-calendar" aria-label={`Personalized ${plan.weeks.length}-week training calendar`}>
-    <header className="offseason-calendar-heading"><h2>Personalized {plan.weeks.length}-week calendar</h2><p>{plan.explanation}</p><p>Select a date to open that training day. Ride and strength sessions may intentionally share a date. The 100-plus-mile consecutive-day goal remains a later distance-and-recovery milestone; this calendar prescribes time, not guaranteed mileage.</p></header>
-    <nav className="offseason-month-jump" aria-label="Jump to training month">{planMonths(plan).map(({ key, year, month }) => <a key={key} href={`#training-${key}`}>{monthName(year, month)}</a>)}</nav>
-    <div className="season-months">{planMonths(plan).map(({ key, year, month }) => {
-      const { leadingDays, dayCount } = getCalendarMonth(year, month)
-      const cells = [...Array(leadingDays).fill(null), ...Array.from({ length: dayCount }, (_, index) => index + 1)]
-      return <div className="training-month-section" key={key}><article className="month-calendar" id={`training-${key}`}>
-        <header><h2>{monthName(year, month)}</h2><strong>TRAINING</strong></header>
-        <div className="calendar-weekdays">{weekdays.map(day => <span key={day}>{day}</span>)}</div>
-        <div className="calendar-grid">{cells.map((day, index) => {
-          if (day === null) return <span className="calendar-blank" aria-hidden="true" key={`blank-${index}`} />
-          const date = `${key}-${String(day).padStart(2, '0')}`
-          const dayAssignments = visibleForDate(date)
-          const completeCount = dayAssignments.filter(item=>item.status==='COMPLETED').length
-          const partial = dayAssignments.some(item=>item.status==='PARTIAL')
-          const statusClass = dayAssignments.length===0?'':partial?'partial':completeCount===dayAssignments.length?'completed':'planned'
-          const labels = dayAssignments.map(shortLabel)
-          return <div className={`calendar-date training-date${date === today ? ' is-today' : ''}${dayAssignments.length ? ' has-assignment' : ''}`} key={date}>
-            {dayAssignments.length ? <button type="button" className={`training-day-button training-${statusClass}${selectedDate === date ? ' is-selected' : ''}`} aria-pressed={selectedDate === date} aria-label={`${date}: ${dayAssignments.map(item=>item.title).join(', ')}. View training day`} onClick={() => setSelectedDate(date)}><span className="training-day-number">{day}</span><span className="training-day-type">{labels.join(' + ')}</span><span className="training-day-status">{completeCount===dayAssignments.length?'✓':partial?'◐':dayAssignments.length>1?String(dayAssignments.length):''}</span></button> : <span className="training-empty-date">{day}</span>}
-          </div>
-        })}</div>
-      </article>
-      {selectedDate?.slice(0, 7) === key && details}
-      </div>
-    })}</div>
+    <header className="offseason-calendar-heading"><h2>24-week training calendar</h2><p className="calendar-summary">Up to 600 total training minutes across 6 days in regular weeks, including two strength sessions. Tap a date for the full workout.</p><details><summary>About this plan</summary><p>{plan.explanation}</p><p>Ride and strength sessions may intentionally share a date. The 100-plus-mile consecutive-day goal remains a later distance-and-recovery milestone; this calendar prescribes time, not guaranteed mileage.</p></details></header>
+    <div className="offseason-month-toolbar">
+      <button type="button" onClick={()=>setActiveMonthIndex(index=>Math.max(0,index-1))} disabled={activeMonthIndex===0} aria-label="Previous training month">‹</button>
+      <label>Month<select value={activeMonthIndex} onChange={event=>setActiveMonthIndex(Number(event.target.value))}>{months.map((item,index)=><option key={item.key} value={index}>{monthName(item.year,item.month)}</option>)}</select></label>
+      <button type="button" onClick={()=>setActiveMonthIndex(index=>Math.min(months.length-1,index+1))} disabled={activeMonthIndex===months.length-1} aria-label="Next training month">›</button>
+    </div>
+    <div className="training-month-section"><article className="month-calendar" id={`training-${key}`}>
+      <header><h2>{monthName(year,month)}</h2><strong>TRAINING</strong></header>
+      <div className="calendar-weekdays">{weekdays.map(day=><span key={day}>{day}</span>)}</div>
+      <div className="calendar-grid">{cells.map((day,index)=>{
+        if(day===null)return <span className="calendar-blank" aria-hidden="true" key={`blank-${index}`}/>
+        const date=`${key}-${String(day).padStart(2,'0')}`
+        const dayAssignments=visibleForDate(date)
+        const completeCount=dayAssignments.filter(item=>item.status==='COMPLETED').length
+        const partial=dayAssignments.some(item=>item.status==='PARTIAL')
+        const statusClass=dayAssignments.length===0?'':partial?'partial':completeCount===dayAssignments.length?'completed':'planned'
+        const labels=dayAssignments.map(shortLabel)
+        return <div className={`calendar-date training-date${date===today?' is-today':''}${dayAssignments.length?' has-assignment':''}`} key={date}>
+          {dayAssignments.length?<button type="button" className={`training-day-button training-${statusClass}${selectedDate===date?' is-selected':''}`} aria-pressed={selectedDate===date} aria-label={`${date}: ${dayAssignments.map(item=>item.title).join(', ')}. View training day`} onClick={()=>setSelectedDate(date)}><span className="training-day-number">{day}</span><span className="training-day-type">{labels.join(' + ')}</span><span className="training-day-status">{completeCount===dayAssignments.length?'✓':partial?'◐':dayAssignments.length>1?String(dayAssignments.length):''}</span></button>:<span className="training-empty-date">{day}</span>}
+        </div>
+      })}</div>
+    </article>
+    {selectedDate?.slice(0,7)===key&&details}
+    </div>
   </section>
 }
