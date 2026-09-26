@@ -1241,3 +1241,20 @@ html[data-motion="reduced"] .ride-screen svg,html[data-motion="reduced"] .race-m
 .ftp-setup-card{display:grid;gap:10px}.ftp-setup-card h2,.ftp-setup-card p{margin:0}.ftp-setup-card .primary-cta{width:fit-content;min-width:190px}
 .ftp-result-card{display:grid;gap:14px;padding:22px;border:2px solid #ff7a16;border-radius:18px;background:linear-gradient(135deg,rgba(255,122,22,.14),rgba(18,18,20,.98));box-shadow:0 18px 48px rgba(0,0,0,.22)}.ftp-result-card h1{font-size:clamp(1.8rem,7vw,3rem);margin:0}.ftp-result-card p{margin:0;color:#d1d1d6}.ftp-result-card label{display:grid;gap:6px;font-weight:850}.ftp-result-card input{min-height:48px;padding:10px 12px;border:1px solid #62626a;border-radius:10px;background:#0e0e10;color:#fff;font-size:18px}.ftp-result-preview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ftp-result-preview span{display:grid;gap:3px;padding:12px;border-radius:12px;background:#202024;color:#b9b9c0}.ftp-result-preview strong{font-size:1.4rem;color:#fff}.ftp-result-card small{color:#aaaab2}
 @media(max-width:560px){.ftp-setup-card .primary-cta{width:100%}.ftp-result-preview{grid-template-columns:1fr}.intro-curriculum .intro-lesson-roadmap{padding:0 8px 8px}}
+
+/* 4.0.26 guided strength sessions */
+.strength-workout-screen{width:min(760px,100%);margin:0 auto;padding:clamp(16px,4vw,36px);display:grid;gap:14px}
+.strength-workout-screen>header h1{margin:.15rem 0;font-size:clamp(2rem,8vw,3.7rem)}
+.strength-exercise-list{display:grid;gap:12px}
+.strength-exercise{min-height:0!important;display:grid;gap:10px}
+.strength-check{display:grid!important;grid-template-columns:28px minmax(0,1fr);align-items:start;gap:10px!important;margin:0!important}
+.strength-check input{width:22px;height:22px;accent-color:#ff6a00}
+.strength-check span,.strength-check strong,.strength-check small{display:block}
+.strength-check strong{font-size:1.08rem}
+.strength-check small{margin-top:4px;color:#aaa}
+.strength-exercise p{margin:0;color:#ccc;line-height:1.45}
+.strength-exercise label:not(.strength-check),.strength-workout-screen article>label{display:grid;gap:6px;font-weight:800}
+.strength-exercise input[type="text"],.strength-exercise input:not([type]),.strength-workout-screen textarea{width:100%;min-height:44px;padding:10px 12px;border:1px solid #46464d;border-radius:10px;background:#101014;color:#fff;font:inherit}
+.strength-workout-screen textarea{min-height:88px;resize:vertical}
+.strength-save{position:sticky;bottom:calc(10px + env(safe-area-inset-bottom));z-index:25;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+@media(max-width:520px){.strength-workout-screen{padding:12px 10px calc(96px + env(safe-area-inset-bottom))}.strength-exercise{padding:14px!important}}
