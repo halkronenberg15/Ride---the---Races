@@ -1,0 +1,15 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { createInitialCareer } from '../state/careerPersistence.ts'
+import { buildCareerExport } from './previewTransfer.ts'
+import type { RiderAccount } from './accountStore.ts'
+import { locationErrorStatus,locationFixAgeSeconds,verifiedLocationFix } from './outdoorLocation.ts'
+import { outdoorElapsed,startOutdoorRide } from '../engine/outdoorRide40252.ts'
+
+const read=(path:string)=>readFileSync(new URL(path,import.meta.url),'utf8')
+test('location permission is requested only after rider action and never by indoor or race cockpits',()=>{const map=read('../components/OutdoorLocationMap.tsx'),ride=read('../screens/RideScreen.tsx'),outdoor=ride.slice(ride.indexOf('function OutdoorRideCockpit'),ride.indexOf('function StandardRideScreen')),standard=ride.slice(ride.indexOf('function StandardRideScreen'));assert.match(map,/Enable Live Location/);assert.match(map,/if\(!enabled\).*watchPosition/);assert.match(outdoor,/OutdoorLocationMap/);assert.doesNotMatch(standard,/OutdoorLocationMap|watchPosition/)})
+test('browser fixes use exact coordinates, accuracy and timestamps for marker state',()=>{const position={coords:{latitude:27.9506,longitude:-82.4572,accuracy:14.5},timestamp:1_000} as unknown as GeolocationPosition;assert.deepEqual(verifiedLocationFix(position),{latitude:27.9506,longitude:-82.4572,accuracy:14.5,timestamp:1_000});assert.equal(locationFixAgeSeconds(verifiedLocationFix(position),32_000),31)})
+test('denied or unavailable location does not affect the timestamp workout clock',()=>{const ride=startOutdoorRide('w1-d6',1_000);assert.equal(locationErrorStatus(1),'Permission Denied');assert.equal(locationErrorStatus(2),'Unavailable');assert.equal(outdoorElapsed(ride,61_000),60)})
+test('reload starts stale, restarts acquisition, and retains elapsed time',()=>{const context=read('../state/OutdoorRideContext.tsx'),map=read('../components/OutdoorLocationMap.tsx'),ride=JSON.parse(JSON.stringify({...startOutdoorRide('w1-d6',1_000),locationEnabled:true}));assert.equal(outdoorElapsed(ride,121_000),120);assert.match(map,/enabled\?'Stale':'Disabled'/);assert.match(map,/watchPosition/);assert.match(context,/locationEnabled/);assert.doesNotMatch(JSON.stringify(ride),/latitude|longitude/)})
+test('coordinates never enter career exports and missing Google configuration preserves the cockpit',()=>{const account={id:'owner',email:'owner@example.test',displayName:'Owner',role:'owner',passwordHash:'x',salt:'y',entitlements:[],requestedPrograms:[],createdAt:'2026-01-01'} as RiderAccount,json=JSON.stringify(buildCareerExport(account,createInitialCareer(),null,'4.0.25.1'));assert.doesNotMatch(json,/latitude|longitude/);const map=read('../components/OutdoorLocationMap.tsx'),service=read('./outdoorLocation.ts');assert.match(map,/VITE_GOOGLE_MAPS_API_KEY/);assert.match(map,/Map unavailable — workout timer continues/);assert.match(service,/maps\.googleapis\.com\/maps\/api\/js/)})

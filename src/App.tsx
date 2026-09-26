@@ -38,11 +38,15 @@ import { bikeProfileForEquipment, GENERIC_MANUAL_EQUIPMENT } from './engine/manu
 import { tacticalPrescription } from './engine/alpha4021.ts'
 import { PRESCRIPTION_RULE_VERSION, noFtpPresentation, prescriptionSnapshot, type OriginalTargetSnapshot } from './engine/release4024.ts'
 import OffSeasonScreen from './screens/OffSeasonScreen.tsx'
+import OutdoorBriefingScreen from './screens/OutdoorBriefingScreen.tsx'
+import OutdoorCompletionScreen from './screens/OutdoorCompletionScreen.tsx'
+import { OutdoorRideProvider,useOutdoorRide } from './state/OutdoorRideContext.tsx'
+import { completeOutdoorRide,HAL_SATURDAY_ASSIGNMENT_ID,type OutdoorMeasurements } from './engine/outdoorRide40252.ts'
 
-type Screen = 'hq' | 'teamBus' | 'season' | 'race' | 'worldsBriefing' | 'stageDetail' | 'training' | 'offseason' | 'roster' | 'tactics' | 'ride' | 'restDay' | 'rideData' | 'health' | 'profile' | 'settings' | 'finale'|'femmes'
+type Screen = 'hq' | 'teamBus' | 'season' | 'race' | 'worldsBriefing' | 'stageDetail' | 'training' | 'offseason' | 'outdoorBriefing' | 'outdoorRide' | 'outdoorCompletion' | 'roster' | 'tactics' | 'ride' | 'restDay' | 'rideData' | 'health' | 'profile' | 'settings' | 'finale'|'femmes'
 
 function RideTheRacesApp() {
-  const { career, selectRaceStage, completeRaceStage, completeTraining, completeWorlds, addRide, recordOffSeasonAssignment } = useCareer()
+  const { career, selectRaceStage, completeRaceStage, completeTraining, completeWorlds, addRide, recordOffSeasonAssignment,updateAlpha4025 } = useCareer()
   const {canAccess,isAuthenticated}=useAuth()
   const [screen, setScreen] = useState<Screen>('hq')
   const [selectedSeason, setSelectedSeason] = useState(2026)
@@ -55,6 +59,7 @@ function RideTheRacesApp() {
   const [stageReplay,setStageReplay]=useState(false)
   const [replayOriginal,setReplayOriginal]=useState<{rideId:string;ftp:number|null;targetSnapshots:OriginalTargetSnapshot[]}|null>(null)
   const { ride, elapsed, end } = useActiveRide()
+  const outdoor=useOutdoorRide()
 
   useEffect(() => {
     const root = document.documentElement
@@ -134,7 +139,9 @@ function RideTheRacesApp() {
           onReplayStage={(stage,useOriginal)=>{const original=career.rideHistory.find(item=>item.stageNumber===stage&&item.activityType!=='STAGE_REPLAY'&&item.targetSnapshots?.length);setReplayOriginal(useOriginal&&original?.targetSnapshots?.length?{rideId:original.id,ftp:original.ftp??null,targetSnapshots:original.targetSnapshots}:null);setStageReplay(true);setSelectedRace('tour-2026');setSelectedStageNumber(stage);setScreen('tactics')}}
         />
       )}
-      {screen==='offseason'&&<OffSeasonScreen onBack={()=>setScreen('teamBus')} onStartWorkout={(workoutId,assignmentId)=>{setSelectedWorkout(workoutId);setSelectedOffSeasonAssignment(assignmentId);setSelectedRace('training');setScreen('tactics')}}/>}
+      {screen==='offseason'&&<OffSeasonScreen activeOutdoor={Boolean(outdoor.ride)} onStartOutdoor={resume=>setScreen(resume?(outdoor.ride?.completionRequested?'outdoorCompletion':'outdoorRide'):'outdoorBriefing')} onBack={()=>setScreen('teamBus')} onStartWorkout={(workoutId,assignmentId)=>{setSelectedWorkout(workoutId);setSelectedOffSeasonAssignment(assignmentId);setSelectedRace('training');setScreen('tactics')}}/>}
+      {screen==='outdoorBriefing'&&<OutdoorBriefingScreen onBack={()=>setScreen('offseason')} onStart={()=>{outdoor.start(HAL_SATURDAY_ASSIGNMENT_ID);setScreen('outdoorRide')}}/>}
+      {screen==='outdoorCompletion'&&outdoor.ride&&<OutdoorCompletionScreen elapsed={outdoor.elapsed} endedEarly={outdoor.ride.completionRequested==='EARLY'} onSave={(measurements:OutdoorMeasurements)=>{updateAlpha4025(old=>completeOutdoorRide(old,outdoor.ride!,measurements,new Date().toISOString(),outdoor.ride!.completionRequested==='EARLY'));outdoor.clear();setScreen('offseason')}}/>}
 
       {screen === 'season' && getSeason(selectedSeason) && <SeasonCalendarScreen season={getSeason(selectedSeason)!} currentRace={career.season.currentRace} onBack={() => setScreen('teamBus')} onOpenRace={(raceId) => { setSelectedRace(raceId); setScreen('race') }} />}
       {screen === 'race' && (selectedRace==='worlds-2026'?<WorldsHubScreen onBack={()=>setScreen('season')} onOpen={(event)=>{setSelectedStageNumber(event);setScreen('worldsBriefing')}}/>:<RaceOverviewScreen library={selectedRace} actionable={selectedRace==='vuelta-2026'?vueltaActionable:tourActionable} onBack={() => setScreen('season')} onOpenStage={(stage)=>{setSelectedStageNumber(stage);setScreen('stageDetail')}} />)}
@@ -160,6 +167,8 @@ function RideTheRacesApp() {
       {ride && screen !== 'ride' && (
         <aside className="active-ride-bar"><strong>● ACTIVE RIDE · Stage {ride.stageNumber} · {Math.floor(elapsed / 60)}:{String(Math.floor(elapsed % 60)).padStart(2, '0')}</strong><button type="button" onClick={() => setScreen('ride')}>Resume Stage</button><button type="button" onClick={() => { if (window.confirm('End this active stage? This cannot be undone.')) end() }}>End Stage</button></aside>
       )}
+      {outdoor.ride&&!['outdoorRide','outdoorCompletion'].includes(screen)&&<aside className="active-ride-bar"><strong>● ACTIVE OUTDOOR WORKOUT · {Math.floor(outdoor.elapsed/60)}:{String(outdoor.elapsed%60).padStart(2,'0')}</strong><button type="button" onClick={()=>setScreen(outdoor.ride?.completionRequested?'outdoorCompletion':'outdoorRide')}>{outdoor.ride.completionRequested?'Finish Outdoor Ride':'Resume Outdoor Ride'}</button></aside>}
+      {screen==='outdoorRide'&&<RideScreen outdoorMode stageNumber={0} strategy="Balanced" durationSelection={{mode:'STANDARD',targetMinutes:90}} onBack={()=>setScreen('offseason')} onFinish={()=>{}} onEndEarly={()=>{}} onOutdoorCompletion={endedEarly=>{outdoor.requestCompletion(endedEarly);setScreen('outdoorCompletion')}}/>}
       {screen === 'ride' && (
         <RideScreen
           stageNumber={ride?.stageNumber ?? selectedStageNumber}
@@ -196,6 +205,6 @@ function App() {
   return <AuthProvider><AuthenticatedApp/></AuthProvider>
 }
 
-function AuthenticatedApp(){const {account,isAuthenticated}=useAuth();if(!account||!isAuthenticated)return <AuthScreen/>;return <CareerProvider key={account.id}><ActiveRideProvider key={account.id}><RideTheRacesApp /></ActiveRideProvider></CareerProvider>}
+function AuthenticatedApp(){const {account,isAuthenticated}=useAuth();if(!account||!isAuthenticated)return <AuthScreen/>;return <CareerProvider key={account.id}><ActiveRideProvider key={account.id}><OutdoorRideProvider key={account.id}><RideTheRacesApp /></OutdoorRideProvider></ActiveRideProvider></CareerProvider>}
 
 export default App

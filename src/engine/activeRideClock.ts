@@ -5,9 +5,11 @@ export function elapsedFromClock(clock: PersistedRideClock, now: number) {
 }
 
 export function pauseClock(clock: PersistedRideClock, now: number): PersistedRideClock {
+  if (clock.runningSince === null) return clock
   return { accumulatedSeconds: elapsedFromClock(clock, now), runningSince: null, paused: true }
 }
 
 export function resumeClock(clock: PersistedRideClock, now: number): PersistedRideClock {
+  if (clock.runningSince !== null) return clock
   return { ...clock, runningSince: now, paused: false }
 }
