@@ -211,8 +211,11 @@ function StandardRideScreen({
   const geographicMode=climbPresentationMode(climbPresentation,Boolean(eligibleActiveClimb))
   const upcomingClimb=eligibleClimbs.find(climb=>climb.startDistance>routeKm+.000001)
   const climbApproachAvailable=!gateActive&&coursePosition.profileMode==='CLIMB_APPROACH'&&Boolean(upcomingClimb)
-  const climbAvailable=Boolean(eligibleActiveClimb)||climbApproachAvailable
-  const showClimbView=climbAvailable&&geographicMode==='CLIMB'
+  // Training rides do not claim a real mountain. When the authored workout enters
+  // a climb section, automatically use the climb visualization as a training aid.
+  const trainingClimbVisual=Boolean(stage.isTraining&&currentSegmentIsClimb&&coursePosition.currentClimbId!==null)
+  const climbAvailable=!stage.isTraining&&(Boolean(eligibleActiveClimb)||climbApproachAvailable)
+  const showClimbView=trainingClimbVisual||(climbAvailable&&geographicMode==='CLIMB')
   const climbRenderPosition=currentSegmentIsClimb||!upcomingClimb?coursePosition:canonicalCoursePosition(timeline,timeline.elapsedAtCourseDistance(upcomingClimb.startDistance+.00001))
   const climbStartResistance=climbRenderPosition.currentTargets.resistance.replace(/ · START \d+% @ \d+ rpm| · Start \d+%/i,'')
   const nextBoundaryElapsed=coursePosition.distanceToNextGradientBoundary===null?null:timeline.elapsedAtCourseDistance(routeKm+coursePosition.distanceToNextGradientBoundary+.00001)
@@ -656,7 +659,7 @@ function StandardRideScreen({
 
 
   return (
-    <section className={`ride-screen ride-cockpit${rideStarted&&(!massStart||massStart.phase==='GO'||massStart.phase==='RACING')?' official-cockpit':''}`}>
+    <section className={`ride-screen ride-cockpit ${stage.isTraining?'cockpit-training':isWorlds?'cockpit-worlds':'cockpit-race'}${rideStarted&&(!massStart||massStart.phase==='GO'||massStart.phase==='RACING')?' official-cockpit':''}`}>
       <style>{`
         .ride-cockpit {
           max-width: 1000px;
@@ -1043,6 +1046,7 @@ function StandardRideScreen({
         <>
           <div className="live-profile-card" aria-label={currentSegmentIsClimb ? "Live climb gradient profile" : "Live stage profile"}>
             <LiveTrackerHeader4023 worlds={isWorlds} training={Boolean(stage.isTraining)} section={gateTitle??currentSegment.name} zone={displayZone}/>
+            <div className="cockpit-road-state" aria-label="Current road state"><span><small>{stage.isTraining?'SESSION':'TERRAIN'}</small><strong>{stage.isTraining?(gateTitle??currentSegment.name):courseContext}</strong></span><span><small>{stage.isTraining?'EFFORT':'GRADE'}</small><strong>{stage.isTraining?(displayEffort??displayZone):`${activeGradient>0?'+':''}${activeGradient.toFixed(1)}%`}</strong></span><span><small>{stage.isTraining?'REMAINING':'TO FINISH'}</small><strong>{stage.isTraining?formatTime(stageRemaining):displayedDistance.remaining}</strong></span></div>
             <div className="compact-section-clock"><strong>{formatTime(massStart?.phase==='PRE_RACE_WARMUP'?massStart.warmupRemaining:massStart?.phase==='KILOMETRE_ZERO'?massStart.kilometreZeroRemaining:massStart?.phase==='GO'?0:sprintPhase?.remaining??segmentRemaining)}</strong><small>{massStart?.phase==='PRE_RACE_WARMUP'?'WARM-UP REMAINING':massStart?.phase==='KILOMETRE_ZERO'?'TO GO':massStart?.phase==='GO'?'RACING START':sprintPhase?`${sprintPhase.name} REMAINING`:'SECTION REMAINING'}</small></div>
             {activeEffort&&effortRemaining>0&&<TacticalStatusStrip state="ACTIVE" action={activeEffort.action??(tactical.state==='ATTACKING'?'ATTACK':'CHASE')} remaining={effortRemaining}/>}
             {tactical.state==='RETURNING_TO_PELOTON'&&tactical.transition&&<TacticalStatusStrip state="RETURNING" remaining={45*(1-tactical.transition.progress)}/>}
@@ -1073,7 +1077,7 @@ function StandardRideScreen({
             {profileView.mode==='DETAIL' ? (
               <ProfileDetail4022 state={profileView} event={raceSituation} gradientBlocks={mergedGradientBlocks} gradientIndex={detailGradientIndex} currentGradient={gateActive?0:activeGradient} nextGradient={gateActive?null:detailGuidance.gradient} nextName={gateActive?(firstRaceTarget?.name??'RACING SECTION 1'):detailGuidance.name} changeDistance={massStart?.phase==='KILOMETRE_ZERO'?formatTime(massStart.kilometreZeroRemaining):gateActive?formatTime(massStart?.warmupRemaining??0):detailGuidance.distanceKm===null?null:detailGuidance.crossing?'CHANGE NOW':formatDistance(Math.max(.001,detailGuidance.distanceKm),measurementSystem)} resistance={displayResistance} effort={displayEffort} context={courseContext} staging={gateActive} firstRacingSection={firstRaceTarget?.name}/>
             ) : showClimbView ? (
-              <ClimbProfile4023 model={timeline} position={climbRenderPosition} approach={climbApproachAvailable&&!currentSegmentIsClimb} currentResistance={climbApproachAvailable&&!currentSegmentIsClimb?climbStartResistance:displayResistance} nextResistance={nextBoundaryResistance==='—'?climbStartResistance:nextBoundaryResistance} formatDistance={km=>formatDistance(km,measurementSystem)} formatTime={formatTime}/>
+              <ClimbProfile4023 model={timeline} position={climbRenderPosition} approach={!trainingClimbVisual&&climbApproachAvailable&&!currentSegmentIsClimb} currentResistance={climbApproachAvailable&&!currentSegmentIsClimb?climbStartResistance:displayResistance} nextResistance={nextBoundaryResistance==='—'?climbStartResistance:nextBoundaryResistance} formatDistance={km=>formatDistance(km,measurementSystem)} formatTime={formatTime}/>
             ) : (
               <>
                 <div className="live-profile-wrap">
