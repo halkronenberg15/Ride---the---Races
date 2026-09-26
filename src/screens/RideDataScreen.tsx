@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useCareer } from '../state/CareerContext'
 import { createDevelopmentProfile } from '../engine/alpha4025.ts'
+import { calculateFtpFrom20MinuteAverage } from '../engine/introCycling.ts'
 import type { RideMetricEntry } from '../types/career'
 import { formatDistance, ftToM, miToKm, mToFt, kmToMi } from '../utils/units'
 
@@ -16,7 +17,7 @@ function RideDataScreen({ onBack }: Props) {
   const [ftpAverage,setFtpAverage]=useState('')
   const latestFtpRide=career.rideHistory.find(ride=>ride.activityType==='FTP_ASSESSMENT')
   const latestFtpRecorded=latestFtpRide?career.alpha4025.ftpAssessments.some(item=>item.date===latestFtpRide.date.slice(0,10)):false
-  const calculatedFtp=ftpAverage&&Number(ftpAverage)>0?Math.round(Number(ftpAverage)*0.95):null
+  const calculatedFtp=ftpAverage&&Number(ftpAverage)>=50&&Number(ftpAverage)<=1000?calculateFtpFrom20MinuteAverage(Number(ftpAverage)):null
 
   if (formSystem !== system) {
     setFormSystem(system)
