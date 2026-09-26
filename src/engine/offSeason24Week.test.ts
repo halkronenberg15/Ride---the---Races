@@ -6,20 +6,28 @@ import { nextOutdoorJeanCue, outdoorJeanCues } from './outdoorJean40252.ts'
 import { emptyAlpha4025 } from './alpha4025.ts'
 import { getLibraryStage } from '../data/raceLibrary.ts'
 
-test('24-week plan starts at 10 hours, eases on recovery weeks and preserves completed work during migration',()=>{
+test('24-week plan keeps 10-hour regular weeks, two strength sessions and the late back-to-back progression',()=>{
  const initial=generatePlan(HAL_INPUT,HAL_GOALS)
  assert.equal(initial.weeks.length,24)
- assert.equal(initial.weeks[0].assignments.reduce((sum,a)=>sum+a.durationMinutes,0),600)
- assert.equal(initial.weeks[20].assignments.reduce((sum,a)=>sum+a.durationMinutes,0),600)
- assert.deepEqual(initial.weeks[20].assignments.slice(5).map(a=>a.durationMinutes),[270,240])
+ for(const week of initial.weeks.filter(w=>!w.recoveryWeek)){
+  assert.equal(week.assignments.reduce((sum,a)=>sum+a.durationMinutes,0),600)
+  assert.equal(week.assignments.filter(a=>a.type==='STRENGTH').length,2)
+ }
+ const peak=initial.weeks[20]
+ assert.equal(peak.assignments.find(a=>a.day==='Saturday'&&a.type==='CYCLING')?.durationMinutes,270)
+ assert.equal(peak.assignments.find(a=>a.day==='Sunday'&&a.type==='CYCLING')?.durationMinutes,240)
+ assert.equal(peak.assignments.filter(a=>a.type==='STRENGTH').reduce((sum,a)=>sum+a.durationMinutes,0),45)
  assert.ok(initial.weeks[3].assignments.reduce((sum,a)=>sum+a.durationMinutes,0)<600)
  assert.deepEqual(initial.weeks.filter(w=>w.recoveryWeek).map(w=>w.number),[4,8,12,16,20,24])
  assert.equal(validatePlanConstraints(initial,6,600).length,0)
+ const weekOne=initial.weeks[0]
+ const tuesdayDate=weekOne.assignments.find(a=>a.day==='Tuesday'&&a.type==='CYCLING')!.date
+ assert.deepEqual(weekOne.assignments.filter(a=>a.date===tuesdayDate).map(a=>a.type).sort(),['CYCLING','STRENGTH'])
  const previous=generatePlan({...HAL_INPUT,weeklyDays:4,weeklyMinutes:240},{...HAL_GOALS,weeklyDays:4,weeklyMinutes:240})
  previous.weeks[0].assignments[2]={...previous.weeks[0].assignments[2],status:'COMPLETED',completion:{completedAt:'2026-09-23',durationMinutes:45}}
  const updated=generatePlan(HAL_INPUT,HAL_GOALS,previous)
- assert.equal(updated.weeks[0].assignments[2].status,'COMPLETED')
- assert.equal(updated.weeks[0].assignments[5].id,'w1-d6')
+ assert.equal(updated.weeks[0].assignments.find(a=>a.id==='w1-d3')?.status,'COMPLETED')
+ assert.equal(updated.weeks[0].assignments.find(a=>a.day==='Saturday'&&a.type==='CYCLING')?.id,'w1-d6')
 })
 
 test('switching an endurance ride keeps date, duration, purpose and effort while opening the right cockpit',()=>{
@@ -50,7 +58,7 @@ test('an unfinished ride can move within its week or become a shorter workout wi
  assert.equal(moved.weeks[1].assignments[0].day,'Saturday')
  assert.equal(validatePlanConstraints(moved,6,600).length,0)
  const changed=changePlannedRide(plan,original.id,'endurance-steady-75',206)
- assert.equal(changed.weeks[1].assignments.length,7)
+ assert.equal(changed.weeks[1].assignments.length,9)
  assert.equal(changed.weeks[1].assignments[5].workoutId,'endurance-steady-75')
  assert.throws(()=>movePlannedRide(plan,original.id,plan.weeks[2].assignments[0].date),/same week/)
 })
