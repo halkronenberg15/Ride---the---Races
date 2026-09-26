@@ -1,0 +1,10 @@
+# Ride the Races: next development passes
+
+The current Alpha 4.0.25.1 off-season plan schedules 24 weeks, 10-hour regular weeks, shorter fourth weeks, indoor workouts and progressively longer consecutive outdoor sessions. The late blocks reach 270 minutes Saturday and 240 minutes Sunday. This is training toward, not proof of readiness for, consecutive 100-plus-mile rides. Actual distance, fueling, fatigue, comfort and recovery must be reviewed from rider-entered evidence.
+
+1. **Phone account and import:** Verify email/password sign-in and local JSON transfer in the installed home-screen app; fix the access path before advising reinstall. Preserve the existing account-scoped data and never require the rider to repeat an import just to receive a deployment.
+2. **Calendar and session editing:** Validate the month view and move, same-prescription setting switch, and shorter-workout controls on a physical iPhone. Extend moves beyond an available rest day when scheduling conflicts can be resolved without changing completed history.
+3. **Indoor stage training:** The current indoor endurance stage profile reuses a built Tour profile in time-based training mode and does not award race results. Add explicitly selectable full stage-inspired training sessions only after their duration, effort and race-result isolation are reviewed.
+4. **Long-distance preparation:** Review actual completed back-to-back sessions and readiness at each four-week checkpoint. Offer rider-approved event-specific peak weeks if the rider later increases the 10-hour baseline; do not imply that 10 total weekly hours alone contains two 100-mile rides.
+5. **Outdoor route and Jean:** The map currently shows an optional live position only. Evaluate route recording, privacy, battery/background behavior and measured distance separately. Keep Jean's time-based cues operational even when location is unavailable.
+6. **Season progression:** Reconcile off-season results with the next season, journal, passport, equipment calibration and rider progression while protecting historical race and replay records.
