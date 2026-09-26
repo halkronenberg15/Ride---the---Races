@@ -4,6 +4,12 @@
 
 All product and engine changes are governed by [the Ride the Races architecture contract](docs/RTR_ARCHITECTURE.md). Canonical geography, stage simulation, prescription, tactics, Jean, telemetry, and environment translation must retain the boundaries defined there.
 
+### Google Maps configuration
+
+The optional outdoor-cockpit map reads `VITE_GOOGLE_MAPS_API_KEY` at build time. Configure separate values in Vercel Preview and Production environments. In Google Cloud, enable **Maps JavaScript API**, create a browser key, restrict its HTTP referrers to the exact RtR preview and production domains, and apply an API restriction allowing only **Maps JavaScript API**. Never commit the key.
+
+Location is requested only after **Enable Live Location**. Coordinates remain in browser memory for the active cockpit and are not written to career exports or sent to an RtR backend. Browser background GPS continuity is not guaranteed.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:

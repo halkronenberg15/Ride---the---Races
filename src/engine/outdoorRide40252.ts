@@ -5,7 +5,7 @@ import type { Alpha4025State, OutdoorActivity } from './alpha4025.ts'
 export const HAL_SATURDAY_ASSIGNMENT_ID='w1-d6'
 export const HAL_SATURDAY_DATE='2026-09-26'
 export const OUTDOOR_ACTIVITY_ID=`outdoor:${HAL_SATURDAY_ASSIGNMENT_ID}`
-export type ActiveOutdoorRide=PersistedRideClock&{id:string;assignmentId:string;startedAt:string;completionRequested?:'FULL'|'EARLY'}
+export type ActiveOutdoorRide=PersistedRideClock&{id:string;assignmentId:string;startedAt:string;completionRequested?:'FULL'|'EARLY';locationEnabled?:boolean}
 export type OutdoorMeasurements={durationSeconds?:number;distanceMiles?:number;rpe?:number;averageHeartRate?:number;maximumHeartRate?:number;averageCadenceRpm?:number;averagePowerWatts?:number;notes?:string}
 export type OutdoorWorkoutSection={id:'warm-up'|'aerobic-endurance'|'cooldown';title:'Warm-up'|'Aerobic Endurance'|'Cooldown';durationSeconds:number;rpe:string;effort:string;guidance:string}
 export const OUTDOOR_ENDURANCE_90_SECTIONS:OutdoorWorkoutSection[]=[
