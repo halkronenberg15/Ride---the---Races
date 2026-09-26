@@ -1176,3 +1176,17 @@ html[data-motion="reduced"] .ride-screen svg,html[data-motion="reduced"] .race-m
   .training-session-heading>strong,.training-day-detail-heading>strong{white-space:normal}
   .offseason-secondary-content{padding:0 10px 10px}
 }
+
+/* Compact off-season month navigation. */
+.offseason-calendar-heading .calendar-summary{margin:.35rem 0 .75rem}
+.offseason-calendar-heading details{margin-top:8px;padding-top:8px;border-top:1px solid #444}
+.offseason-calendar-heading summary{cursor:pointer;font-weight:850}
+.offseason-month-toolbar{display:grid;grid-template-columns:52px minmax(0,1fr) 52px;gap:8px;align-items:end;margin:12px 0 16px}
+.offseason-month-toolbar button{min-height:48px;font-size:1.6rem}
+.offseason-month-toolbar label{display:grid;gap:5px;font-weight:800}
+.offseason-month-toolbar select{width:100%;min-height:48px;padding:8px 10px;border-radius:8px;background:#252326;color:#fff;border:1px solid #7a7a82;font-size:16px}
+@media(max-width:520px){
+ .offseason-calendar-heading h2{margin-bottom:.25rem}
+ .offseason-month-toolbar{grid-template-columns:44px minmax(0,1fr) 44px}
+ .offseason-month-toolbar button{min-height:44px}
+}
