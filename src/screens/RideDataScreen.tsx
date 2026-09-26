@@ -1,17 +1,22 @@
 import { useState } from 'react'
 import { useCareer } from '../state/CareerContext'
+import { createDevelopmentProfile } from '../engine/alpha4025.ts'
 import type { RideMetricEntry } from '../types/career'
 import { formatDistance, ftToM, miToKm, mToFt, kmToMi } from '../utils/units'
 
 type Props = { onBack: () => void }
 
 function RideDataScreen({ onBack }: Props) {
-  const { career, addRide,updateRideEntry } = useCareer()
+  const { career, addRide,updateRideEntry,updateRider,updateAlpha4025 } = useCareer()
   const system = career.settings.measurementSystem
   const [saved, setSaved] = useState(false)
   const [form, setForm] = useState({ durationMinutes: '45', distance: system === 'imperial' ? '12.4' : '20', averagePower: '', averageHeartRate: '', averageCadence: '', elevation: '', calories: '', notes: '' })
   const [formSystem, setFormSystem] = useState(system)
   const [editing,setEditing]=useState<string|null>(null)
+  const [ftpAverage,setFtpAverage]=useState('')
+  const latestFtpRide=career.rideHistory.find(ride=>ride.activityType==='FTP_ASSESSMENT')
+  const latestFtpRecorded=latestFtpRide?career.alpha4025.ftpAssessments.some(item=>item.date===latestFtpRide.date.slice(0,10)):false
+  const calculatedFtp=ftpAverage&&Number(ftpAverage)>0?Math.round(Number(ftpAverage)*0.95):null
 
   if (formSystem !== system) {
     setFormSystem(system)
@@ -20,6 +25,17 @@ function RideDataScreen({ onBack }: Props) {
       distance: current.distance ? (system === 'imperial' ? kmToMi(Number(current.distance)).toFixed(1) : miToKm(Number(current.distance)).toFixed(1)) : '',
       elevation: current.elevation ? (system === 'imperial' ? Math.round(mToFt(Number(current.elevation))).toString() : Math.round(ftToM(Number(current.elevation))).toString()) : '',
     }))
+  }
+
+  function saveFtpAssessment(event:React.FormEvent){
+    event.preventDefault()
+    if(!latestFtpRide||calculatedFtp===null||Number(ftpAverage)<50||Number(ftpAverage)>1000)return
+    const date=latestFtpRide.date.slice(0,10)
+    updateRider({ftp:calculatedFtp,ftpKnown:true,ftpProvenance:'MEASURED'})
+    updateAlpha4025(old=>{
+      const intake=old.intake?{...old.intake,ftp:calculatedFtp}:old.intake
+      return {...old,intake,developmentProfile:intake?createDevelopmentProfile(intake):old.developmentProfile,ftpAssessments:[{date,testAverageWatts:Number(ftpAverage),ftpWatts:calculatedFtp,source:'Manual',recovered:true},...old.ftpAssessments.filter(item=>item.date!==date)]}
+    })
   }
 
   function submit(event: React.FormEvent) {
@@ -43,6 +59,7 @@ function RideDataScreen({ onBack }: Props) {
 
   return <section className="data-screen">
     <button className="back-button" type="button" onClick={onBack}>← Team HQ</button>
+    {latestFtpRide&&!latestFtpRecorded&&<form className="ftp-result-card" onSubmit={saveFtpAssessment}><p className="eyebrow">RTR FTP TEST COMPLETE</p><h1>Establish your RtR FTP</h1><p>Enter the average power from the 20-minute test interval. RtR uses 95% of that average as your FTP.</p><label>20-minute average power (W)<input type="number" inputMode="numeric" min="50" max="1000" value={ftpAverage} onChange={event=>setFtpAverage(event.target.value.replace(/\D/g,''))} placeholder="e.g. 241"/></label><div className="ftp-result-preview"><span>20-min average<strong>{ftpAverage||'—'} W</strong></span><span>Calculated RtR FTP<strong>{calculatedFtp??'—'} W</strong></span></div><button className="primary-button" type="submit" disabled={calculatedFtp===null}>Save RtR FTP</button><small>This becomes the rider’s measured FTP and will scale future FTP-based training targets.</small></form>}
     <header><p className="eyebrow">RIDE DATA ENGINE • MVP</p><h1>Log a completed ride</h1><p>Manual entry works now. Your global {system} preference controls every distance, elevation, height, and weight measurement.</p></header>
     <div className="source-strip">{['Manual ✓', 'FIT', 'TCX', 'GPX', 'Garmin', 'Peloton', 'WHOOP', 'Strava'].map((source) => <span key={source}>{source}</span>)}</div>
     <form className="metric-form" onSubmit={submit}>
