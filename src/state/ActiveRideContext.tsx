@@ -22,10 +22,14 @@ export function ActiveRideProvider({ children }: { children: React.ReactNode }) 
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     localStorage.setItem(key(), JSON.stringify(ride))
-    if (!ride || ride.runningSince === null) return
+  }, [ride])
+  const clockRunning=Boolean(ride&&ride.runningSince!==null)
+  useEffect(() => {
+    if (!clockRunning) return
+    setNow(Date.now())
     const timer = window.setInterval(() => setNow(Date.now()), 250)
     return () => window.clearInterval(timer)
-  }, [ride])
+  }, [clockRunning])
   const value = useMemo<Value>(() => ({
     ride,
     elapsed: ride ? elapsedFromClock(ride, now) : 0,
