@@ -8,11 +8,11 @@ export function createIntroCyclingPlan(answers:IntroCyclingAnswers):IntroCycling
  const powerCeilingPercent=answers.ftpKnown?(cautious?72:78):65
  const instructionDensity=answers.cadenceResistanceConfidence==='Low'||answers.shiftingBrakingConfidence==='Low'?'high':'standard'
  const cadenceComplexity=answers.cadenceResistanceConfidence==='Low'?'FOUNDATION' as const:'PROGRESSIVE' as const
- const calibration=answers.ftpKnown?[]:['intro-calibration'],ids=[...calibration,`intro-foundations-${duration}`,`intro-control-${duration}`,'intro-outdoor-45']
- const titles=[...(answers.ftpKnown?[]:['Intro Calibration Ride']),'Bike and Rhythm Foundations','Cadence and Resistance Control','Preparing for Longer and Outdoor Rides']
- const focuses=[...(answers.ftpKnown?[]:['Controlled cadence/load steps and RPE checkpoints establish an Intro Effort Baseline.']),'Setup, posture, smooth pedaling, cadence awareness, and easy resistance.','Separate cadence and resistance changes with recovery.','Sustainable pacing, rolling terrain, bike control, hydration, fueling, and outdoor preparation.']
+ const calibration=answers.ftpKnown?[]:['intro-calibration'],ids=[...calibration,`intro-foundations-${duration}`,`intro-control-${duration}`,'intro-outdoor-45','intro-ftp-test-30']
+ const titles=[...(answers.ftpKnown?[]:['Intro Calibration Ride']),'Bike and Rhythm Foundations','Cadence and Resistance Control','Preparing for Longer and Outdoor Rides','RtR FTP Test']
+ const focuses=[...(answers.ftpKnown?[]:['Controlled cadence/load steps and RPE checkpoints establish an Intro Effort Baseline.']),'Setup, posture, smooth pedaling, cadence awareness, and easy resistance.','Separate cadence and resistance changes with recovery.','Sustainable pacing, rolling terrain, bike control, hydration, fueling, and outdoor preparation.','Finish Intro with a controlled 20-minute FTP assessment. Enter the 20-minute average power afterward to establish the rider’s RtR FTP.']
  const spacing=Math.max(1,Math.floor(7/Math.max(1,answers.weeklyDays)))
- const rides=ids.map((id,index)=>({id,title:titles[index],durationMinutes:id==='intro-calibration'?30:id==='intro-outdoor-45'?45:duration,focus:focuses[index],scheduledDay:1+index*spacing,recoveryAfter:(index+1)%recoveryEvery===0}))
+ const rides=ids.map((id,index)=>({id,title:titles[index],durationMinutes:id==='intro-calibration'||id==='intro-ftp-test-30'?30:id==='intro-outdoor-45'?45:duration,focus:focuses[index],scheduledDay:1+index*spacing,recoveryAfter:(index+1)%recoveryEvery===0}))
  return {startingDurationMinutes:duration,powerCeilingPercent,recoveryEveryRides:recoveryEvery,instructionDensity,cadenceComplexity,climbingIntroducedAfterRide:cautious?3:2,readinessAssessmentAfterRide:cautious?3:2,weeklyDays:answers.weeklyDays,comfortableMinutes:answers.comfortableMinutes,deliveryMode:answers.bikeAccess==='Both'?'HYBRID':answers.bikeAccess==='Outdoor'?'OUTDOOR_GUIDED':'INDOOR',outdoorChecklistStartsAfterRide:answers.outdoorConfidence==='Low'?2:1,rides}
 }
 
