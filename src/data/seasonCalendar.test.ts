@@ -17,3 +17,14 @@ test('season model supports multiple race markers and relevant initial month', (
   const noActive = { ...season, races: season.races.map((race) => ({ ...race, status: 'planned' as const })) }
   assert.equal(getInitialMonth(noActive, 'La Vuelta'), 7)
 })
+
+
+test('2027 calendar includes confirmed major RtR targets',()=>{
+ const season=getSeason(2027)
+ assert(season)
+ assert.equal(season?.races.find(r=>r.id==='tour-2027')?.startDate,'2027-07-02')
+ assert.equal(season?.races.find(r=>r.id==='giro-2027')?.startDate,'2027-05-08')
+ assert.equal(season?.races.find(r=>r.id==='vuelta-2027')?.startDate,'2027-09-04')
+ assert.equal(season?.races.find(r=>r.id==='worlds-2027')?.startDate,'2027-08-24')
+ assert.equal(seasons.some(s=>s.year===2027),true)
+})
