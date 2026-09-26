@@ -656,7 +656,7 @@ function StandardRideScreen({
 
 
   return (
-    <section className={`ride-screen ride-cockpit${rideStarted&&(!massStart||massStart.phase==='GO'||massStart.phase==='RACING')?' official-cockpit':''}`}>
+    <section className={`ride-screen ride-cockpit ${stage.isTraining?'cockpit-training':isWorlds?'cockpit-worlds':'cockpit-race'}${rideStarted&&(!massStart||massStart.phase==='GO'||massStart.phase==='RACING')?' official-cockpit':''}`}>
       <style>{`
         .ride-cockpit {
           max-width: 1000px;
@@ -1043,6 +1043,7 @@ function StandardRideScreen({
         <>
           <div className="live-profile-card" aria-label={currentSegmentIsClimb ? "Live climb gradient profile" : "Live stage profile"}>
             <LiveTrackerHeader4023 worlds={isWorlds} training={Boolean(stage.isTraining)} section={gateTitle??currentSegment.name} zone={displayZone}/>
+            <div className="cockpit-road-state" aria-label="Current road state"><span><small>{stage.isTraining?'SESSION':'TERRAIN'}</small><strong>{stage.isTraining?(gateTitle??currentSegment.name):courseContext}</strong></span><span><small>{stage.isTraining?'EFFORT':'GRADE'}</small><strong>{stage.isTraining?(displayEffort??displayZone):`${activeGradient>0?'+':''}${activeGradient.toFixed(1)}%`}</strong></span><span><small>{stage.isTraining?'REMAINING':'TO FINISH'}</small><strong>{stage.isTraining?formatTime(stageRemaining):displayedDistance.remaining}</strong></span></div>
             <div className="compact-section-clock"><strong>{formatTime(massStart?.phase==='PRE_RACE_WARMUP'?massStart.warmupRemaining:massStart?.phase==='KILOMETRE_ZERO'?massStart.kilometreZeroRemaining:massStart?.phase==='GO'?0:sprintPhase?.remaining??segmentRemaining)}</strong><small>{massStart?.phase==='PRE_RACE_WARMUP'?'WARM-UP REMAINING':massStart?.phase==='KILOMETRE_ZERO'?'TO GO':massStart?.phase==='GO'?'RACING START':sprintPhase?`${sprintPhase.name} REMAINING`:'SECTION REMAINING'}</small></div>
             {activeEffort&&effortRemaining>0&&<TacticalStatusStrip state="ACTIVE" action={activeEffort.action??(tactical.state==='ATTACKING'?'ATTACK':'CHASE')} remaining={effortRemaining}/>}
             {tactical.state==='RETURNING_TO_PELOTON'&&tactical.transition&&<TacticalStatusStrip state="RETURNING" remaining={45*(1-tactical.transition.progress)}/>}
