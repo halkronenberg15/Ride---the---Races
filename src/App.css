@@ -1190,3 +1190,47 @@ html[data-motion="reduced"] .ride-screen svg,html[data-motion="reduced"] .race-m
  .offseason-month-toolbar{grid-template-columns:44px minmax(0,1fr) 44px}
  .offseason-month-toolbar button{min-height:44px}
 }
+
+/* Intro to Cycling guided pathway + Training Library polish. */
+.intro-pathway{display:grid;gap:14px;overflow:hidden}
+.intro-pathway-header{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:start}
+.intro-pathway-header h2{margin:.1rem 0 .35rem}
+.intro-pathway-header p:last-child{margin:0;color:#c7c7cc}
+.intro-progress-badge{display:grid;min-width:92px;padding:12px;border:1px solid #4a4a50;border-radius:14px;background:#141416;text-align:center}
+.intro-progress-badge strong{font-size:1.65rem;color:#ff7a16}.intro-progress-badge span{font-size:.72rem;color:#bcbcc3}
+.intro-pathway progress{width:100%;height:10px;accent-color:#ff7a16}
+.intro-lesson-roadmap{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.intro-lesson-roadmap li{display:grid;grid-template-columns:32px minmax(0,1fr);gap:9px;align-items:center;padding:10px;border:1px solid #3b3b41;border-radius:12px;background:#171719}
+.intro-lesson-roadmap li>span{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#2c2c31;font-weight:900}
+.intro-lesson-roadmap strong,.intro-lesson-roadmap small{display:block}.intro-lesson-roadmap small{margin-top:2px;color:#aaaab1}
+.intro-lesson-roadmap .is-complete{border-color:#5f8f7f;background:#13221d}.intro-lesson-roadmap .is-complete>span{background:#315f50}
+.intro-lesson-roadmap .is-next{border-color:#ff7a16;box-shadow:0 0 0 1px rgba(255,122,22,.25) inset}
+.intro-lesson-roadmap .is-next>span{background:#ff7a16;color:#111}
+.intro-lesson-roadmap .is-locked{opacity:.72}
+.intro-next-lesson{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:14px;border-radius:14px;background:linear-gradient(135deg,rgba(255,122,22,.16),rgba(255,122,22,.03));border:1px solid rgba(255,122,22,.4)}
+.intro-next-lesson h3,.intro-next-lesson p{margin:.15rem 0}.intro-next-lesson .primary-cta{min-width:150px}
+.intro-skill-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.intro-skill-strip span{display:grid;gap:2px;padding:10px;border-radius:10px;background:#202024;text-align:center;color:#b8b8be;font-size:.76rem}.intro-skill-strip strong{color:#fff;font-size:.9rem}
+.intro-readiness-panel{padding:0;border:1px solid #3b3b41;border-radius:12px;overflow:hidden}.intro-readiness-panel>summary{padding:12px 14px;cursor:pointer;font-weight:850}.intro-readiness-panel .outdoor-checklist{padding:0 14px 12px;border:0}.intro-readiness-panel>small{display:block;padding:0 14px 14px;color:#a9a9b0}
+.intro-graduation{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,260px);gap:14px;align-items:end;margin:0;padding:14px;border:1px solid #35353a;border-radius:12px;background:#141416;font-style:normal}
+.intro-graduation p,.intro-graduation strong,.intro-graduation small{display:block}.intro-graduation strong{margin-bottom:3px}.intro-graduation label{display:grid;gap:5px;font-weight:800}.intro-graduation select{min-height:44px;padding:8px 10px;border-radius:8px;background:#fff;color:#111}
+
+.training-library-polished{display:grid;gap:16px}
+.training-library-hero{align-items:start}.training-library-hero p{max-width:680px;margin:.25rem 0 0;color:#c6c6cc}.training-library-hero>small{padding:7px 10px;border-radius:999px;background:#232326;white-space:nowrap}
+.training-library-polished .training-folder-list{gap:10px}
+.training-library-polished .training-folder-row{min-height:78px;border-radius:14px!important;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.training-library-polished .training-folder-icon{display:grid;place-items:center;width:32px;height:32px;border-radius:9px;background:rgba(122,53,0,.09);font-size:1.1rem}
+.training-library-polished .training-folder-title{font-size:1rem}.training-library-polished .training-folder-description{line-height:1.35}
+.training-library-polished .featured-training-folder{border-width:2px;background:linear-gradient(135deg,#fff8ef,#f4efe8)}
+.training-folder-header{padding:4px 2px}.training-folder-header p:last-child{max-width:700px;color:#b9b9bf}
+.polished-training-card{display:grid;gap:10px}.training-card-topline{display:flex;justify-content:space-between;gap:12px;align-items:start}.training-card-topline .eyebrow{margin:0}.training-card-topline>strong{white-space:nowrap;color:#ffb06f}
+.polished-training-card h3,.polished-training-card p{margin:0}.polished-training-card footer{display:flex;justify-content:space-between;gap:10px;align-items:center;margin:4px 0 0;padding:10px 0 0;border-top:1px solid #37373d;background:none;box-shadow:none;font-style:normal}.polished-training-card footer span{color:#a9a9b0;font-size:.8rem}.polished-training-card footer button{min-height:44px}
+
+@media(max-width:560px){
+ .intro-pathway-header,.intro-next-lesson,.intro-graduation{grid-template-columns:1fr}
+ .intro-progress-badge{grid-template-columns:auto auto;justify-content:start;gap:8px;align-items:baseline;min-width:0;text-align:left}
+ .intro-lesson-roadmap{grid-template-columns:1fr}
+ .intro-skill-strip{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .intro-next-lesson .primary-cta{width:100%}
+ .training-library-hero{display:grid;gap:8px}.training-library-hero>small{justify-self:start}
+ .polished-training-card footer{display:grid;grid-template-columns:1fr}.polished-training-card footer button{width:100%}
+}
