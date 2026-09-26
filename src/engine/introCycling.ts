@@ -8,11 +8,11 @@ export function createIntroCyclingPlan(answers:IntroCyclingAnswers):IntroCycling
  const powerCeilingPercent=answers.ftpKnown?(cautious?72:78):65
  const instructionDensity=answers.cadenceResistanceConfidence==='Low'||answers.shiftingBrakingConfidence==='Low'?'high':'standard'
  const cadenceComplexity=answers.cadenceResistanceConfidence==='Low'?'FOUNDATION' as const:'PROGRESSIVE' as const
- const calibration=answers.ftpKnown?[]:['intro-calibration'],ids=[...calibration,`intro-foundations-${duration}`,`intro-control-${duration}`,'intro-outdoor-45']
- const titles=[...(answers.ftpKnown?[]:['Intro Calibration Ride']),'Bike and Rhythm Foundations','Cadence and Resistance Control','Preparing for Longer and Outdoor Rides']
- const focuses=[...(answers.ftpKnown?[]:['Controlled cadence/load steps and RPE checkpoints establish an Intro Effort Baseline.']),'Setup, posture, smooth pedaling, cadence awareness, and easy resistance.','Separate cadence and resistance changes with recovery.','Sustainable pacing, rolling terrain, bike control, hydration, fueling, and outdoor preparation.']
+ const calibration=answers.ftpKnown?[]:['intro-calibration'],ids=[...calibration,`intro-foundations-${duration}`,`intro-control-${duration}`,'intro-outdoor-45','intro-ftp-warmup-10','intro-ftp-test-20']
+ const titles=[...(answers.ftpKnown?[]:['Intro Calibration Ride']),'Bike and Rhythm Foundations','Cadence and Resistance Control','Preparing for Longer and Outdoor Rides','FTP Warm-Up','RtR 20-Minute FTP Test']
+ const focuses=[...(answers.ftpKnown?[]:['Controlled cadence/load steps and RPE checkpoints establish an Intro Effort Baseline.']),'Setup, posture, smooth pedaling, cadence awareness, and easy resistance.','Separate cadence and resistance changes with recovery.','Sustainable pacing, rolling terrain, bike control, hydration, fueling, and outdoor preparation.','Prepare for the FTP test with progressive aerobic work and short controlled openers.','Ride a standalone 20-minute maximal sustainable effort. Enter the ride average power afterward to establish the rider’s RtR FTP.']
  const spacing=Math.max(1,Math.floor(7/Math.max(1,answers.weeklyDays)))
- const rides=ids.map((id,index)=>({id,title:titles[index],durationMinutes:id==='intro-calibration'?30:id==='intro-outdoor-45'?45:duration,focus:focuses[index],scheduledDay:1+index*spacing,recoveryAfter:(index+1)%recoveryEvery===0}))
+ const rides=ids.map((id,index)=>({id,title:titles[index],durationMinutes:id==='intro-calibration'?30:id==='intro-ftp-warmup-10'?10:id==='intro-ftp-test-20'?20:id==='intro-outdoor-45'?45:duration,focus:focuses[index],scheduledDay:1+index*spacing,recoveryAfter:id==='intro-ftp-warmup-10'?false:(index+1)%recoveryEvery===0}))
  return {startingDurationMinutes:duration,powerCeilingPercent,recoveryEveryRides:recoveryEvery,instructionDensity,cadenceComplexity,climbingIntroducedAfterRide:cautious?3:2,readinessAssessmentAfterRide:cautious?3:2,weeklyDays:answers.weeklyDays,comfortableMinutes:answers.comfortableMinutes,deliveryMode:answers.bikeAccess==='Both'?'HYBRID':answers.bikeAccess==='Outdoor'?'OUTDOOR_GUIDED':'INDOOR',outdoorChecklistStartsAfterRide:answers.outdoorConfidence==='Low'?2:1,rides}
 }
 
@@ -29,3 +29,5 @@ export function applyIntroPrescription(segments:RideSegment[],ftp:number,plan:In
 
 export const OUTDOOR_READINESS_ITEMS=[['fit','Bike fit and equipment check'],['helmet','Helmet and safety equipment'],['braking','Braking and controlled stopping'],['shifting','Shifting fundamentals'],['look-back','Looking behind while holding a line'],['signals','Hand signals'],['awareness','Road awareness'],['group','Basic group-riding etiquette'],['fuel','Hydration and fueling'],['supervised','Plan a supervised first outdoor ride']] as const
 export function introReadiness(completed:number,total:number,checklistCount=0){return {introComplete:completed>=total,indoorProgramReady:completed>=total,outdoorPreparationComplete:completed>=total&&checklistCount===OUTDOOR_READINESS_ITEMS.length,outdoorGroupRideCertified:false,advancedProgramReady:completed>=total&&checklistCount===OUTDOOR_READINESS_ITEMS.length}}
+
+export function calculateFtpFrom20MinuteAverage(averageWatts:number){if(!Number.isFinite(averageWatts)||averageWatts<50||averageWatts>1000)throw new Error('20-minute average power is outside the accepted range.');return Math.round(averageWatts*0.95)}
