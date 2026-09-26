@@ -41,6 +41,8 @@ export type RideMetricEntry = {
   race?: string
   stageNumber?: number
   stageName?: string
+  workoutId?:string
+  offSeasonAssignmentId?:string
   plannedDurationSeconds?: number
   actualEngineDurationSeconds?: number
   tactic?: string
@@ -75,6 +77,7 @@ export type HealthEntry = {
   recoveryScore: number
   restingHeartRate?: number
   hrv?: number
+  recentStrain?: number
   fatigue: number
   mood: 'Low' | 'Steady' | 'Good' | 'Excellent'
 }
