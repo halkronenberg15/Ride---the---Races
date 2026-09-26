@@ -22,3 +22,10 @@ test('persistent race status is compact in the cockpit',()=>{
  assert.match(css,/4\.0\.26\.1 cockpit hotfix/)
  assert.match(css,/\.ride-cockpit \.race-status-persistent/)
 })
+
+
+test('peloton and breakaway visuals stay dormant until connected power positioning is enabled',()=>{
+ const ride=read('../screens/RideScreen.tsx')
+ assert.match(ride,/const livePowerRacePositionEnabled=false/)
+ assert.match(ride,/const raceSituation=livePowerRacePositionEnabled\?raceSituationModel:undefined/)
+})
