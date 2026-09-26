@@ -1370,7 +1370,10 @@ html[data-motion="reduced"] .ride-screen svg,html[data-motion="reduced"] .race-m
 }
 .ride-cockpit .target-tile strong {
   color:#fff;
+  font-size:clamp(1rem,4.15vw,1.38rem) !important;
+  line-height:1.05;
   font-variant-numeric:tabular-nums;
+  letter-spacing:-.035em;
 }
 .ride-cockpit .target-tile:first-child strong { color:var(--cockpit-accent); }
 
@@ -1497,5 +1500,6 @@ html[data-motion="reduced"] .ride-screen svg,html[data-motion="reduced"] .race-m
 @media (orientation:landscape) and (max-height:600px){
   .cockpit-road-state span { padding-block:4px; }
   .compact-section-clock strong { font-size:1.45rem !important; }
-  .ride-cockpit .target-tile { min-height:43px; }
+  .ride-cockpit .target-tile { min-height:46px; }
+  .ride-cockpit .target-tile strong { font-size:1.05rem !important; }
 }
