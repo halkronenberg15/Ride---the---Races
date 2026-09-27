@@ -1,4 +1,6 @@
 import type { CareerState } from '../types/career.ts'
+import packageMetadata from '../../package.json'
+import { markProfileAppVersion, snapshotBeforeAppUpdate, validateRestoredCareer } from '../services/profileBackups.ts'
 import { INITIAL_PELOTON_EQUIPMENT_CALIBRATION } from '../engine/manualBike.ts'
 import { createIntroCyclingPlan } from '../engine/introCycling.ts'
 import { activeSeasonClosure } from '../engine/release4024.ts'
@@ -40,8 +42,22 @@ export function migrateCareer(saved:Partial<CareerState>):CareerState{
 /** Restores and synchronously persists migrations before the provider's first render. */
 export function restoreCareerBeforeRender(storage:Pick<Storage,'getItem'|'setItem'>,storageKey:string,displayName=''):CareerState{
  const raw=storage.getItem(storageKey)
- const restored=raw?migrateCareer(JSON.parse(raw) as Partial<CareerState>):{...createInitialCareer(),rider:{...createInitialCareer().rider,name:displayName}}
+ if(!raw){
+  const created={...createInitialCareer(),rider:{...createInitialCareer().rider,name:displayName}}
+  const serialized=JSON.stringify(created)
+  storage.setItem(storageKey,serialized)
+  markProfileAppVersion(storage,storageKey,packageMetadata.version)
+  return JSON.parse(serialized) as CareerState
+ }
+ snapshotBeforeAppUpdate(storage,storageKey,raw,packageMetadata.version)
+ const source=JSON.parse(raw) as Partial<CareerState>
+ const sourceRideCount=Array.isArray(source.rideHistory)?source.rideHistory.length:0
+ const sourceTrainingCount=Array.isArray(source.trainingHistory)?source.trainingHistory.length:0
+ const restored=validateRestoredCareer(migrateCareer(source))
+ if(restored.rideHistory.length<sourceRideCount)throw new Error('Rider profile migration stopped because ride history would be reduced.')
+ if(restored.trainingHistory.length<sourceTrainingCount)throw new Error('Rider profile migration stopped because training history would be reduced.')
  const serialized=JSON.stringify(restored)
  storage.setItem(storageKey,serialized)
+ markProfileAppVersion(storage,storageKey,packageMetadata.version)
  return JSON.parse(serialized) as CareerState
 }

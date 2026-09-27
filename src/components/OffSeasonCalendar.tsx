@@ -2,12 +2,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { getCalendarMonth } from '../data/seasonCalendar.ts'
 import { planMonths } from '../engine/offSeasonCalendar.ts'
 import { availableRideChanges, canSwitchRideSetting, type CalendarAssignment, type TrainingPlan } from '../engine/alpha4025.ts'
+import type { RideMetricEntry } from '../types/career.ts'
+import { buildPostRideReport } from '../engine/postRideReport4026.ts'
 
 const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const monthName = (year: number, month: number) => new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(Date.UTC(year, month, 1)))
 const shortLabel = (assignment: CalendarAssignment) => assignment.type === 'CYCLING' || assignment.type === 'ASSESSMENT' ? 'Ride' : assignment.type === 'STRENGTH' ? 'Strength' : assignment.type === 'MOBILITY' ? 'Mobility' : 'Rest'
 
-export default function OffSeasonCalendar({ plan, today, activeOutdoorAssignmentId, onStartWorkout, onStartOutdoor, onMove, onChange, onSwitchSetting,onOpenStrength }: { plan: TrainingPlan; today: string; activeOutdoorAssignmentId:string|null; onStartWorkout: (workoutId: string, assignmentId: string) => void; onStartOutdoor: (assignmentId: string, resume: boolean) => void; onMove:(assignmentId:string,date:string)=>void; onChange:(assignmentId:string,workoutId:string)=>void; onSwitchSetting:(assignmentId:string)=>void; onOpenStrength:(assignmentId:string)=>void }) {
+export default function OffSeasonCalendar({ plan, today, rideHistory, ftp, activeOutdoorAssignmentId, onStartWorkout, onStartOutdoor, onMove, onChange, onSwitchSetting,onOpenStrength }: { plan: TrainingPlan; today: string; rideHistory:RideMetricEntry[]; ftp:number|null; activeOutdoorAssignmentId:string|null; onStartWorkout: (workoutId: string, assignmentId: string) => void; onStartOutdoor: (assignmentId: string, resume: boolean) => void; onMove:(assignmentId:string,date:string)=>void; onChange:(assignmentId:string,workoutId:string)=>void; onSwitchSetting:(assignmentId:string)=>void; onOpenStrength:(assignmentId:string)=>void }) {
   const assignments = plan.weeks.flatMap(week => week.assignments)
   const byDate = useMemo(() => {
     const map = new Map<string, CalendarAssignment[]>()
@@ -26,6 +28,8 @@ export default function OffSeasonCalendar({ plan, today, activeOutdoorAssignment
 
   const assignmentDetails = (selected: CalendarAssignment) => {
     const selectedWorkoutChanges = availableRideChanges(plan, selected.id)
+    const linkedRide=rideHistory.find(ride=>ride.offSeasonAssignmentId===selected.id)??rideHistory.find(ride=>ride.workoutId===selected.workoutId&&ride.date.slice(0,10)===selected.date)
+    const report=linkedRide&&(selected.type==='CYCLING'||selected.type==='ASSESSMENT')?buildPostRideReport(selected,linkedRide,ftp):null
     const moveTargets=(selectedWeek?.assignments.filter(item=>item.type==='REST'&&item.status==='PLANNED'&&item.date>=today&&visibleForDate(item.date).every(candidate=>candidate.durationMinutes===0))??[])
     return <article className="training-session-card" key={selected.id}>
       <header className="training-session-heading"><div><p className="eyebrow">{shortLabel(selected)} · {selected.status}</p><h3>{selected.title}</h3></div><strong>{selected.durationMinutes} min</strong></header>
@@ -34,6 +38,7 @@ export default function OffSeasonCalendar({ plan, today, activeOutdoorAssignment
       <p>{selected.primary}</p>
       {selected.completion && <p><strong>Recorded:</strong> {new Date(selected.completion.completedAt).toLocaleString()} · {selected.completion.durationMinutes} minutes{selected.completion.notes ? ` · ${selected.completion.notes}` : ''}</p>}
       {selected.substitution && <p><strong>Adjustment:</strong> {selected.substitution.reason}</p>}
+      {report&&<details className="post-ride-report"><summary>View Ride Report</summary><div className="post-ride-report-body"><p className="eyebrow">RTR POST-RIDE ANALYSIS · {report.outcome}</p><h4>{report.headline}</h4><p>{report.summary}</p><ul>{report.evidence.map(item=><li key={item}>{item}</li>)}</ul><p><strong>Next:</strong> {report.nextStep}</p></div></details>}
       <p><strong>Fueling:</strong> {selected.fueling.preRide} {selected.fueling.carbsPerHour === null ? '' : `${selected.fueling.carbsPerHour} g carbohydrate/hour.`} {selected.fueling.fluidMlPerHour === null ? '' : `${selected.fueling.fluidMlPerHour} ml fluid/hour.`}</p>
       <details><summary>Alternatives and recovery</summary><p><strong>Short:</strong> {selected.shortened}</p><p><strong>Indoor:</strong> {selected.indoorAlternative}</p><p><strong>Outdoor:</strong> {selected.outdoorAlternative}</p><p><strong>Recovery:</strong> {selected.recoveryAlternative}</p><p>{selected.fueling.recoveryPriority}</p></details>
       {selected.type==='STRENGTH'&&<button type="button" className="primary-cta" onClick={()=>onOpenStrength(selected.id)}>{selected.status==='PLANNED'?'Open Strength Workout':'Review / Repeat Strength Workout'}</button>}
