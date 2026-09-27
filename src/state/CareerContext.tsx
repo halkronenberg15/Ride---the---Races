@@ -2,7 +2,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import type { CareerState, EditableRideResult, HealthEntry, IntroCyclingAnswers, IntroCyclingPlan, MeasurementSystem, RideMetricEntry } from '../types/career'
 import type { Alpha4025State, ExternalCyclingCompletion } from '../engine/alpha4025.ts'
-import { createInitialCareer, equipmentForDevices, initialCareer, migrateCareer, restoreCareerBeforeRender } from './careerPersistence.ts'
+import { createInitialCareer, equipmentForDevices, migrateCareer, restoreCareerBeforeRender } from './careerPersistence.ts'
 import { useAuth } from './AuthContext.tsx'
 import { careerStorageKey } from '../services/accountStore.ts'
 import { closeSeason } from '../engine/release4024.ts'
