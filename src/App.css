@@ -1719,3 +1719,143 @@ body{
   color:#d6d6da;
   line-height:1.4;
 }
+
+
+/* 4.0.26 phone-pass cleanup: mobile intake, ride data, settings and active-ride chrome */
+:root:not([data-theme='light']) .data-screen > header h1{
+  color:#f4f4f6!important;
+}
+:root:not([data-theme='light']) .data-screen > header p:not(.eyebrow){
+  color:#b8b8bf;
+}
+.onboarding-shell,
+.onboarding-card,
+.ftp-panel,
+.wizard-actions,
+.settings-screen,
+.settings-card,
+.preview-transfer,
+.transfer-actions,
+.file-picker{
+  min-width:0;
+  max-width:100%;
+  box-sizing:border-box;
+}
+.ftp-unknown-choice{
+  grid-template-columns:auto minmax(0,1fr);
+  align-items:start;
+  overflow-wrap:anywhere;
+}
+.ftp-unknown-choice input{
+  width:22px!important;
+  min-width:22px;
+  height:22px;
+  margin-top:2px;
+}
+.end-season-card{
+  min-height:0;
+}
+.end-season-card button{
+  width:100%;
+  min-height:48px;
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
+@media(max-width:700px){
+  .onboarding-screen{
+    display:block;
+    width:100%;
+    padding:calc(var(--safe-top) + 12px) max(12px,var(--safe-right)) calc(var(--safe-bottom) + 18px) max(12px,var(--safe-left));
+  }
+  .onboarding-shell{width:100%;}
+  .onboarding-card{
+    width:100%;
+    padding:18px 14px;
+    border-radius:20px;
+  }
+  .onboarding-card>*,
+  .ftp-panel>*{min-width:0;max-width:100%;}
+  .ftp-panel{padding:16px 12px;}
+  .ftp-panel > label:first-child{
+    display:grid;
+    align-items:stretch;
+  }
+  .ftp-panel > label:first-child input{
+    width:100%;
+  }
+  .wizard-actions{
+    width:100%;
+    align-items:stretch;
+  }
+  .wizard-actions button{
+    flex:1 1 0;
+    min-width:0;
+    max-width:100%;
+    padding-left:12px;
+    padding-right:12px;
+    white-space:normal;
+  }
+  .settings-screen{
+    width:100%;
+    overflow-x:hidden;
+    padding-left:12px;
+    padding-right:12px;
+  }
+  .settings-screen .settings-card{
+    width:100%;
+    min-height:0;
+    padding:18px 14px;
+  }
+  .settings-screen .preview-transfer{
+    gap:12px;
+  }
+  .settings-screen .preview-transfer h2{
+    font-size:clamp(1.25rem,7vw,1.7rem);
+    overflow-wrap:anywhere;
+  }
+  .settings-screen .preview-transfer p{
+    max-width:100%;
+    overflow-wrap:anywhere;
+  }
+  .settings-screen .transfer-actions{
+    display:grid;
+    grid-template-columns:1fr;
+  }
+  .settings-screen .transfer-actions>*{
+    width:100%;
+  }
+  .settings-screen .file-picker input[type='file']{
+    width:100%;
+    max-width:100%;
+    font-size:.9rem;
+  }
+  .active-ride-bar{
+    position:sticky;
+    top:0;
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto auto;
+    justify-content:stretch;
+    gap:8px;
+    padding:8px 10px;
+  }
+  .active-ride-bar strong{
+    min-width:0;
+    font-size:.78rem;
+    line-height:1.25;
+    overflow-wrap:anywhere;
+  }
+  .active-ride-bar button{
+    min-height:42px;
+    padding:6px 10px;
+    white-space:normal;
+  }
+}
+@media(max-width:430px){
+  .active-ride-bar{
+    grid-template-columns:1fr 1fr;
+  }
+  .active-ride-bar strong{
+    grid-column:1/-1;
+    text-align:center;
+  }
+}
