@@ -6,6 +6,7 @@ import { speakAsJean, stopJeanVoice, type JeanVoiceStatus } from '../services/je
 import { originalTargetsAvailable } from '../engine/release4024.ts'
 import { useAuth } from '../state/AuthContext.tsx'
 import { OffSeasonPreviewButton } from '../components/OffSeasonPreviewButton.ts'
+import { useActiveRide } from '../state/ActiveRideContext.tsx'
 
 type Props = {
   onBack: () => void
@@ -20,7 +21,8 @@ type Props = {
 }
 
 export default function TeamBusScreen({ onBack, seasons, onOpenSeason, onOpenTraining, onOpenOffSeason,onOpenFemmes,onOpenRoster,onReplayStage,onOpenStageResults }: Props) {
-  const {career,setJeanVoiceEnabled}=useCareer()
+  const {career,setJeanVoiceEnabled,endSeason}=useCareer()
+  const {ride}=useActiveRide()
   const {isAuthenticated}=useAuth()
   const [voiceStatus,setVoiceStatus]=useState<JeanVoiceStatus>('idle')
   const motto='Ride with patience. Race with purpose. Finish together.'
@@ -32,6 +34,7 @@ export default function TeamBusScreen({ onBack, seasons, onOpenSeason, onOpenTra
     <article className="jean-command-card team-bus-jean"><div className="jean-identity"><div className="jean-avatar" aria-hidden="true">JM</div><div><p className="eyebrow">DIRECTEUR SPORTIF</p><h2>Jean Moreau</h2><span>Live from the Team Loriot car</span></div></div><div className="radio-message team-motto"><span className="radio-indicator"><i/> TEAM PHILOSOPHY</span><blockquote>“{motto}”</blockquote></div><div className="jean-voice-controls"><button type="button" className="voice-button" onClick={hearJean} disabled={!career.settings.jeanVoiceEnabled}>{voiceStatus==='speaking'?'■ Stop Jean':'▶ Hear Jean'}</button><label><input type="checkbox" checked={career.settings.jeanVoiceEnabled} onChange={event=>{stopJeanVoice();setVoiceStatus('idle');setJeanVoiceEnabled(event.target.checked)}}/> Jean voice</label></div></article>
     <nav className="team-bus-destinations" aria-label="Team Bus destinations">
       <p className="eyebrow destination-heading">CURRENT SEASON</p>
+      {career.season.active&&career.season.closure.status==='ACTIVE'&&<article className="dashboard-card end-season-card"><p className="eyebrow">SEASON HANDOFF</p><h2>{career.season.completedStages.length<21?'End Season Early':'Finish Season'}</h2><p>Closing the season preserves completed rides and results, archives the season once, and unlocks Off-Season Training.</p>{ride?<p role="status">Finish or end the active ride first.</p>:<button type="button" onClick={()=>{const early=career.season.completedStages.length<21;if(window.confirm(early?`End the season early? ${21-career.season.completedStages.length} stages remain incomplete. Completed history will be preserved.`:'Finish the season and open Off-Season Training?'))endSeason(early)}}>{career.season.completedStages.length<21?'END SEASON EARLY':'FINISH SEASON'}</button>}</article>}
       {career.alpha4025.seriesPreference!=='RtR Femmes'&&seasons.map((season) => <button type="button" key={season.year} onClick={() => onOpenSeason(season.year)}><strong>{season.year} →</strong><small>{season.races.length} professional races</small></button>)}
       {career.alpha4025.seriesPreference==='RtR Femmes'&&<button type="button" onClick={onOpenFemmes}><strong>RTR FEMMES CALENDAR</strong><small>Platform shell · no unverified production races</small></button>}
       <OffSeasonPreviewButton authenticated={isAuthenticated} plan={career.alpha4025.trainingPlan} onOpen={onOpenOffSeason}/>
