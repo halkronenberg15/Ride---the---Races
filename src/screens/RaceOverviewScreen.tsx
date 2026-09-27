@@ -1,9 +1,12 @@
 import { useCareer } from '../state/CareerContext'
 import { tour2026, vuelta2026 } from '../data/professionalRaces'
+import { getSeason } from '../data/seasonCalendar'
 
 const dateLabel=(value:string)=>new Intl.DateTimeFormat('en',{weekday:'short',month:'short',day:'numeric',timeZone:'UTC'}).format(new Date(value+'T00:00:00Z'))
 export default function RaceOverviewScreen({library,actionable,onBack,onOpenStage}:{library:string;actionable:number;onBack:()=>void;onOpenStage:(stage:number)=>void}){
- const {career}=useCareer(); const isVuelta=library==='vuelta-2026'; const completed=isVuelta?career.races.vuelta.completedStages:career.races.tour.completedStages
+ const {career}=useCareer(); const isTour=library==='tour-2026',isVuelta=library==='vuelta-2026';
+ if(!isTour&&!isVuelta){const calendarRace=getSeason(2026)?.races.find(item=>item.raceLibraryId===library);return <section className="race-overview"><button onClick={onBack}>← Back to Season</button><header className="race-hub-header race-hero-title"><p className="eyebrow">TEAM LORIOT • 2026</p><h1>{calendarRace?.name??'Race'}</h1><p>{calendarRace?`${dateLabel(calendarRace.startDate)}${calendarRace.endDate!==calendarRace.startDate?` – ${dateLabel(calendarRace.endDate)}`:''}`:'Calendar event'}</p></header><section className="dashboard-card"><p className="eyebrow">CALENDAR EVENT</p><h2>Roadbook not loaded yet</h2><p>This race is on the season calendar, but RtR does not yet have a verified rideable course for it. Tour de France stages will not be substituted.</p></section></section>}
+ const completed=isVuelta?career.races.vuelta.completedStages:career.races.tour.completedStages
  const race=isVuelta?vuelta2026:tour2026
  return <section className="race-overview" style={{'--race-accent':race.identity.raceAccentColor} as React.CSSProperties}>
   <button onClick={onBack}>← Back to Season</button><header className="race-hub-header race-hero-title"><p className="eyebrow">TEAM LORIOT • {race.season}</p><h1>{race.name}</h1><p>{dateLabel(race.startDate)} – {dateLabel(race.endDate)} • {race.stages.length} stages</p><strong>{completed.length} / {race.stages.length} COMPLETE</strong></header>
