@@ -84,7 +84,7 @@ export function CareerProvider({ children }: { children: React.ReactNode }) {
       setCareer((current) => ({ ...current, rideHistory: [ride, ...current.rideHistory] }))
     },
     updateHealth(entry) {
-      setCareer((current) => ({ ...current, health: entry,alpha4025:{...current.alpha4025,readinessEntries:[{date:entry.date,updatedAt:new Date().toISOString(),source:'Manual',sleepHours:entry.sleepHours,externalRecoveryScore:entry.recoveryScore,fatigue:entry.fatigue>=67?'High':entry.fatigue>=34?'Moderate':'Low',soreness:'None',motivation:entry.mood==='Low'?'Low':entry.mood==='Steady'?'Moderate':'High',hydrationConcern:false,illnessOrPain:false,recommendedAdjustment:'Use the authoritative phase-aware readiness projection.'},...current.alpha4025.readinessEntries.filter(item=>item.date!==entry.date)]} }))
+      setCareer((current) => ({ ...current, health: entry,alpha4025:{...current.alpha4025,readinessEntries:[{date:entry.date,updatedAt:new Date().toISOString(),source:'Manual',sleepHours:entry.sleepHours,externalRecoveryScore:entry.recoveryScore,recentStrain:entry.recentStrain,fatigue:entry.fatigue>=67?'High':entry.fatigue>=34?'Moderate':'Low',soreness:'None',motivation:entry.mood==='Low'?'Low':entry.mood==='Steady'?'Moderate':'High',hydrationConcern:false,illnessOrPain:false,recommendedAdjustment:'Use the authoritative phase-aware readiness projection.'},...current.alpha4025.readinessEntries.filter(item=>item.date!==entry.date)]} }))
     },
     updateRider(rider) {
       setCareer((current) => ({ ...current, rider: { ...current.rider, ...rider } }))
