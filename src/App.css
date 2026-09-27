@@ -1653,3 +1653,69 @@ body{
   font-size:.78rem;
   letter-spacing:.05em;
 }
+
+
+/* 4.0.26 cleanup: settings contrast, readiness inputs, post-ride analysis */
+:root:not([data-theme='light']) .settings-screen,
+:root:not([data-theme='light']) .settings-screen header,
+:root:not([data-theme='light']) .settings-screen h1,
+:root:not([data-theme='light']) .settings-screen h2,
+:root:not([data-theme='light']) .settings-screen h3,
+:root:not([data-theme='light']) .settings-screen strong,
+:root:not([data-theme='light']) .settings-screen label{
+  color:#f4f4f6!important;
+}
+:root:not([data-theme='light']) .settings-screen header p:last-child,
+:root:not([data-theme='light']) .settings-card p,
+:root:not([data-theme='light']) .settings-card small{
+  color:#b8b8bf!important;
+}
+:root:not([data-theme='light']) .settings-card select{
+  background:#101014!important;
+  color:#fff!important;
+  border-color:#56565f!important;
+}
+:root:not([data-theme='light']) .settings-card option{
+  background:#101014;
+  color:#fff;
+}
+.health-screen .metric-form label small{
+  display:block;
+  color:#a9a9b0;
+  font-weight:500;
+  line-height:1.35;
+}
+.post-ride-report{
+  margin:12px 0 4px;
+  overflow:hidden;
+  border:1px solid rgba(255,122,22,.48);
+  border-radius:12px;
+  background:rgba(255,122,22,.06);
+}
+.post-ride-report>summary{
+  min-height:44px;
+  display:flex;
+  align-items:center;
+  padding:10px 12px;
+  color:#ffae72;
+  cursor:pointer;
+  font-weight:900;
+}
+.post-ride-report-body{
+  padding:4px 14px 14px;
+  border-top:1px solid rgba(255,122,22,.22);
+}
+.post-ride-report-body h4{
+  margin:6px 0;
+  color:#fff;
+  font-size:1.08rem;
+}
+.post-ride-report-body ul{
+  margin:10px 0;
+  padding-left:20px;
+}
+.post-ride-report-body li{
+  margin:5px 0;
+  color:#d6d6da;
+  line-height:1.4;
+}
