@@ -10,7 +10,7 @@ const assignment:CalendarAssignment={
  durationMinutes:45,intensity:'MODERATE',demandingCycling:false,environment:'INDOOR',
  primary:'Controlled tempo.',shortened:'Short ride.',indoorAlternative:'Primary.',outdoorAlternative:'Tempo climb.',
  recoveryAlternative:'Rest.',powerTarget:{minimum:174,maximum:197},effort:'Comfortable',
- fueling:{classification:'Quality interval',preRide:'Fuel normally.',carbsPerHour:30,fluidMlPerHour:500,recoveryPriority:'Recover.',nextDayWorkload:'Easy'},
+ fueling:{classification:'Quality interval',carbohydrateDemand:'Moderate',preRide:'Fuel normally.',carbsPerHour:30,fluidMlPerHour:500,electrolytes:'Use as conditions require.',recoveryPriority:'Recover.',nextDayWorkload:'Easy'},
  status:'COMPLETED'
 }
 
