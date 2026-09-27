@@ -2,7 +2,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import type { CareerState, EditableRideResult, HealthEntry, IntroCyclingAnswers, IntroCyclingPlan, MeasurementSystem, RideMetricEntry } from '../types/career'
 import type { Alpha4025State, ExternalCyclingCompletion } from '../engine/alpha4025.ts'
-import { equipmentForDevices, initialCareer, restoreCareerBeforeRender } from './careerPersistence.ts'
+import { createInitialCareer, equipmentForDevices, initialCareer, migrateCareer, restoreCareerBeforeRender } from './careerPersistence.ts'
 import { useAuth } from './AuthContext.tsx'
 import { careerStorageKey } from '../services/accountStore.ts'
 import { closeSeason } from '../engine/release4024.ts'
@@ -50,7 +50,11 @@ export function CareerProvider({ children }: { children: React.ReactNode }) {
     try {
       return restoreCareerBeforeRender(window.localStorage,storageKey,account?.displayName??'')
     } catch {
-      return initialCareer
+      const raw=window.localStorage.getItem(storageKey)
+      if(raw){
+        try{return migrateCareer(JSON.parse(raw) as Partial<CareerState>)}catch{/* preserve startup access below */}
+      }
+      return {...createInitialCareer(),rider:{...createInitialCareer().rider,name:account?.displayName??''}}
     }
   })
 
