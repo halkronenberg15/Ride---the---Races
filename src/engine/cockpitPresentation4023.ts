@@ -26,6 +26,6 @@ export function completionLabel(completion:number,distanceTravelled:number){
 
 /** Detail guidance stops at the canonical gradient model; Finish is not a road change. */
 export function resolveDetailGuidance4023(nextGradient:number|null,distanceToBoundary:number|null,crossing:boolean){
- if(nextGradient===null||distanceToBoundary===null)return {name:'NO UPCOMING GRADIENT CHANGE',gradient:null,distanceKm:null,crossing:false}
+ if(nextGradient===null||distanceToBoundary===null)return {name:'NO IMMEDIATE GRADIENT CHANGE',gradient:null,distanceKm:null,crossing:false}
  return {name:'NEXT GRADIENT',gradient:nextGradient,distanceKm:distanceToBoundary,crossing}
 }
