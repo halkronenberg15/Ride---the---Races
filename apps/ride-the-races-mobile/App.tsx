@@ -85,6 +85,11 @@ export default function App(){
         if(error) console.warn(error.message)
         setProfileId(data?.athlete_id??null)
         setCloudProfile(data?{display_name:data.display_name,ftp_watts:data.ftp_watts,weight_kg:data.weight_kg}:null)
+        if(data?.athlete_id){
+          Promise.all([loadLatestCloudCareer(data.athlete_id),loadCloudRideCount(data.athlete_id)])
+            .then(([snapshot,count])=>{setCareer(snapshot);setCloudRideCount(count)})
+            .catch(error=>console.warn(error instanceof Error?error.message:String(error)))
+        }
       })
   },[session?.user?.id])
 
