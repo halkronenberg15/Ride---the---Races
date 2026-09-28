@@ -336,12 +336,25 @@ export default function App(){
     )
   }
 
+  if(screen==='home'){
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><HomeScreen career={career} riderName={cloudProfile?.display_name??career?.rider.name??'Rider'} ftp={cloudProfile?.ftp_watts??career?.rider.ftp??null} rideCount={cloudRideCount} onTraining={()=>setScreen('training')} onLibrary={()=>setScreen('library')} onRide={()=>setScreen('ride')} onSignOut={()=>supabase.auth.signOut()}/></SafeAreaView>
+  }
+
+  if(screen==='training'){
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><TrainingScreen career={career} onBack={()=>setScreen('home')} onRide={()=>setScreen('ride')}/></SafeAreaView>
+  }
+
+  if(screen==='library'){
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><LibraryScreen onBack={()=>setScreen('home')} onTraining={()=>setScreen('training')} onRide={()=>setScreen('ride')}/></SafeAreaView>
+  }
+
   return(
     <SafeAreaView style={styles.root}>
       <StatusBar style="light"/>
       <ScrollView contentContainerStyle={styles.wrap}>
         <View style={styles.headerRow}>
           <View>
+            <Pressable onPress={()=>setScreen('home')}><Text style={styles.link}>← Team HQ</Text></Pressable>
             <Text style={styles.eyebrow}>RIDE THE RACES · ALPHA</Text>
             <Text style={styles.title}>Ride cockpit</Text>
           </View>
