@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "Ride the Races",
+    "slug": "ride-the-races",
+    "scheme": "ridetheraces",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "ios": {
+      "bundleIdentifier": "com.ridetheraces.app"
+    },
+    "android": {
+      "package": "com.ridetheraces.app"
+    }
+  }
+}

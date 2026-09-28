@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "Mission France",
+    "slug": "mission-france",
+    "scheme": "missionfrance",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "ios": {
+      "bundleIdentifier": "com.ridetheraces.missionfrance"
+    },
+    "android": {
+      "package": "com.ridetheraces.missionfrance"
+    }
+  }
+}
