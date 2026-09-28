@@ -154,7 +154,15 @@ export async function commitLegacyCareerImport(preview:LegacyImportPreview,athle
       notes:ride.notes??null,
       record_version:1,
     }
-    const {error}=await supabase.from('rides').upsert(row,{onConflict:'athlete_id,legacy_source_id',ignoreDuplicates:true})
+    const {data:existing,error:lookupError}=await supabase
+      .from('rides')
+      .select('ride_id')
+      .eq('athlete_id',athleteId)
+      .eq('legacy_source_id',ride.id)
+      .maybeSingle()
+    if(lookupError)throw new Error('Ride history lookup stopped: '+lookupError.message)
+    if(existing)continue
+    const {error}=await supabase.from('rides').insert(row)
     if(error)throw new Error('Ride history import stopped: '+error.message)
     imported+=1
   }
