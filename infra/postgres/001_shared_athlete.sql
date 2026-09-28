@@ -175,3 +175,39 @@ create policy "athletes_update_own_sync_cursors"
 on public.sync_cursors for update to authenticated
 using (athlete_id in (select athlete_id from public.athlete_profiles where user_id = (select auth.uid())))
 with check (athlete_id in (select athlete_id from public.athlete_profiles where user_id = (select auth.uid())));
+
+
+-- One-time migration archive for existing browser-based RtR careers.
+create table if not exists public.legacy_profile_imports (
+  import_id uuid primary key default gen_random_uuid(),
+  athlete_id uuid not null references public.athlete_profiles(athlete_id) on delete cascade,
+  imported_at timestamptz not null default now(),
+  source_schema_version integer,
+  source_app_version text,
+  ride_count integer not null default 0,
+  training_count integer not null default 0,
+  raw_profile jsonb not null
+);
+
+create index if not exists legacy_profile_imports_athlete_idx
+  on public.legacy_profile_imports(athlete_id, imported_at desc);
+
+alter table public.rides
+  add column if not exists legacy_source_id text,
+  add column if not exists legacy_source_payload jsonb;
+
+create unique index if not exists rides_athlete_legacy_source_uidx
+  on public.rides(athlete_id, legacy_source_id)
+  where legacy_source_id is not null;
+
+alter table public.legacy_profile_imports enable row level security;
+
+drop policy if exists "athletes_select_own_legacy_imports" on public.legacy_profile_imports;
+create policy "athletes_select_own_legacy_imports"
+on public.legacy_profile_imports for select to authenticated
+using (athlete_id in (select athlete_id from public.athlete_profiles where user_id = (select auth.uid())));
+
+drop policy if exists "athletes_insert_own_legacy_imports" on public.legacy_profile_imports;
+create policy "athletes_insert_own_legacy_imports"
+on public.legacy_profile_imports for insert to authenticated
+with check (athlete_id in (select athlete_id from public.athlete_profiles where user_id = (select auth.uid())));
