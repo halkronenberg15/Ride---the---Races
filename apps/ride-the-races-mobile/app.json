@@ -8,21 +8,32 @@
     "ios": {
       "bundleIdentifier": "com.ridetheraces.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Ride the Races uses your location during a ride to measure distance and speed."
+        "NSLocationWhenInUseUsageDescription": "Ride the Races uses your location during a ride to measure distance and speed.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Ride the Races keeps tracking an active ride when your screen locks or the app is in the background.",
+        "UIBackgroundModes": [
+          "location"
+        ]
       }
     },
     "android": {
       "package": "com.ridetheraces.app",
       "permissions": [
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
       ]
     },
     "plugins": [
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Ride the Races uses your location during a ride to measure distance and speed."
+          "locationWhenInUsePermission": "Ride the Races uses your location during a ride to measure distance and speed.",
+          "locationAlwaysAndWhenInUsePermission": "Ride the Races keeps tracking an active ride when your screen locks or the app is in the background.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
         }
       ]
     ]
