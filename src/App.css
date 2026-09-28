@@ -1902,3 +1902,13 @@ body{
 .today-food-log small{color:#aaa}
 @media(max-width:700px){.nutrition-quick-form{grid-template-columns:1fr 1fr}.nutrition-name,.remember-meal{grid-column:1/-1}.section-title-row{align-items:flex-start}.nutrition-totals{text-align:left}}
 @media(max-width:480px){.nutrition-quick-form{grid-template-columns:1fr}.nutrition-name,.remember-meal{grid-column:auto}.today-food-log>div{flex-direction:column}}
+
+
+.jimmy-coach-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:start;border-color:#ff7a16!important;background:radial-gradient(circle at top right,rgba(255,122,22,.14),transparent 36%),#14151a}
+.jimmy-coach-card h2{margin-bottom:8px}
+.jimmy-coach-card>div>p:last-child{color:#c3c4ca;line-height:1.5}
+.jimmy-coach-panel{grid-column:1/-1;display:grid;gap:12px;padding-top:14px;border-top:1px solid #343434}
+.jimmy-quick-prompts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.jimmy-quick-prompts button{min-height:46px;padding:10px 12px;border:1px solid #3b3b3b;border-radius:12px;background:#1b1b1f;color:#f4f4f5;text-align:left}
+.jimmy-coach-panel small{color:#96979e;line-height:1.45}
+@media(max-width:620px){.jimmy-coach-card{grid-template-columns:1fr}.jimmy-coach-card>.primary-cta{width:100%}.jimmy-quick-prompts{grid-template-columns:1fr}}
