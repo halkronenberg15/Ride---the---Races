@@ -1,7 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import type { CloudCareerSnapshot } from '../lib/cloudCareer'
 
-export default function HomeScreen({career,riderName,ftp,rideCount,onTraining,onLibrary,onRide,onSignOut}:{career:CloudCareerSnapshot|null;riderName:string;ftp:number|null;rideCount:number;onTraining:()=>void;onLibrary:()=>void;onRide:()=>void;onSignOut:()=>void}){
+export default function HomeScreen({career,riderName,ftp,rideCount,onTraining,onLibrary,onProfile,onHistory,onRide,onSignOut}:{career:CloudCareerSnapshot|null;riderName:string;ftp:number|null;rideCount:number;onTraining:()=>void;onLibrary:()=>void;onProfile:()=>void;onHistory:()=>void;onRide:()=>void;onSignOut:()=>void}){
  const tour=career?.races?.tour?.completedStages?.length??0
  const vuelta=career?.races?.vuelta?.completedStages?.length??0
  return <ScrollView contentContainerStyle={s.wrap}>
@@ -10,6 +10,8 @@ export default function HomeScreen({career,riderName,ftp,rideCount,onTraining,on
   <View style={s.row}><View style={s.metric}><Text style={s.label}>TOUR</Text><Text style={s.number}>{tour}</Text><Text style={s.unit}>stages complete</Text></View><View style={s.metric}><Text style={s.label}>VUELTA</Text><Text style={s.number}>{vuelta}</Text><Text style={s.unit}>stages complete</Text></View></View>
   <Pressable style={s.primary} onPress={onTraining}><Text style={s.primaryText}>OPEN TRAINING PLAN</Text></Pressable>
   <Pressable style={s.secondary} onPress={onLibrary}><Text style={s.secondaryText}>OPEN RACE LIBRARY</Text></Pressable>
+  <Pressable style={s.secondary} onPress={onProfile}><Text style={s.secondaryText}>RIDER PASSPORT</Text></Pressable>
+  <Pressable style={s.secondary} onPress={onHistory}><Text style={s.secondaryText}>RIDE HISTORY</Text></Pressable>
   <Pressable style={s.secondary} onPress={onRide}><Text style={s.secondaryText}>OPEN RIDE COCKPIT</Text></Pressable>
  </ScrollView>
 }
