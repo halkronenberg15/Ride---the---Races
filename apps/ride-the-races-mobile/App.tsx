@@ -197,6 +197,9 @@ export default function App(){
         ftp_watts:importPreview.ftp,
         weight_kg:importPreview.weightKg,
       })
+      const [snapshot,count]=await Promise.all([loadLatestCloudCareer(profileId),loadCloudRideCount(profileId)])
+      setCareer(snapshot)
+      setCloudRideCount(count)
       setImportPreview(null)
       Alert.alert(
         'Rider imported',
