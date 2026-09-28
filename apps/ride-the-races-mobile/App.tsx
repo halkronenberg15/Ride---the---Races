@@ -21,9 +21,11 @@ import { loadCloudRideCount, loadLatestCloudCareer, type CloudCareerSnapshot } f
 import HomeScreen from './screens/HomeScreen'
 import TrainingScreen from './screens/TrainingScreen'
 import LibraryScreen from './screens/LibraryScreen'
+import ProfileScreen from './screens/ProfileScreen'
+import HistoryScreen from './screens/HistoryScreen'
 
 type RideState='idle'|'riding'|'paused'|'saving'
-type AppScreen='home'|'training'|'library'|'ride'
+type AppScreen='home'|'training'|'library'|'profile'|'history'|'ride'
 type Coord={latitude:number;longitude:number;timestamp:number}
 
 function distanceMeters(a:Coord,b:Coord){
@@ -346,6 +348,14 @@ export default function App(){
 
   if(screen==='library'){
     return <SafeAreaView style={styles.root}><StatusBar style="light"/><LibraryScreen onBack={()=>setScreen('home')} onTraining={()=>setScreen('training')} onRide={()=>setScreen('ride')}/></SafeAreaView>
+  }
+
+  if(screen==='profile'){
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><ProfileScreen career={career} rideCount={cloudRideCount} onBack={()=>setScreen('home')}/></SafeAreaView>
+  }
+
+  if(screen==='history'){
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><HistoryScreen career={career} onBack={()=>setScreen('home')}/></SafeAreaView>
   }
 
   return(
