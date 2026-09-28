@@ -34,12 +34,14 @@ export function missionFranceSnapshot(career:CareerState,now=new Date()){
  const outdoorCount=career.alpha4025.outdoorActivities.length
  const climbEvidence=career.rideHistory.filter(ride=>/climb|tourmalet|alpe|mountain|summit|gavarnie/i.test((ride.stageName??'')+' '+(ride.notes??''))).length
  const recoveryFresh=Date.now()-new Date(career.health.date+'T12:00:00').getTime()<2*86400000
+ const nutritionEntries=career.nutrition.entries.length
+ const rideFuelEntries=career.nutrition.entries.filter(entry=>entry.mealType==='Ride Fuel'||entry.mealType==='Recovery').length
  const pillars:MissionPillar[]=[
   {id:'CLIMBING',label:'Sustained climbing',state:climbEvidence>=3?'EVIDENCE BUILDING':'NEEDS DEVELOPMENT',evidence:climbEvidence?climbEvidence+' climbing-related rides recorded':'No climbing-specific ride evidence recorded yet'},
   {id:'ENDURANCE',label:'Long-ride durability',state:longestMinutes>=180?'EVIDENCE BUILDING':'NEEDS DEVELOPMENT',evidence:longestMinutes?'Longest recorded ride: '+longestMinutes+' min':'No completed ride history yet'},
   {id:'DURABILITY',label:'Consecutive-day tolerance',state:backToBack>=3?'EVIDENCE BUILDING':'NEEDS DEVELOPMENT',evidence:backToBack?'Best recorded riding streak: '+backToBack+' consecutive days':'No consecutive-day riding evidence yet'},
   {id:'OUTDOOR',label:'Outdoor mountain skill',state:outdoorCount>=4?'EVIDENCE BUILDING':outdoorCount?'NEEDS DEVELOPMENT':'NEEDS DATA',evidence:outdoorCount?outdoorCount+' outdoor activities recorded':'No outdoor activity evidence recorded yet'},
-  {id:'FUELING',label:'Fueling execution',state:'NEEDS DATA',evidence:'Nutrition and ride-fueling log is the next Command Center data layer'},
+  {id:'FUELING',label:'Fueling execution',state:rideFuelEntries>=3?'EVIDENCE BUILDING':nutritionEntries?'NEEDS DEVELOPMENT':'NEEDS DATA',evidence:rideFuelEntries?rideFuelEntries+' ride-fueling/recovery entries recorded':nutritionEntries?nutritionEntries+' nutrition entries recorded; add ride-fueling entries to build evidence':'No nutrition or ride-fueling evidence recorded yet'},
   {id:'RECOVERY',label:'Recovery consistency',state:recoveryFresh?'ON TRACK':'NEEDS DATA',evidence:recoveryFresh?'Latest health check-in: '+career.health.date:'Daily recovery check-in needs updating'},
  ]
  return {ftp:career.rider.ftp,weightKg:career.rider.weightKg,minutes7,minutes28,distance7Km,rides7:rides7.length,rides28:rides28.length,longestMinutes,backToBack,outdoorCount,health:career.health,pillars}
