@@ -6,12 +6,14 @@ import { createIntroCyclingPlan } from '../engine/introCycling.ts'
 import { activeSeasonClosure } from '../engine/release4024.ts'
 import { emptyAlpha4025, ensureHalOffSeasonPlan, isHalOffSeasonCareer } from '../engine/alpha4025.ts'
 
+const localToday=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}
+
 export function createInitialCareer():CareerState{return {
  schemaVersion:6,onboardingComplete:false,
  rider:{name:'',number:0,nationality:'',team:'Équipe Loriot',archetype:'GC Contender',ftp:null,ftpKnown:false,ftpProvenance:'UNKNOWN',experience:'Recreational',seasonGoal:'Improve fitness',devices:[]},
  equipment:{activeEquipmentId:null,connectionMethod:'manual-guidance',instances:[]},
  season:{active:false,year:2026,currentRace:'Tour de France',currentStage:1,completedStages:[1,2],closure:activeSeasonClosure()},pastSeasons:[],favoriteStageRefs:[],races:{tour:{currentStage:1,completedStages:[1,2]},vuelta:{currentStage:1,completedStages:[]}},trainingHistory:[],
- health:{date:new Date().toISOString().slice(0,10),sleepHours:7.5,recoveryScore:82,restingHeartRate:58,hrv:52,fatigue:24,mood:'Good'},rideHistory:[],nutrition:{entries:[],mealTemplates:[]},alpha4020:{calendar:{month:0,scrollY:0},earnedMarkerIds:[]},
+ health:{date:localToday(),sleepHours:7.5,recoveryScore:82,restingHeartRate:58,hrv:52,fatigue:24,mood:'Good'},rideHistory:[],nutrition:{entries:[],mealTemplates:[]},alpha4020:{calendar:{month:0,scrollY:0},earnedMarkerIds:[]},
  alpha4022:{worldsResults:{},ittSplits:{},raceEvents:{},radioHistory:[],rainbowTitles:[],profileView:{mode:'OVERVIEW',activeRangeId:null,autoConsumedIds:[]}},
  introCycling:{selected:false,answers:null,plan:null,completedRideIds:[],dismissed:false,outdoorChecklistIds:[],requestedNextProgram:null},
  alpha4025:emptyAlpha4025(),
