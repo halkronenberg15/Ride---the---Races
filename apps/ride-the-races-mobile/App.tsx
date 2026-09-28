@@ -339,7 +339,7 @@ export default function App(){
   }
 
   if(screen==='home'){
-    return <SafeAreaView style={styles.root}><StatusBar style="light"/><HomeScreen career={career} riderName={cloudProfile?.display_name??career?.rider.name??'Rider'} ftp={cloudProfile?.ftp_watts??career?.rider.ftp??null} rideCount={cloudRideCount} onTraining={()=>setScreen('training')} onLibrary={()=>setScreen('library')} onRide={()=>setScreen('ride')} onSignOut={()=>supabase.auth.signOut()}/></SafeAreaView>
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><HomeScreen career={career} riderName={cloudProfile?.display_name??career?.rider.name??'Rider'} ftp={cloudProfile?.ftp_watts??career?.rider.ftp??null} rideCount={cloudRideCount} onTraining={()=>setScreen('training')} onLibrary={()=>setScreen('library')} onProfile={()=>setScreen('profile')} onHistory={()=>setScreen('history')} onRide={()=>setScreen('ride')} onSignOut={()=>supabase.auth.signOut()}/></SafeAreaView>
   }
 
   if(screen==='training'){
