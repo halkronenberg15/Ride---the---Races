@@ -6,10 +6,25 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "ios": {
-      "bundleIdentifier": "com.ridetheraces.app"
+      "bundleIdentifier": "com.ridetheraces.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Ride the Races uses your location during a ride to measure distance and speed."
+      }
     },
     "android": {
-      "package": "com.ridetheraces.app"
-    }
+      "package": "com.ridetheraces.app",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Ride the Races uses your location during a ride to measure distance and speed."
+        }
+      ]
+    ]
   }
 }
