@@ -15,6 +15,7 @@ import {
 } from 'react-native'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
+import { commitLegacyCareerImport, pickLegacyCareer, type LegacyImportPreview } from './lib/importLegacyCareer'
 
 type RideState='idle'|'riding'|'paused'|'saving'
 type Coord={latitude:number;longitude:number;timestamp:number}
@@ -51,6 +52,9 @@ export default function App(){
   const [lastCoord,setLastCoord]=useState<Coord|null>(null)
   const [locationStatus,setLocationStatus]=useState('GPS idle')
   const [profileId,setProfileId]=useState<string|null>(null)
+  const [cloudProfile,setCloudProfile]=useState<{display_name:string;ftp_watts:number|null;weight_kg:number|null}|null>(null)
+  const [importPreview,setImportPreview]=useState<LegacyImportPreview|null>(null)
+  const [importBusy,setImportBusy]=useState(false)
   const locationSub=useRef<Location.LocationSubscription|null>(null)
   const activeStartedAt=useRef<number|null>(null)
   const elapsedBeforePause=useRef(0)
@@ -66,10 +70,11 @@ export default function App(){
 
   useEffect(()=>{
     if(!session?.user?.id){setProfileId(null);return}
-    supabase.from('athlete_profiles').select('athlete_id').eq('user_id',session.user.id).single()
+    supabase.from('athlete_profiles').select('athlete_id,display_name,ftp_watts,weight_kg').eq('user_id',session.user.id).single()
       .then(({data,error})=>{
         if(error) console.warn(error.message)
         setProfileId(data?.athlete_id??null)
+        setCloudProfile(data?{display_name:data.display_name,ftp_watts:data.ftp_watts,weight_kg:data.weight_kg}:null)
       })
   },[session?.user?.id])
 
@@ -131,6 +136,38 @@ export default function App(){
         })
       }
     )
+  }
+
+  async function chooseCareerImport(){
+    if(rideState!=='idle')return Alert.alert('Finish the ride first','Career import is disabled while a ride is active.')
+    try{
+      const preview=await pickLegacyCareer()
+      if(preview)setImportPreview(preview)
+    }catch(error){
+      Alert.alert('Could not read career file',error instanceof Error?error.message:'Unknown import error')
+    }
+  }
+
+  async function importCareer(){
+    if(!profileId||!importPreview)return
+    setImportBusy(true)
+    try{
+      const result=await commitLegacyCareerImport(importPreview,profileId)
+      setCloudProfile({
+        display_name:importPreview.riderName,
+        ftp_watts:importPreview.ftp,
+        weight_kg:importPreview.weightKg,
+      })
+      setImportPreview(null)
+      Alert.alert(
+        'Rider imported',
+        `${importPreview.riderName} is now the cloud rider. ${result.imported} historical rides were added, and the original profile file was archived.`
+      )
+    }catch(error){
+      Alert.alert('Import stopped safely',error instanceof Error?error.message:'Unknown import error')
+    }finally{
+      setImportBusy(false)
+    }
   }
 
   async function startRide(){
@@ -274,6 +311,29 @@ export default function App(){
         <View style={styles.statusCard}>
           <Text style={styles.statusTitle}>{locationStatus}</Text>
           <Text style={styles.body}>{profileId?'Cloud rider connected':'Finishing rider sync…'}</Text>
+          {cloudProfile&&<Text style={styles.profileLine}>
+            {cloudProfile.display_name}{cloudProfile.ftp_watts?` · FTP ${cloudProfile.ftp_watts} W`:''}{cloudProfile.weight_kg?` · ${(cloudProfile.weight_kg*2.20462).toFixed(1)} lb`:''}
+          </Text>}
+        </View>
+
+        <View style={styles.importCard}>
+          <Text style={styles.metricLabel}>EXISTING RTR RIDER</Text>
+          <Text style={styles.statusTitle}>Bring your current career with you</Text>
+          <Text style={styles.body}>Choose the JSON file created by Export My RtR Career. The source file is archived before any historical rides are added.</Text>
+          <Pressable style={styles.secondary} onPress={chooseCareerImport} disabled={rideState!=='idle'||importBusy}>
+            <Text style={styles.secondaryText}>CHOOSE RTR CAREER FILE</Text>
+          </Pressable>
+          {importPreview&&<View style={styles.importPreview}>
+            <Text style={styles.statusTitle}>{importPreview.riderName}</Text>
+            <Text style={styles.body}>FTP {importPreview.ftp??'—'} W · {importPreview.rideCount} rides · {importPreview.trainingCount} training completions</Text>
+            <Text style={styles.alphaNote}>Source app {importPreview.sourceApplicationVersion} · schema {importPreview.sourceSchemaVersion} · {importPreview.fileName}</Text>
+            <Pressable style={styles.primary} onPress={importCareer} disabled={importBusy}>
+              <Text style={styles.primaryText}>{importBusy?'IMPORTING…':'CONFIRM IMPORT'}</Text>
+            </Pressable>
+            <Pressable style={styles.secondary} onPress={()=>setImportPreview(null)} disabled={importBusy}>
+              <Text style={styles.secondaryText}>CANCEL</Text>
+            </Pressable>
+          </View>}
         </View>
 
         {rideState==='idle'&&<Pressable style={styles.primary} onPress={startRide}><Text style={styles.primaryText}>START RIDE</Text></Pressable>}
@@ -319,5 +379,8 @@ const styles=StyleSheet.create({
   unit:{color:'#969696',fontSize:14,fontWeight:'700'},
   statusCard:{padding:16,borderRadius:16,backgroundColor:'#111',borderWidth:1,borderColor:'#2b2b2b'},
   statusTitle:{color:'#fff',fontWeight:'800',fontSize:16,marginBottom:4},
+  profileLine:{color:'#ff8b3d',fontWeight:'800',fontSize:14,marginTop:8},
+  importCard:{padding:18,borderRadius:18,backgroundColor:'#111',borderWidth:1,borderColor:'#3a2a1f',gap:12},
+  importPreview:{gap:10,paddingTop:6},
   alphaNote:{color:'#737373',fontSize:13,lineHeight:19,marginTop:6},
 })
