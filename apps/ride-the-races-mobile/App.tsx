@@ -16,6 +16,7 @@ import {
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import { commitLegacyCareerImport, pickLegacyCareer, type LegacyImportPreview } from './lib/importLegacyCareer'
+import { canUseBackgroundRideTracking, pauseBackgroundRideTracking, readBackgroundRideState, resetBackgroundRideTracking, startBackgroundRideTracking } from './lib/backgroundRide'
 
 type RideState='idle'|'riding'|'paused'|'saving'
 type Coord={latitude:number;longitude:number;timestamp:number}
@@ -55,6 +56,7 @@ export default function App(){
   const [cloudProfile,setCloudProfile]=useState<{display_name:string;ftp_watts:number|null;weight_kg:number|null}|null>(null)
   const [importPreview,setImportPreview]=useState<LegacyImportPreview|null>(null)
   const [importBusy,setImportBusy]=useState(false)
+  const [backgroundMode,setBackgroundMode]=useState(false)
   const locationSub=useRef<Location.LocationSubscription|null>(null)
   const activeStartedAt=useRef<number|null>(null)
   const elapsedBeforePause=useRef(0)
@@ -87,6 +89,18 @@ export default function App(){
     return()=>clearInterval(id)
   },[rideState])
 
+  useEffect(()=>{
+    if(rideState!=='riding'||!backgroundMode)return
+    let cancelled=false
+    const refresh=async()=>{
+      const state=await readBackgroundRideState()
+      if(!cancelled)setDistance(state.distanceMeters)
+    }
+    refresh()
+    const id=setInterval(refresh,2000)
+    return()=>{cancelled=true;clearInterval(id)}
+  },[rideState,backgroundMode])
+
   useEffect(()=>()=>{locationSub.current?.remove();deactivateKeepAwake()},[])
 
   const miles=distance/1609.344
@@ -111,10 +125,22 @@ export default function App(){
     if(error) Alert.alert('Sign in failed',error.message)
   }
 
-  async function beginGps(){
+  async function beginGps(resetBackground=false){
     const {status}=await Location.requestForegroundPermissionsAsync()
     if(status!=='granted') throw new Error('Location permission is required to track the ride.')
-    setLocationStatus('GPS connected')
+
+    if(await canUseBackgroundRideTracking()){
+      const background=await Location.requestBackgroundPermissionsAsync()
+      if(background.status==='granted'){
+        await startBackgroundRideTracking(resetBackground)
+        setBackgroundMode(true)
+        setLocationStatus('GPS background tracking')
+        return
+      }
+    }
+
+    setBackgroundMode(false)
+    setLocationStatus('GPS foreground tracking')
     locationSub.current=await Location.watchPositionAsync(
       {
         accuracy:Location.Accuracy.High,
@@ -130,7 +156,7 @@ export default function App(){
         setLastCoord(prev=>{
           if(prev){
             const segment=distanceMeters(prev,next)
-            if(segment<100) setDistance(total=>total+segment)
+            if(segment<100)setDistance(total=>total+segment)
           }
           return next
         })
@@ -174,7 +200,7 @@ export default function App(){
     if(!profileId)return Alert.alert('Profile not ready','Give the rider profile a moment to finish syncing.')
     try{
       await activateKeepAwakeAsync()
-      await beginGps()
+      await beginGps(true)
       const now=Date.now()
       setStartedAt(now)
       activeStartedAt.current=now
@@ -189,20 +215,25 @@ export default function App(){
     }
   }
 
-  function pauseRide(){
+  async function pauseRide(){
     if(rideState!=='riding')return
     const active=activeStartedAt.current?Math.floor((Date.now()-activeStartedAt.current)/1000):0
     elapsedBeforePause.current+=active
     activeStartedAt.current=null
+    if(backgroundMode)await pauseBackgroundRideTracking()
     locationSub.current?.remove()
     locationSub.current=null
+    if(backgroundMode){
+      const state=await readBackgroundRideState()
+      setDistance(state.distanceMeters)
+    }
     setRideState('paused')
     setLocationStatus('GPS paused')
   }
 
   async function resumeRide(){
     try{
-      await beginGps()
+      await beginGps(false)
       activeStartedAt.current=Date.now()
       setRideState('riding')
     }catch(error){
@@ -212,9 +243,10 @@ export default function App(){
 
   async function finishRide(){
     if(!profileId||!startedAt)return
-    pauseRide()
+    await pauseRide()
     setRideState('saving')
     const completedAt=Date.now()
+    const finalDistance=backgroundMode?(await readBackgroundRideState()).distanceMeters:distance
     const rideId=Crypto.randomUUID()
     const eventId=Crypto.randomUUID()
     const durationSeconds=elapsedBeforePause.current
@@ -225,7 +257,7 @@ export default function App(){
       started_at:new Date(startedAt).toISOString(),
       completed_at:new Date(completedAt).toISOString(),
       duration_seconds:durationSeconds,
-      distance_meters:Math.round(distance),
+      distance_meters:Math.round(finalDistance),
     }
     const {error:rideError}=await supabase.from('rides').insert(rideRow)
     if(rideError){
@@ -251,6 +283,7 @@ export default function App(){
       producer:'ride-the-races',
       payload:eventPayload,
     })
+    await resetBackgroundRideTracking()
     deactivateKeepAwake()
     setRideState('idle')
     setStartedAt(null)
@@ -258,6 +291,7 @@ export default function App(){
     setDistance(0)
     setLastCoord(null)
     setLocationStatus('GPS idle')
+    setBackgroundMode(false)
     elapsedBeforePause.current=0
     activeStartedAt.current=null
     if(eventError) Alert.alert('Ride saved','The ride saved, but its sync event still needs retrying.')
@@ -311,6 +345,7 @@ export default function App(){
         <View style={styles.statusCard}>
           <Text style={styles.statusTitle}>{locationStatus}</Text>
           <Text style={styles.body}>{profileId?'Cloud rider connected':'Finishing rider sync…'}</Text>
+          {backgroundMode&&<Text style={styles.profileLine}>Lock-screen tracking enabled</Text>}
           {cloudProfile&&<Text style={styles.profileLine}>
             {cloudProfile.display_name}{cloudProfile.ftp_watts?` · FTP ${cloudProfile.ftp_watts} W`:''}{cloudProfile.weight_kg?` · ${(cloudProfile.weight_kg*2.20462).toFixed(1)} lb`:''}
           </Text>}
@@ -346,7 +381,7 @@ export default function App(){
         )}
         {rideState==='saving'&&<View style={styles.statusCard}><Text style={styles.statusTitle}>Saving ride…</Text></View>}
 
-        <Text style={styles.alphaNote}>Alpha scope: foreground GPS ride tracking, pause/resume, cloud save and ride.completed sync event. Background/locked-screen tracking and sensors come next.</Text>
+        <Text style={styles.alphaNote}>Expo Go uses foreground GPS. A native development build automatically upgrades this cockpit to background/locked-screen GPS when permission is granted. Sensors come next.</Text>
       </ScrollView>
     </SafeAreaView>
   )
