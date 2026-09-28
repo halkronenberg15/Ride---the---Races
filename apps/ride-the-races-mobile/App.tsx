@@ -17,8 +17,13 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import { commitLegacyCareerImport, pickLegacyCareer, type LegacyImportPreview } from './lib/importLegacyCareer'
 import { canUseBackgroundRideTracking, pauseBackgroundRideTracking, readBackgroundRideState, resetBackgroundRideTracking, startBackgroundRideTracking } from './lib/backgroundRide'
+import { loadCloudRideCount, loadLatestCloudCareer, type CloudCareerSnapshot } from './lib/cloudCareer'
+import HomeScreen from './screens/HomeScreen'
+import TrainingScreen from './screens/TrainingScreen'
+import LibraryScreen from './screens/LibraryScreen'
 
 type RideState='idle'|'riding'|'paused'|'saving'
+type AppScreen='home'|'training'|'library'|'ride'
 type Coord={latitude:number;longitude:number;timestamp:number}
 
 function distanceMeters(a:Coord,b:Coord){
@@ -57,6 +62,9 @@ export default function App(){
   const [importPreview,setImportPreview]=useState<LegacyImportPreview|null>(null)
   const [importBusy,setImportBusy]=useState(false)
   const [backgroundMode,setBackgroundMode]=useState(false)
+  const [screen,setScreen]=useState<AppScreen>('home')
+  const [career,setCareer]=useState<CloudCareerSnapshot|null>(null)
+  const [cloudRideCount,setCloudRideCount]=useState(0)
   const locationSub=useRef<Location.LocationSubscription|null>(null)
   const activeStartedAt=useRef<number|null>(null)
   const elapsedBeforePause=useRef(0)
