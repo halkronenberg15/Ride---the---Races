@@ -92,8 +92,9 @@ begin
 end;
 $$;
 
-revoke execute on function public.handle_new_rider() from anon;
-revoke execute on function public.handle_new_rider() from authenticated;
+revoke all on function public.handle_new_rider() from public;
+revoke all on function public.handle_new_rider() from anon;
+revoke all on function public.handle_new_rider() from authenticated;
 grant execute on function public.handle_new_rider() to supabase_auth_admin;
 
 drop trigger if exists on_auth_user_created_rtr on auth.users;
