@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { missionFranceSnapshot } from '../engine/missionFrance2028.ts'
+import { jimmyCoachContext, jimmyCoachOpeningLine } from '../engine/jimmyCoach.ts'
 import { useCareer } from '../state/CareerContext.tsx'
 import type { NutritionMealType } from '../types/career.ts'
 
@@ -16,6 +17,8 @@ const today=()=>{const date=new Date();return [date.getFullYear(),String(date.ge
 export default function MissionFranceCommandCenter({onBack,onOpenHealth,onOpenRideData,onOpenOffSeason}:Props){
  const {career,addNutritionEntry}=useCareer()
  const snapshot=missionFranceSnapshot(career)
+ const jimmyContext=jimmyCoachContext(career)
+ const [jimmyOpen,setJimmyOpen]=useState(false)
  const powerToWeight=snapshot.ftp!==null&&snapshot.weightKg?snapshot.ftp/snapshot.weightKg:null
  const [mealType,setMealType]=useState<NutritionMealType>('Snack')
  const [name,setName]=useState('')
@@ -69,6 +72,25 @@ export default function MissionFranceCommandCenter({onBack,onOpenHealth,onOpenRi
    </form>
    {saved&&<p className="success-message">Logged {saved}. RtR {remember?'remembered it for next time.':'added it to today.'}</p>}
    {todayEntries.length>0&&<details className="today-food-log"><summary>Today’s food · {todayEntries.length} entries</summary>{todayEntries.map(entry=><div key={entry.id}><strong>{entry.name}</strong><small>{entry.mealType} · {entry.proteinG??'—'}g protein · {entry.carbsG??'—'}g carbs · {entry.calories??'—'} cal</small></div>)}</details>}
+  </section>
+
+  <section className="dashboard-card jimmy-coach-card">
+   <div>
+    <p className="eyebrow">JIMMY · AI COACH</p>
+    <h2>Your coach in the team car.</h2>
+    <p>{jimmyCoachOpeningLine(career)}</p>
+   </div>
+   <button type="button" className="primary-cta" onClick={()=>setJimmyOpen(value=>!value)}>{jimmyOpen?'Close Jimmy':'Ask Jimmy'}</button>
+   {jimmyOpen&&<div className="jimmy-coach-panel">
+    <p><strong>Jimmy can already see:</strong> FTP {jimmyContext.ftp??'not set'} W · {jimmyContext.recentRideCount} rides / {jimmyContext.recentMinutes} min in the last 7 days · recovery {jimmyContext.recoveryScore} · fatigue {jimmyContext.fatigue}% · {jimmyContext.nutritionEntriesToday} nutrition entries today.</p>
+    <div className="jimmy-quick-prompts">
+     <button type="button">What should I ride today?</button>
+     <button type="button">How should I fuel today?</button>
+     <button type="button">Strength or recovery?</button>
+     <button type="button">Give me a Mission France pep talk</button>
+    </div>
+    <small>Live conversational AI connection is the next integration step. This preview exposes the context contract Jimmy will use so he does not start from zero.</small>
+   </div>}
   </section>
 
   <section className="mission-pillars">
