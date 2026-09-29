@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import ImmersiveRideProfile from '../components/ImmersiveRideProfile'
 import type { RaceStage, RideSegment } from '../../../src/data/raceStages'
 
 function formatTime(seconds:number){const h=Math.floor(seconds/3600),m=Math.floor((seconds%3600)/60),s=seconds%60;return [h,m,s].map((v,i)=>i===0?String(v):String(v).padStart(2,'0')).join(':')}
@@ -13,6 +14,7 @@ export default function StructuredRideScreen({stage,onBack,onFinish}:{stage:Race
  useEffect(()=>{if(!running)return;const id=setInterval(()=>{const active=startRef.current?Math.floor((Date.now()-startRef.current)/1000):0;setElapsed(Math.min(total,baseRef.current+active))},500);return()=>clearInterval(id)},[running,total])
  useEffect(()=>{if(elapsed>=total&&running){baseRef.current=total;setRunning(false);startRef.current=null}},[elapsed,running,total])
  const current=segmentAt(stage,elapsed),progress=Math.min(1,elapsed/Math.max(1,total)),virtualMiles=stage.distanceKm*0.621371*progress,heights=profileHeights(stage)
+ const profilePoints=useMemo(()=>{const raw=stage.profilePoints;if(!raw.length)return [{x:0,y:.2},{x:.2,y:.35},{x:.4,y:.25},{x:.6,y:.55},{x:.8,y:.4},{x:1,y:.7}];if(typeof raw[0]==='string'){const parsed=raw.map(p=>String(p).split(',').map(Number));const xs=parsed.map(p=>p[0]),ys=parsed.map(p=>p[1]);const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);return parsed.map(([x,y])=>({x:(x-minX)/Math.max(1,maxX-minX),y:1-(y-minY)/Math.max(1,maxY-minY)}))}const pts=raw as {distanceKm:number;elevationM:number}[];const min=Math.min(...pts.map(p=>p.elevationM)),max=Math.max(...pts.map(p=>p.elevationM));return pts.map(p=>({x:p.distanceKm/Math.max(1,stage.distanceKm),y:.12+((p.elevationM-min)/Math.max(1,max-min))*.78}))},[stage])
  const start=()=>{startRef.current=Date.now();setRunning(true)}
  const pause=()=>{if(!running)return;const active=startRef.current?Math.floor((Date.now()-startRef.current)/1000):0;baseRef.current=Math.min(total,baseRef.current+active);setElapsed(baseRef.current);startRef.current=null;setRunning(false)}
  const resume=()=>{startRef.current=Date.now();setRunning(true)}
@@ -22,7 +24,7 @@ export default function StructuredRideScreen({stage,onBack,onFinish}:{stage:Race
   <Text style={s.eyebrow}>STAGE {stage.number} · {stage.theme.toUpperCase()}</Text><Text style={s.title}>{stage.route}</Text>
   <Text style={s.body}>{stage.objective}</Text>
 
-  <View style={s.profileCard}><View style={s.profile}>{heights.map((h,i)=><View key={i} style={[s.profileBar,{height:h}]}/>)}</View><View style={s.profileMeta}><Text style={s.meta}>{stage.distanceKm.toFixed(1)} km / {(stage.distanceKm*0.621371).toFixed(1)} mi</Text><Text style={s.meta}>{stage.elevationM.toLocaleString()} m D+</Text><Text style={s.meta}>{Math.round(total/60)} min</Text></View></View>
+  <ImmersiveRideProfile points={profilePoints} progress={progress} label="COURSE PROFILE" currentLabel={current.segment.name} nextLabel={stage.segments[current.index+1]?.name??'Finish'}/>
 
   <View style={s.timeCard}><Text style={s.label}>STAGE TIME</Text><Text style={s.time}>{formatTime(elapsed)}</Text><Text style={s.subtle}>{formatTime(Math.max(0,total-elapsed))} remaining · {virtualMiles.toFixed(1)} virtual mi</Text></View>
 
