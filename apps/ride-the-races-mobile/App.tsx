@@ -26,10 +26,11 @@ import HistoryScreen from './screens/HistoryScreen'
 import TrainingRideScreen from './screens/TrainingRideScreen'
 import StageRoadbookScreen from './screens/StageRoadbookScreen'
 import StructuredRideScreen from './screens/StructuredRideScreen'
+import StrengthPlanScreen from './screens/StrengthPlanScreen'
 import type { RaceStage } from '../../src/data/raceStages'
 
 type RideState='idle'|'riding'|'paused'|'saving'
-type AppScreen='home'|'training'|'trainingRide'|'library'|'profile'|'history'|'roadbook'|'structuredRide'|'ride'
+type AppScreen='home'|'training'|'trainingRide'|'strength'|'library'|'profile'|'history'|'roadbook'|'structuredRide'|'ride'
 type Coord={latitude:number;longitude:number;timestamp:number}
 
 function distanceMeters(a:Coord,b:Coord){
@@ -73,6 +74,7 @@ export default function App(){
   const [cloudRideCount,setCloudRideCount]=useState(0)
   const [selectedStage,setSelectedStage]=useState<RaceStage|null>(null)
   const [selectedWorkoutId,setSelectedWorkoutId]=useState<string|null>(null)
+  const [selectedStrengthAssignment,setSelectedStrengthAssignment]=useState<any|null>(null)
   const locationSub=useRef<Location.LocationSubscription|null>(null)
   const activeStartedAt=useRef<number|null>(null)
   const elapsedBeforePause=useRef(0)
@@ -354,7 +356,11 @@ export default function App(){
   }
 
   if(screen==='training'){
-    return <SafeAreaView style={styles.root}><StatusBar style="light"/><TrainingScreen career={career} onBack={()=>setScreen('home')} onRide={(workoutId)=>{setSelectedWorkoutId(workoutId);setScreen('trainingRide')}}/></SafeAreaView>
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><TrainingScreen career={career} onBack={()=>setScreen('home')} onRide={(workoutId)=>{setSelectedWorkoutId(workoutId);setScreen('trainingRide')}} onStrength={(assignment)=>{setSelectedStrengthAssignment(assignment);setScreen('strength')}}/></SafeAreaView>
+  }
+
+  if(screen==='strength'&&selectedStrengthAssignment){
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><StrengthPlanScreen assignment={selectedStrengthAssignment} onBack={()=>setScreen('training')}/></SafeAreaView>
   }
 
   if(screen==='trainingRide'&&selectedWorkoutId){
