@@ -21,7 +21,7 @@ import { loadCloudRideCount, loadLatestCloudCareer, type CloudCareerSnapshot } f
 import HomeScreen from './screens/HomeScreen'
 import TrainingScreen from './screens/TrainingScreen'
 import LibraryScreen from './screens/LibraryScreen'
-import ProfileScreen from './screens/ProfileScreen'
+import ProfileScreen, { type EditableRiderProfile } from './screens/ProfileScreen'
 import HistoryScreen from './screens/HistoryScreen'
 import TrainingRideScreen from './screens/TrainingRideScreen'
 import StageRoadbookScreen from './screens/StageRoadbookScreen'
@@ -64,7 +64,7 @@ export default function App(){
   const [lastCoord,setLastCoord]=useState<Coord|null>(null)
   const [locationStatus,setLocationStatus]=useState('GPS idle')
   const [profileId,setProfileId]=useState<string|null>(null)
-  const [cloudProfile,setCloudProfile]=useState<{display_name:string;ftp_watts:number|null;weight_kg:number|null}|null>(null)
+  const [cloudProfile,setCloudProfile]=useState<EditableRiderProfile|null>(null)
   const [importPreview,setImportPreview]=useState<LegacyImportPreview|null>(null)
   const [importBusy,setImportBusy]=useState(false)
   const [backgroundMode,setBackgroundMode]=useState(false)
@@ -88,11 +88,11 @@ export default function App(){
 
   useEffect(()=>{
     if(!session?.user?.id){setProfileId(null);return}
-    supabase.from('athlete_profiles').select('athlete_id,display_name,ftp_watts,weight_kg').eq('user_id',session.user.id).single()
+    supabase.from('athlete_profiles').select('athlete_id,display_name,ftp_watts,weight_kg,height_cm,rider_number,archetype,season_goal,preferred_units').eq('user_id',session.user.id).single()
       .then(({data,error})=>{
         if(error) console.warn(error.message)
         setProfileId(data?.athlete_id??null)
-        setCloudProfile(data?{display_name:data.display_name,ftp_watts:data.ftp_watts,weight_kg:data.weight_kg}:null)
+        setCloudProfile(data?{display_name:data.display_name,ftp_watts:data.ftp_watts,weight_kg:data.weight_kg,height_cm:data.height_cm,rider_number:data.rider_number,archetype:data.archetype,season_goal:data.season_goal,preferred_units:data.preferred_units}:null)
         if(data?.athlete_id){
           Promise.all([loadLatestCloudCareer(data.athlete_id),loadCloudRideCount(data.athlete_id)])
             .then(([snapshot,count])=>{setCareer(snapshot);setCloudRideCount(count)})
@@ -200,11 +200,16 @@ export default function App(){
     setImportBusy(true)
     try{
       const result=await commitLegacyCareerImport(importPreview,profileId)
-      setCloudProfile({
+      setCloudProfile(current=>({
         display_name:importPreview.riderName,
         ftp_watts:importPreview.ftp,
         weight_kg:importPreview.weightKg,
-      })
+        height_cm:current?.height_cm??null,
+        rider_number:current?.rider_number??null,
+        archetype:current?.archetype??career?.rider.archetype??'GC Contender',
+        season_goal:current?.season_goal??career?.rider.seasonGoal??null,
+        preferred_units:current?.preferred_units??'imperial',
+      }))
       const [snapshot,count]=await Promise.all([loadLatestCloudCareer(profileId),loadCloudRideCount(profileId)])
       setCareer(snapshot)
       setCloudRideCount(count)
@@ -369,7 +374,7 @@ export default function App(){
   }
 
   if(screen==='profile'){
-    return <SafeAreaView style={styles.root}><StatusBar style="light"/><ProfileScreen career={career} rideCount={cloudRideCount} onBack={()=>setScreen('home')}/></SafeAreaView>
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><ProfileScreen career={career} rideCount={cloudRideCount} profile={cloudProfile} onBack={()=>setScreen('home')} onSave={async(next)=>{if(!session?.user?.id)throw new Error('Rider session is not ready.');const {error}=await supabase.from('athlete_profiles').update({display_name:next.display_name,ftp_watts:next.ftp_watts,weight_kg:next.weight_kg,height_cm:next.height_cm,rider_number:next.rider_number,archetype:next.archetype,season_goal:next.season_goal,preferred_units:next.preferred_units,profile_version:(cloudProfile?1:0)+1,updated_at:new Date().toISOString()}).eq('user_id',session.user.id);if(error)throw error;setCloudProfile(next)}}/></SafeAreaView>
   }
 
   if(screen==='history'){
