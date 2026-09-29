@@ -23,12 +23,13 @@ import TrainingScreen from './screens/TrainingScreen'
 import LibraryScreen from './screens/LibraryScreen'
 import ProfileScreen from './screens/ProfileScreen'
 import HistoryScreen from './screens/HistoryScreen'
+import TrainingRideScreen from './screens/TrainingRideScreen'
 import StageRoadbookScreen from './screens/StageRoadbookScreen'
 import StructuredRideScreen from './screens/StructuredRideScreen'
 import type { RaceStage } from '../../src/data/raceStages'
 
 type RideState='idle'|'riding'|'paused'|'saving'
-type AppScreen='home'|'training'|'library'|'profile'|'history'|'roadbook'|'structuredRide'|'ride'
+type AppScreen='home'|'training'|'trainingRide'|'library'|'profile'|'history'|'roadbook'|'structuredRide'|'ride'
 type Coord={latitude:number;longitude:number;timestamp:number}
 
 function distanceMeters(a:Coord,b:Coord){
@@ -71,6 +72,7 @@ export default function App(){
   const [career,setCareer]=useState<CloudCareerSnapshot|null>(null)
   const [cloudRideCount,setCloudRideCount]=useState(0)
   const [selectedStage,setSelectedStage]=useState<RaceStage|null>(null)
+  const [selectedWorkoutId,setSelectedWorkoutId]=useState<string|null>(null)
   const locationSub=useRef<Location.LocationSubscription|null>(null)
   const activeStartedAt=useRef<number|null>(null)
   const elapsedBeforePause=useRef(0)
@@ -347,7 +349,11 @@ export default function App(){
   }
 
   if(screen==='training'){
-    return <SafeAreaView style={styles.root}><StatusBar style="light"/><TrainingScreen career={career} onBack={()=>setScreen('home')} onRide={()=>setScreen('ride')}/></SafeAreaView>
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><TrainingScreen career={career} onBack={()=>setScreen('home')} onRide={(workoutId)=>{setSelectedWorkoutId(workoutId);setScreen('trainingRide')}}/></SafeAreaView>
+  }
+
+  if(screen==='trainingRide'&&selectedWorkoutId){
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><TrainingRideScreen workoutId={selectedWorkoutId} ftp={cloudProfile?.ftp_watts??career?.rider.ftp??null} onBack={()=>setScreen('training')} onFinish={async(durationSeconds,workout)=>{if(!profileId)return;const rideId=Crypto.randomUUID();const now=new Date();const started=new Date(now.getTime()-durationSeconds*1000);const row={ride_id:rideId,athlete_id:profileId,source:'RTR',started_at:started.toISOString(),completed_at:now.toISOString(),duration_seconds:durationSeconds,distance_meters:null,workout_id:workout.id,notes:workout.title};const {error}=await supabase.from('rides').insert(row);if(error)throw error;await supabase.from('athlete_events').insert({event_id:Crypto.randomUUID(),athlete_id:profileId,event_type:'ride.completed',schema_version:1,occurred_at:row.completed_at,producer:'ride-the-races',payload:{schemaVersion:1,rideId,athleteId:profileId,source:'RTR',workoutId:workout.id,startedAt:row.started_at,completedAt:row.completed_at,durationSeconds}});setCloudRideCount(count=>count+1);Alert.alert('Workout saved',workout.title+' is in your cloud ride history.');setScreen('training')}}/></SafeAreaView>
   }
 
   if(screen==='library'){
