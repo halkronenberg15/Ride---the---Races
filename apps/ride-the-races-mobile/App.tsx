@@ -419,25 +419,7 @@ export default function App(){
           </Text>}
         </View>
 
-        <View style={styles.importCard}>
-          <Text style={styles.metricLabel}>EXISTING RTR RIDER</Text>
-          <Text style={styles.statusTitle}>Bring your current career with you</Text>
-          <Text style={styles.body}>Choose the JSON file created by Export My RtR Career. The source file is archived before any historical rides are added.</Text>
-          <Pressable style={styles.secondary} onPress={chooseCareerImport} disabled={rideState!=='idle'||importBusy}>
-            <Text style={styles.secondaryText}>CHOOSE RTR CAREER FILE</Text>
-          </Pressable>
-          {importPreview&&<View style={styles.importPreview}>
-            <Text style={styles.statusTitle}>{importPreview.riderName}</Text>
-            <Text style={styles.body}>FTP {importPreview.ftp??'—'} W · {importPreview.rideCount} rides · {importPreview.trainingCount} training completions</Text>
-            <Text style={styles.alphaNote}>Source app {importPreview.sourceApplicationVersion} · schema {importPreview.sourceSchemaVersion} · {importPreview.fileName}</Text>
-            <Pressable style={styles.primary} onPress={importCareer} disabled={importBusy}>
-              <Text style={styles.primaryText}>{importBusy?'IMPORTING…':'CONFIRM IMPORT'}</Text>
-            </Pressable>
-            <Pressable style={styles.secondary} onPress={()=>setImportPreview(null)} disabled={importBusy}>
-              <Text style={styles.secondaryText}>CANCEL</Text>
-            </Pressable>
-          </View>}
-        </View>
+        <Text style={styles.alphaNote}>Free GPS ride mode. Planned training rides open from Training Calendar; race stages open from Race Library.</Text>
 
         {rideState==='idle'&&<Pressable style={styles.primary} onPress={startRide}><Text style={styles.primaryText}>START RIDE</Text></Pressable>}
         {rideState==='riding'&&<Pressable style={styles.warn} onPress={pauseRide}><Text style={styles.primaryText}>PAUSE</Text></Pressable>}
