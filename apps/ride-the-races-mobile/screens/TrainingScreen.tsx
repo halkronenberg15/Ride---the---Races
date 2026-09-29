@@ -56,7 +56,7 @@ export default function TrainingScreen({career,onBack,onRide,onStrength}:{career
     const selectedDay=date===selectedDate
     return <Pressable key={date} onPress={()=>setSelectedDate(date)} style={[s.day,selectedDay&&s.daySelected,date===today&&s.today]}>
       <Text style={s.dayNum}>{day}</Text>
-      <View style={s.dots}>{hasRide&&<View style={s.rideDot}/>} {hasStrength&&<View style={s.strengthDot}/>}</View>
+      <View style={s.dots}>{hasRide&&<View style={s.rideDot}/>}{hasStrength&&<View style={s.strengthDot}/>}</View>
     </Pressable>
   })}</View>
 
