@@ -23,9 +23,12 @@ import TrainingScreen from './screens/TrainingScreen'
 import LibraryScreen from './screens/LibraryScreen'
 import ProfileScreen from './screens/ProfileScreen'
 import HistoryScreen from './screens/HistoryScreen'
+import StageRoadbookScreen from './screens/StageRoadbookScreen'
+import StructuredRideScreen from './screens/StructuredRideScreen'
+import type { RaceStage } from '../../src/data/raceStages'
 
 type RideState='idle'|'riding'|'paused'|'saving'
-type AppScreen='home'|'training'|'library'|'profile'|'history'|'ride'
+type AppScreen='home'|'training'|'library'|'profile'|'history'|'roadbook'|'structuredRide'|'ride'
 type Coord={latitude:number;longitude:number;timestamp:number}
 
 function distanceMeters(a:Coord,b:Coord){
@@ -67,6 +70,7 @@ export default function App(){
   const [screen,setScreen]=useState<AppScreen>('home')
   const [career,setCareer]=useState<CloudCareerSnapshot|null>(null)
   const [cloudRideCount,setCloudRideCount]=useState(0)
+  const [selectedStage,setSelectedStage]=useState<RaceStage|null>(null)
   const locationSub=useRef<Location.LocationSubscription|null>(null)
   const activeStartedAt=useRef<number|null>(null)
   const elapsedBeforePause=useRef(0)
@@ -347,7 +351,15 @@ export default function App(){
   }
 
   if(screen==='library'){
-    return <SafeAreaView style={styles.root}><StatusBar style="light"/><LibraryScreen onBack={()=>setScreen('home')} onTraining={()=>setScreen('training')} onRide={()=>setScreen('ride')}/></SafeAreaView>
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><LibraryScreen onBack={()=>setScreen('home')} onTraining={()=>setScreen('training')} onRide={()=>setScreen('roadbook')}/></SafeAreaView>
+  }
+
+  if(screen==='roadbook'){
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><StageRoadbookScreen onBack={()=>setScreen('library')} onOpenStage={(stage)=>{setSelectedStage(stage);setScreen('structuredRide')}}/></SafeAreaView>
+  }
+
+  if(screen==='structuredRide'&&selectedStage){
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><StructuredRideScreen stage={selectedStage} onBack={()=>setScreen('roadbook')} onFinish={async(durationSeconds)=>{if(!profileId)return;const rideId=Crypto.randomUUID();const now=new Date();const started=new Date(now.getTime()-durationSeconds*1000);const row={ride_id:rideId,athlete_id:profileId,source:'RTR',started_at:started.toISOString(),completed_at:now.toISOString(),duration_seconds:durationSeconds,distance_meters:Math.round(selectedStage.distanceKm*1000),stage_number:selectedStage.number,race_id:'tour-2026',notes:selectedStage.title};const {error}=await supabase.from('rides').insert(row);if(error)throw error;await supabase.from('athlete_events').insert({event_id:Crypto.randomUUID(),athlete_id:profileId,event_type:'ride.completed',schema_version:1,occurred_at:row.completed_at,producer:'ride-the-races',payload:{schemaVersion:1,rideId,athleteId:profileId,source:'RTR',stageNumber:selectedStage.number,raceId:'tour-2026',startedAt:row.started_at,completedAt:row.completed_at,durationSeconds,distanceMeters:row.distance_meters}});setCloudRideCount(count=>count+1);Alert.alert('Stage saved','Stage '+selectedStage.number+' is in your cloud ride history.');setScreen('roadbook')}}/></SafeAreaView>
   }
 
   if(screen==='profile'){
