@@ -21,3 +21,6 @@ test('Hal plan restoration is idempotent and contains no lifecycle mutation',()=
 
 
 test('Hal Sep 30 plan is upgraded in place to the 75-minute climbing session',()=>{const state=ensureHalOffSeasonPlan(emptyAlpha4025()),ride=state.trainingPlan!.weeks[1].assignments.find(a=>a.id==='w2-d3')!;assert.equal(ride.date,'2026-09-30');assert.equal(ride.workoutId,'tempo-climb-75');assert.equal(ride.durationMinutes,75);assert.deepEqual(ride.powerTarget,{minimum:160,maximum:181});assert.equal(ride.status,'REPLACED');assert.match(ride.substitution?.reason??'',/75 minutes/)})
+
+
+test('existing Hal profiles receive the Sep 30 adaptation during migration',()=>{const plan=generatePlan(HAL_INPUT,HAL_GOALS);const source={schemaVersion:6,onboardingComplete:true,rider:{name:'Hal',number:15,ftp:229},alpha4025:{...emptyAlpha4025(),trainingPlan:plan,intake:HAL_INPUT,questionnaire:HAL_GOALS,developmentProfile:createDevelopmentProfile(HAL_INPUT)}} as never;const migrated=migrateCareer(source);const ride=migrated.alpha4025.trainingPlan!.weeks[1].assignments.find(a=>a.id==='w2-d3')!;assert.equal(ride.workoutId,'tempo-climb-75');assert.equal(ride.durationMinutes,75)})
