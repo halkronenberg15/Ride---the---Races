@@ -3,6 +3,7 @@ import * as Crypto from 'expo-crypto'
 import * as Location from 'expo-location'
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import {
   Alert,
   Pressable,
@@ -29,6 +30,7 @@ import StageRoadbookScreen from './screens/StageRoadbookScreen'
 import StructuredRideScreen from './screens/StructuredRideScreen'
 import StrengthPlanScreen from './screens/StrengthPlanScreen'
 import type { RaceStage } from '../../src/data/raceStages'
+import { workoutById } from '../../src/engine/adaptiveTraining40251'
 
 type RideState='idle'|'riding'|'paused'|'saving'
 type AppScreen='mission'|'home'|'nutrition'|'training'|'trainingRide'|'strength'|'library'|'profile'|'roadbook'|'structuredRide'|'ride'
@@ -76,6 +78,7 @@ export default function App(){
   const [selectedStage,setSelectedStage]=useState<RaceStage|null>(null)
   const [selectedWorkoutId,setSelectedWorkoutId]=useState<string|null>(null)
   const [selectedStrengthAssignment,setSelectedStrengthAssignment]=useState<any|null>(null)
+  const [trainingOverrides,setTrainingOverrides]=useState<Record<string,string>>({})
   const locationSub=useRef<Location.LocationSubscription|null>(null)
   const activeStartedAt=useRef<number|null>(null)
   const elapsedBeforePause=useRef(0)
@@ -88,6 +91,8 @@ export default function App(){
     const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,next)=>setSession(next))
     return()=>subscription.unsubscribe()
   },[])
+
+  useEffect(()=>{AsyncStorage.getItem('rtr-mobile-training-overrides-v1').then(raw=>{if(raw){try{setTrainingOverrides(JSON.parse(raw) as Record<string,string>)}catch{}}})},[])
 
   useEffect(()=>{
     if(!session?.user?.id){setProfileId(null);return}
@@ -126,6 +131,25 @@ export default function App(){
   },[rideState,backgroundMode])
 
   useEffect(()=>()=>{locationSub.current?.remove();deactivateKeepAwake()},[])
+
+  const effectiveCareer=useMemo(()=>{if(!career||!career.alpha4025?.trainingPlan)return career
+    const weeks=career.alpha4025.trainingPlan.weeks.map(week=>({...week,assignments:week.assignments.map(item=>{
+      const replacementId=trainingOverrides[item.id]
+      if(!replacementId)return item
+      const workout=workoutById(replacementId)
+      if(!workout)return item
+      return {...item,status:'REPLACED',workoutId:replacementId,title:workout.title,durationMinutes:workout.durationMinutes,environment:workout.environment}
+    })}))
+    return {...career,alpha4025:{...career.alpha4025,trainingPlan:{...career.alpha4025.trainingPlan,weeks}}}
+  },[career,trainingOverrides])
+
+  const replaceTrainingAssignment=(assignmentId:string,workoutId:string)=>{
+    setTrainingOverrides(current=>{
+      const next={...current,[assignmentId]:workoutId}
+      AsyncStorage.setItem('rtr-mobile-training-overrides-v1',JSON.stringify(next))
+      return next
+    })
+  }
 
   const miles=distance/1609.344
   const mph=useMemo(()=>elapsed>0?miles/(elapsed/3600):0,[miles,elapsed])
@@ -209,8 +233,8 @@ export default function App(){
         weight_kg:importPreview.weightKg,
         height_cm:current?.height_cm??null,
         rider_number:current?.rider_number??null,
-        archetype:current?.archetype??career?.rider.archetype??'GC Contender',
-        season_goal:current?.season_goal??career?.rider.seasonGoal??null,
+        archetype:current?.archetype??effectiveCareer?.rider.archetype??'GC Contender',
+        season_goal:current?.season_goal??effectiveCareer?.rider.seasonGoal??null,
         preferred_units:current?.preferred_units??'imperial',
       }))
       const [snapshot,count]=await Promise.all([loadLatestCloudCareer(profileId),loadCloudRideCount(profileId)])
@@ -353,19 +377,19 @@ export default function App(){
   }
 
   if(screen==='mission'){
-    return <SafeAreaView style={styles.root}><StatusBar style="light"/><MissionFranceLandingScreen career={career} riderName={cloudProfile?.display_name??career?.rider.name??'Rider'} ftp={cloudProfile?.ftp_watts??career?.rider.ftp??null} rideCount={cloudRideCount} onEnterHQ={()=>setScreen('home')} onOpenTraining={()=>setScreen('training')}/></SafeAreaView>
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><MissionFranceLandingScreen career={effectiveCareer} riderName={cloudProfile?.display_name??effectiveCareer?.rider.name??'Rider'} ftp={cloudProfile?.ftp_watts??effectiveCareer?.rider.ftp??null} rideCount={cloudRideCount} onEnterHQ={()=>setScreen('home')} onOpenTraining={()=>setScreen('training')}/></SafeAreaView>
   }
 
   if(screen==='home'){
-    return <SafeAreaView style={styles.root}><StatusBar style="light"/><HomeScreen career={career} riderName={cloudProfile?.display_name??career?.rider.name??'Rider'} ftp={cloudProfile?.ftp_watts??career?.rider.ftp??null} rideCount={cloudRideCount} onBackMission={()=>setScreen('mission')} onTraining={()=>setScreen('training')} onNutrition={()=>setScreen('nutrition')} onLibrary={()=>setScreen('library')} onProfile={()=>setScreen('profile')} onRide={()=>setScreen('ride')} onSignOut={()=>supabase.auth.signOut()}/></SafeAreaView>
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><HomeScreen career={effectiveCareer} riderName={cloudProfile?.display_name??effectiveCareer?.rider.name??'Rider'} ftp={cloudProfile?.ftp_watts??effectiveCareer?.rider.ftp??null} rideCount={cloudRideCount} onBackMission={()=>setScreen('mission')} onTraining={()=>setScreen('training')} onNutrition={()=>setScreen('nutrition')} onLibrary={()=>setScreen('library')} onProfile={()=>setScreen('profile')} onRide={()=>setScreen('ride')} onSignOut={()=>supabase.auth.signOut()}/></SafeAreaView>
   }
 
   if(screen==='nutrition'){
-    return <SafeAreaView style={styles.root}><StatusBar style="light"/><NutritionScreen career={career} onBack={()=>setScreen('home')}/></SafeAreaView>
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><NutritionScreen career={effectiveCareer} onBack={()=>setScreen('home')}/></SafeAreaView>
   }
 
   if(screen==='training'){
-    return <SafeAreaView style={styles.root}><StatusBar style="light"/><TrainingScreen career={career} onBack={()=>setScreen('home')} onRide={(workoutId)=>{setSelectedWorkoutId(workoutId);setScreen('trainingRide')}} onStrength={(assignment)=>{setSelectedStrengthAssignment(assignment);setScreen('strength')}}/></SafeAreaView>
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><TrainingScreen career={effectiveCareer} onBack={()=>setScreen('home')} onRide={(assignment,workoutId)=>{if(assignment.workoutId!==workoutId)replaceTrainingAssignment(assignment.id,workoutId);setSelectedWorkoutId(workoutId);setScreen('trainingRide')}} onStrength={(assignment)=>{setSelectedStrengthAssignment(assignment);setScreen('strength')}}/></SafeAreaView>
   }
 
   if(screen==='strength'&&selectedStrengthAssignment){
@@ -373,7 +397,7 @@ export default function App(){
   }
 
   if(screen==='trainingRide'&&selectedWorkoutId){
-    return <SafeAreaView style={styles.root}><StatusBar style="light"/><TrainingRideScreen workoutId={selectedWorkoutId} ftp={cloudProfile?.ftp_watts??career?.rider.ftp??null} onBack={()=>setScreen('training')} onFinish={async(durationSeconds,workout)=>{if(!profileId)return;const rideId=Crypto.randomUUID();const now=new Date();const started=new Date(now.getTime()-durationSeconds*1000);const row={ride_id:rideId,athlete_id:profileId,source:'RTR',started_at:started.toISOString(),completed_at:now.toISOString(),duration_seconds:durationSeconds,distance_meters:null,workout_id:workout.id,notes:workout.title};const {error}=await supabase.from('rides').insert(row);if(error)throw error;await supabase.from('athlete_events').insert({event_id:Crypto.randomUUID(),athlete_id:profileId,event_type:'ride.completed',schema_version:1,occurred_at:row.completed_at,producer:'ride-the-races',payload:{schemaVersion:1,rideId,athleteId:profileId,source:'RTR',workoutId:workout.id,startedAt:row.started_at,completedAt:row.completed_at,durationSeconds}});setCloudRideCount(count=>count+1);Alert.alert('Workout saved',workout.title+' is in your cloud ride history.');setScreen('training')}}/></SafeAreaView>
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><TrainingRideScreen workoutId={selectedWorkoutId} ftp={cloudProfile?.ftp_watts??effectiveCareer?.rider.ftp??null} onBack={()=>setScreen('training')} onFinish={async(durationSeconds,workout)=>{if(!profileId)return;const rideId=Crypto.randomUUID();const now=new Date();const started=new Date(now.getTime()-durationSeconds*1000);const row={ride_id:rideId,athlete_id:profileId,source:'RTR',started_at:started.toISOString(),completed_at:now.toISOString(),duration_seconds:durationSeconds,distance_meters:null,workout_id:workout.id,notes:workout.title};const {error}=await supabase.from('rides').insert(row);if(error)throw error;await supabase.from('athlete_events').insert({event_id:Crypto.randomUUID(),athlete_id:profileId,event_type:'ride.completed',schema_version:1,occurred_at:row.completed_at,producer:'ride-the-races',payload:{schemaVersion:1,rideId,athleteId:profileId,source:'RTR',workoutId:workout.id,startedAt:row.started_at,completedAt:row.completed_at,durationSeconds}});setCloudRideCount(count=>count+1);Alert.alert('Workout saved',workout.title+' is in your cloud ride history.');setScreen('training')}}/></SafeAreaView>
   }
 
   if(screen==='library'){
@@ -389,7 +413,7 @@ export default function App(){
   }
 
   if(screen==='profile'){
-    return <SafeAreaView style={styles.root}><StatusBar style="light"/><ProfileScreen career={career} rideCount={cloudRideCount} profile={cloudProfile} onBack={()=>setScreen('home')} onSave={async(next)=>{if(!session?.user?.id)throw new Error('Rider session is not ready.');const {error}=await supabase.from('athlete_profiles').update({display_name:next.display_name,ftp_watts:next.ftp_watts,weight_kg:next.weight_kg,height_cm:next.height_cm,rider_number:next.rider_number,archetype:next.archetype,season_goal:next.season_goal,preferred_units:next.preferred_units,profile_version:(cloudProfile?1:0)+1,updated_at:new Date().toISOString()}).eq('user_id',session.user.id);if(error)throw error;setCloudProfile(next)}}/></SafeAreaView>
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><ProfileScreen career={effectiveCareer} rideCount={cloudRideCount} profile={cloudProfile} onBack={()=>setScreen('home')} onSave={async(next)=>{if(!session?.user?.id)throw new Error('Rider session is not ready.');const {error}=await supabase.from('athlete_profiles').update({display_name:next.display_name,ftp_watts:next.ftp_watts,weight_kg:next.weight_kg,height_cm:next.height_cm,rider_number:next.rider_number,archetype:next.archetype,season_goal:next.season_goal,preferred_units:next.preferred_units,profile_version:(cloudProfile?1:0)+1,updated_at:new Date().toISOString()}).eq('user_id',session.user.id);if(error)throw error;setCloudProfile(next)}}/></SafeAreaView>
   }
 
   return(
