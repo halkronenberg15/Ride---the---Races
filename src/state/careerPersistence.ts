@@ -5,6 +5,7 @@ import { INITIAL_PELOTON_EQUIPMENT_CALIBRATION } from '../engine/manualBike.ts'
 import { createIntroCyclingPlan } from '../engine/introCycling.ts'
 import { activeSeasonClosure } from '../engine/release4024.ts'
 import { applyHalSep30Climb75, emptyAlpha4025, ensureHalOffSeasonPlan, isHalOffSeasonCareer } from '../engine/alpha4025.ts'
+import { emptyTrainingJournal, ensureHalSep30TrainingJournal } from '../../packages/training-journal/src/index.ts'
 
 export function createInitialCareer():CareerState{return {
  schemaVersion:6,onboardingComplete:false,
