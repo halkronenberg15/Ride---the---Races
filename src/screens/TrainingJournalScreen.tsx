@@ -14,14 +14,20 @@ export default function TrainingJournalScreen({onBack}:Props){
     event.preventDefault()
     if(!selected)return
     const data=new FormData(event.currentTarget)
-    const feedback:Partial<RiderTrainingFeedback>={
-      legsAfter:String(data.get('legsAfter')??'') as RiderTrainingFeedback['legsAfter'],
-      workBlocks:String(data.get('workBlocks')??'') as RiderTrainingFeedback['workBlocks'],
-      recoveryBetweenBlocks:String(data.get('recoveryBetweenBlocks')??'') as RiderTrainingFeedback['recoveryBetweenBlocks'],
-      lateSession:String(data.get('lateSession')??'') as RiderTrainingFeedback['lateSession'],
-      freeText:String(data.get('freeText')??'').trim()||undefined,
-    }
+    const feedback:Partial<RiderTrainingFeedback>={}
+    const legsAfter=String(data.get('legsAfter')??'') as RiderTrainingFeedback['legsAfter']
+    const workBlocks=String(data.get('workBlocks')??'') as RiderTrainingFeedback['workBlocks']
+    const recoveryBetweenBlocks=String(data.get('recoveryBetweenBlocks')??'') as RiderTrainingFeedback['recoveryBetweenBlocks']
+    const lateSession=String(data.get('lateSession')??'') as RiderTrainingFeedback['lateSession']
+    const freeText=String(data.get('freeText')??'').trim()
+    if(legsAfter)feedback.legsAfter=legsAfter
+    if(workBlocks)feedback.workBlocks=workBlocks
+    if(recoveryBetweenBlocks)feedback.recoveryBetweenBlocks=recoveryBetweenBlocks
+    if(lateSession)feedback.lateSession=lateSession
+    if(freeText)feedback.freeText=freeText
+    if(Object.keys(feedback).length===0)return
     updateTrainingJournal(state=>updateTrainingFeedback(state,selected.id,feedback))
+    event.currentTarget.reset()
   }
 
   function saveFuel(event:React.FormEvent<HTMLFormElement>){
@@ -62,12 +68,12 @@ export default function TrainingJournalScreen({onBack}:Props){
     </div>}
 
     {selected&&<div className="hq-dashboard-grid">
-      <form className="dashboard-card metric-form" onSubmit={saveFeedback}><p className="eyebrow">POST-RIDE FEEDBACK</p><h2>Tell the coach what the numbers missed</h2>
-        <label>Legs after<select name="legsAfter" defaultValue={selected.feedback.legsAfter??''}><option value="">Choose…</option><option value="FRESH">Fresh</option><option value="GOOD">Good</option><option value="NOTICEABLE_FATIGUE">Noticeable fatigue</option><option value="HEAVY">Heavy</option><option value="VERY_HEAVY">Very heavy</option></select></label>
-        <label>Work blocks<select name="workBlocks" defaultValue={selected.feedback.workBlocks??''}><option value="">Choose…</option><option value="EASY">Easy</option><option value="CONTROLLED">Controlled</option><option value="CHALLENGING_WITH_RESERVE">Challenging with reserve</option><option value="LIMIT">At limit</option><option value="FAILED">Could not complete</option></select></label>
-        <label>Recovery between blocks<select name="recoveryBetweenBlocks" defaultValue={selected.feedback.recoveryBetweenBlocks??''}><option value="">Choose…</option><option value="FULLY_READY">Fully ready</option><option value="MOSTLY_READY">Mostly ready</option><option value="PARTIAL">Partial</option><option value="NOT_READY">Not ready</option></select></label>
-        <label>Late session<select name="lateSession" defaultValue={selected.feedback.lateSession??''}><option value="">Choose…</option><option value="STRONGER">Stronger</option><option value="STEADY">Steady</option><option value="FADING">Fading</option><option value="FAILED">Failed</option></select></label>
-        <label className="wide-field">Notes<textarea name="freeText" defaultValue={selected.feedback.freeText}/></label><button className="primary-button wide-field" type="submit">Save feedback</button>
+      <form key={selected.id} className="dashboard-card metric-form" onSubmit={saveFeedback}><p className="eyebrow">POST-RIDE FEEDBACK</p><h2>Tell the coach what the numbers missed</h2><p>Leave anything blank to keep the saved journal value unchanged.</p>
+        <label>Legs after<select name="legsAfter" defaultValue=""><option value="">Choose…</option><option value="FRESH">Fresh</option><option value="GOOD">Good</option><option value="NOTICEABLE_FATIGUE">Noticeable fatigue</option><option value="HEAVY">Heavy</option><option value="VERY_HEAVY">Very heavy</option></select></label>
+        <label>Work blocks<select name="workBlocks" defaultValue=""><option value="">Choose…</option><option value="EASY">Easy</option><option value="CONTROLLED">Controlled</option><option value="CHALLENGING_WITH_RESERVE">Challenging with reserve</option><option value="LIMIT">At limit</option><option value="FAILED">Could not complete</option></select></label>
+        <label>Recovery between blocks<select name="recoveryBetweenBlocks" defaultValue=""><option value="">Choose…</option><option value="FULLY_READY">Fully ready</option><option value="MOSTLY_READY">Mostly ready</option><option value="PARTIAL">Partial</option><option value="NOT_READY">Not ready</option></select></label>
+        <label>Late session<select name="lateSession" defaultValue=""><option value="">Choose…</option><option value="STRONGER">Stronger</option><option value="STEADY">Steady</option><option value="FADING">Fading</option><option value="FAILED">Failed</option></select></label>
+        <label className="wide-field">Notes<textarea name="freeText" defaultValue=""/></label><button className="primary-button wide-field" type="submit">Save feedback</button>
       </form>
       <form className="dashboard-card metric-form" onSubmit={saveFuel}><p className="eyebrow">FUELING</p><h2>Add ride fuel</h2><label>Minute<input name="minute" type="number" min="0"/></label><label>Fuel / drink<input name="label" required placeholder="Gel, drink mix, banana…"/></label><label>Carbs (g)<input name="carbs" type="number" min="0" step="0.1"/></label><label>Calories<input name="calories" type="number" min="0"/></label><label>Sodium (mg)<input name="sodium" type="number" min="0"/></label><button className="primary-button wide-field" type="submit">Add fueling</button></form>
     </div>}

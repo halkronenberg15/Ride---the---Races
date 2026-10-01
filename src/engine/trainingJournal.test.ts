@@ -36,3 +36,14 @@ test('fuel entries upsert by id',()=>{
   assert.equal(updated.fueling.length,1)
   assert.equal(updated.fueling[0].carbohydrateGrams,18)
 })
+
+
+test('training journal feedback form source keeps update controls blank',async()=>{
+  const {readFileSync}=await import('node:fs')
+  const source=readFileSync(new URL('../screens/TrainingJournalScreen.tsx',import.meta.url),'utf8')
+  assert.match(source,/form key={selected\.id}/)
+  assert.match(source,/Leave anything blank to keep the saved journal value unchanged\./)
+  assert.doesNotMatch(source,/defaultValue={selected\.feedback/)
+  assert.match(source,/if\(legsAfter\)feedback\.legsAfter=legsAfter/)
+  assert.match(source,/event\.currentTarget\.reset\(\)/)
+})
