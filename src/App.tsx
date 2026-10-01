@@ -16,6 +16,7 @@ import RiderProfileScreen from './screens/RiderProfileScreen'
 import { CareerProvider, useCareer } from './state/CareerContext'
 import OnboardingScreen from './screens/OnboardingScreen'
 import SettingsScreen from './screens/SettingsScreen'
+import MissionFranceCommandCenter from './screens/MissionFranceCommandCenter.tsx'
 import { useEffect } from 'react'
 import FinaleScreen from './screens/FinaleScreen'
 import { ActiveRideProvider, useActiveRide } from './state/ActiveRideContext'
@@ -45,7 +46,7 @@ import StrengthWorkoutScreen from './screens/StrengthWorkoutScreen.tsx'
 import { OutdoorRideProvider,useOutdoorRide } from './state/OutdoorRideContext.tsx'
 import { completeOutdoorRide,type OutdoorMeasurements } from './engine/outdoorRide40252.ts'
 
-type Screen = 'hq' | 'teamBus' | 'season' | 'race' | 'worldsBriefing' | 'stageDetail' | 'training' | 'offseason' | 'outdoorBriefing' | 'outdoorRide' | 'outdoorCompletion' | 'strengthWorkout' | 'roster' | 'tactics' | 'ride' | 'restDay' | 'rideData' | 'trainingJournal' | 'health' | 'profile' | 'settings' | 'finale'|'femmes'
+type Screen = 'hq' | 'teamBus' | 'season' | 'race' | 'worldsBriefing' | 'stageDetail' | 'training' | 'offseason' | 'outdoorBriefing' | 'outdoorRide' | 'outdoorCompletion' | 'strengthWorkout' | 'roster' | 'tactics' | 'ride' | 'restDay' | 'rideData' | 'trainingJournal' | 'health' | 'profile' | 'settings' | 'missionFrance' | 'finale'|'femmes'
 
 function RideTheRacesApp() {
   const { career, selectRaceStage, completeRaceStage, completeTraining, completeWorlds, addRide, recordOffSeasonAssignment,updateAlpha4025 } = useCareer()
@@ -118,6 +119,7 @@ function RideTheRacesApp() {
           onStartIntro={(workoutId)=>{setSelectedRace('training');setSelectedWorkout(workoutId);setScreen('tactics')}}
           onOpenFemmes={()=>setScreen('femmes')}
           onOpenOffSeason={()=>setScreen('offseason')}
+          onOpenMissionFrance={()=>setScreen('missionFrance')}
           onOpenHealth={() => setScreen('health')}
           onOpenProfile={() => setScreen('profile')}
           onOpenSettings={() => setScreen('settings')}
@@ -131,6 +133,7 @@ function RideTheRacesApp() {
       {screen === 'health' && <HealthScreen onBack={() => setScreen('hq')} />}
       {screen === 'profile' && <RiderProfileScreen onBack={() => setScreen('hq')} />}
       {screen === 'settings' && <SettingsScreen onBack={() => setScreen('hq')} />}
+      {screen === 'missionFrance' && <MissionFranceCommandCenter onBack={()=>setScreen('hq')} onOpenHealth={()=>setScreen('health')} onOpenRideData={()=>setScreen('rideData')} onOpenOffSeason={()=>setScreen('offseason')} />}
 
       {screen === 'teamBus' && (
         <TeamBusScreen

@@ -1859,3 +1859,51 @@ body{
     text-align:center;
   }
 }
+
+
+/* Mission France 2028 Command Center */
+.mission-france-screen{max-width:1180px;margin:0 auto;padding:24px 18px calc(110px + env(safe-area-inset-bottom));display:grid;gap:18px}
+.mission-france-hero{padding:28px;border:1px solid rgba(255,122,22,.35);border-radius:24px;background:radial-gradient(circle at top right,rgba(255,122,22,.16),transparent 42%),#111318}
+.mission-france-hero h1{margin:6px 0 12px;font-size:clamp(2.4rem,7vw,5rem);line-height:.95;color:#fff}
+.mission-france-hero>p:last-child{max-width:760px;color:#c7c7cc;line-height:1.5}
+.mission-today-grid,.mission-pillar-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.mission-today-grid .dashboard-card,.mission-pillar{min-height:150px;display:grid;align-content:start;gap:8px}
+.mission-today-grid small,.mission-pillar small{font-weight:900;letter-spacing:.1em;color:#aeb0b7}
+.mission-today-grid strong{font-size:1.7rem;color:#fff}
+.mission-today-grid span,.mission-pillar p{color:#b8b8bf}
+.mission-primary-card{border-color:#ff7a16!important;background:linear-gradient(145deg,rgba(255,122,22,.13),rgba(20,20,24,.98))}
+.mission-daily-command{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(240px,.8fr);gap:18px;align-items:center}
+.mission-actions{display:grid;gap:10px}
+.mission-actions button{min-height:48px}
+.mission-pillars{display:grid;gap:12px}
+.mission-pillars>header h2{margin:4px 0 0;color:#fff}
+.mission-pillar strong{font-size:1rem;letter-spacing:.04em;color:#ffae72}
+.mission-france-home{border-color:#ff7a16!important;background:linear-gradient(145deg,rgba(255,122,22,.1),rgba(20,20,24,.98))}
+.mission-nutrition{display:grid;gap:16px}
+.nutrition-totals{display:grid;grid-template-columns:auto auto;gap:2px 8px;align-items:baseline;text-align:right}
+.nutrition-totals strong{font-size:1.4rem;color:#fff}
+.nutrition-totals span{color:#9d9da5;font-size:.78rem;text-transform:uppercase;letter-spacing:.08em}
+.remembered-meals{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px}
+.remembered-meals button{min-width:170px;display:grid;gap:5px;padding:12px 14px;border:1px solid #3a3a3a;border-radius:14px;background:#151515;color:#fff;text-align:left}
+.remembered-meals small{color:#aaa}
+.nutrition-quick-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.nutrition-quick-form label{display:grid;gap:6px;color:#ddd;font-weight:750}
+.nutrition-quick-form input,.nutrition-quick-form select{width:100%;padding:12px 13px;border:1px solid #3b3b3b;border-radius:12px;background:#0d0d0d;color:#fff}
+.nutrition-name{grid-column:span 2}
+.remember-meal{grid-column:span 2;display:flex!important;align-items:center;gap:8px!important}
+.remember-meal input{width:auto}
+.today-food-log{border-top:1px solid #333;padding-top:12px}
+.today-food-log>div{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid #262626}
+.today-food-log small{color:#aaa}
+.jimmy-coach-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:start;border-color:#ff7a16!important;background:radial-gradient(circle at top right,rgba(255,122,22,.14),transparent 36%),#14151a}
+.jimmy-coach-card h2{margin-bottom:8px}
+.jimmy-coach-card>div>p:last-child{color:#c3c4ca;line-height:1.5}
+.jimmy-coach-panel{grid-column:1/-1;display:grid;gap:12px;padding-top:14px;border-top:1px solid #343434}
+.jimmy-quick-prompts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.jimmy-quick-prompts button{min-height:46px;padding:10px 12px;border:1px solid #3b3b3b;border-radius:12px;background:#1b1b1f;color:#f4f4f5;text-align:left}
+.jimmy-coach-panel small{color:#96979e;line-height:1.45}
+@media(max-width:820px){.mission-today-grid,.mission-pillar-grid{grid-template-columns:1fr 1fr}.mission-daily-command{grid-template-columns:1fr}}
+@media(max-width:700px){.nutrition-quick-form{grid-template-columns:1fr 1fr}.nutrition-name,.remember-meal{grid-column:1/-1}.section-title-row{align-items:flex-start}.nutrition-totals{text-align:left}}
+@media(max-width:620px){.jimmy-coach-card{grid-template-columns:1fr}.jimmy-coach-card>.primary-cta{width:100%}.jimmy-quick-prompts{grid-template-columns:1fr}}
+@media(max-width:520px){.mission-france-screen{padding-left:12px;padding-right:12px}.mission-france-hero{padding:22px 18px}.mission-today-grid,.mission-pillar-grid{grid-template-columns:1fr}.mission-today-grid .dashboard-card,.mission-pillar{min-height:0}}
+@media(max-width:480px){.nutrition-quick-form{grid-template-columns:1fr}.nutrition-name,.remember-meal{grid-column:auto}.today-food-log>div{flex-direction:column}}
