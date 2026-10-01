@@ -8,7 +8,7 @@ function monthKey(date:string){return date.slice(0,7)}
 function monthLabel(key:string){const [y,m]=key.split('-').map(Number);return new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric'}).format(new Date(y,m-1,1))}
 const weekdays=['S','M','T','W','T','F','S']
 
-export default function TrainingScreen({career,onBack,onRide,onStrength}:{career:CloudCareerSnapshot|null;onBack:()=>void;onRide:(workoutId:string)=>void;onStrength:(assignment:any)=>void}){
+export default function TrainingScreen({career,onBack,onRide,onStrength}:{career:CloudCareerSnapshot|null;onBack:()=>void;onRide:(assignment:any,workoutId:string)=>void;onStrength:(assignment:any)=>void}){
  const today=localDate()
  const all=career?.alpha4025?.trainingPlan?.weeks.flatMap(w=>w.assignments)??[]
  const months=useMemo(()=>Array.from(new Set(all.map(x=>monthKey(x.date)))).sort(),[all])
@@ -66,7 +66,7 @@ export default function TrainingScreen({career,onBack,onRide,onStrength}:{career
       <View style={s.top}><Text style={s.type}>{x.type}</Text><Text style={s.minutes}>{x.durationMinutes??0} min</Text></View>
       <Text style={s.cardTitle}>{x.title??'Session'}</Text>
       <Text style={s.body}>{x.purpose??x.primary??(x.environment?String(x.environment):'')}</Text>
-      {(x.type==='CYCLING'||x.type==='ASSESSMENT')&&x.workoutId&&<View style={s.actions}>{options(x).map(o=><Pressable key={o.id+o.label} style={o.note==='Planned'?s.primary:s.button} onPress={()=>onRide(o.id)}><Text style={o.note==='Planned'?s.primaryText:s.buttonText}>{o.label}</Text><Text style={s.note}>{o.note}</Text></Pressable>)}</View>}
+      {(x.type==='CYCLING'||x.type==='ASSESSMENT')&&x.workoutId&&<View style={s.actions}>{options(x).map(o=><Pressable key={o.id+o.label} style={o.note==='Planned'?s.primary:s.button} onPress={()=>onRide(x,o.id)}><Text style={o.note==='Planned'?s.primaryText:s.buttonText}>{o.label}</Text><Text style={s.note}>{o.note}</Text></Pressable>)}</View>}
       {x.type==='STRENGTH'&&<Pressable style={s.primary} onPress={()=>onStrength(x)}><Text style={s.primaryText}>OPEN {String(x.title??'STRENGTH').toUpperCase()} PLAN</Text></Pressable>}
     </View>)}
   </View>
