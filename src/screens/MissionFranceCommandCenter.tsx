@@ -29,6 +29,7 @@ export default function MissionFranceCommandCenter({onBack,onOpenHealth,onOpenRi
  const [remember,setRemember]=useState(true)
  const [saved,setSaved]=useState('')
  const [importMessage,setImportMessage]=useState('')
+ const [rideHistoryOpen,setRideHistoryOpen]=useState(false)
  const templates=useMemo(()=>[...career.nutrition.mealTemplates].sort((a,b)=>b.timesUsed-a.timesUsed||b.lastUsedAt.localeCompare(a.lastUsedAt)),[career.nutrition.mealTemplates])
  const todayEntries=career.nutrition.entries.filter(entry=>entry.date===today())
  const totals=todayEntries.reduce((sum,entry)=>({calories:sum.calories+(entry.calories??0),protein:sum.protein+(entry.proteinG??0),carbs:sum.carbs+(entry.carbsG??0),fluid:sum.fluid+(entry.fluidOz??0)}),{calories:0,protein:0,carbs:0,fluid:0})
@@ -48,6 +49,11 @@ export default function MissionFranceCommandCenter({onBack,onOpenHealth,onOpenRi
    <article className="dashboard-card"><small>LAST 7 DAYS</small><strong>{snapshot.rides7} rides · {snapshot.minutes7} min</strong><span>{miles(snapshot.distance7Km).toFixed(1)} mi recorded</span></article>
    <article className="dashboard-card"><small>LONGEST RIDE</small><strong>{snapshot.longestMinutes?snapshot.longestMinutes+' min':'—'}</strong><span>Recorded RtR ride history</span></article>
    <article className="dashboard-card"><small>BEST RIDING STREAK</small><strong>{snapshot.backToBack?snapshot.backToBack+' days':'—'}</strong><span>Consecutive days with recorded rides</span></article>
+  </section>
+
+  <section className="dashboard-card mission-ride-history">
+   <div className="section-title-row"><div><p className="eyebrow">RIDE HISTORY</p><h2>Your recorded rides</h2><p>{career.rideHistory.length} rides are stored in RtR.</p></div><button type="button" className="secondary-action" onClick={()=>setRideHistoryOpen(value=>!value)}>{rideHistoryOpen?'Hide rides':'View rides'}</button></div>
+   {rideHistoryOpen&&<div className="mission-ride-list">{career.rideHistory.length===0?<p>No rides logged yet.</p>:career.rideHistory.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(ride=>{const value={...ride,...ride.correctedEntry};return <details key={ride.id} className="mission-ride-item"><summary><strong>{ride.stageName??ride.activityType??'Ride'}</strong><span>{new Date(ride.date).toLocaleDateString()} · {value.durationMinutes} min · {miles(value.distanceKm).toFixed(1)} mi</span></summary><div className="mission-ride-metrics"><span><strong>{value.averagePower??'—'}{value.averagePower?' W':''}</strong>Avg power</span><span><strong>{value.averageHeartRate??'—'}{value.averageHeartRate?' bpm':''}</strong>Avg HR</span><span><strong>{value.averageCadence??'—'}{value.averageCadence?' rpm':''}</strong>Cadence</span><span><strong>{value.totalOutputKj??'—'}{value.totalOutputKj?' kJ':''}</strong>Output</span></div>{value.notes&&<p>{value.notes}</p>}</details>})}<button type="button" className="secondary-action" onClick={onOpenRideData}>Open full ride data history</button></div>}
   </section>
 
   <section className="dashboard-card mission-daily-command">
