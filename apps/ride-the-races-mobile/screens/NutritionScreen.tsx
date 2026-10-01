@@ -102,14 +102,26 @@ function buildTodayPlan(
    {id:'1900-dinner',time:'7:00 PM',label:'Dinner',detail:dinner,reason:'Complete recovery with a normal protein + carbohydrate meal.'},
    {id:'2030-recovery',time:'8:30 PM',label:'Evening recovery',detail:recovery,reason:'Keep the established evening recovery routine.'},
   )
+ } else if(midday){
+  const postRideMinutes=start+Math.max(75,longestRide||60)
+  slots.push(
+   {id:'0930-shake',time:'9:30 AM',label:'Protein shake',detail:shake,reason:'Keep the morning light enough to ride comfortably while still starting protein early.'},
+   {id:'pre-training',time:shiftTime(trainingTime,-45),label:hasRide?'Pre-ride fuel':'Pre-training fuel',detail:pre,reason:'Placed about 45 minutes before training so the final pre-session food stays easy to digest.'},
+  )
+  if(hasRide&&longestRide>=60)slots.push({id:'during-ride',time:'During training',label:'Ride fuel + hydration',detail:longOrHard?'Electrolytes plus 30–45 g carbohydrate per hour':'Electrolytes plus about 20–30 g carbohydrate during the session',reason:'Ride fueling is added because today has enough cycling volume to justify it.'})
+  slots.push(
+   {id:'post-training-lunch',time:fmt(postRideMinutes+15),label:'Post-ride lunch',detail:lunch,reason:'Lunch moves after the ride so recovery food replaces the normal mid-morning snack instead of colliding with pre-ride fuel.'},
+   {id:'afternoon-snack',time:'3:30 PM',label:'Afternoon snack',detail:snack,reason:'Use this only if appetite or recovery needs call for it after lunch.'},
+   {id:'1900-dinner',time:'7:00 PM',label:'Dinner',detail:dinner,reason:longOrHard?'Use a full carbohydrate serving to complete recovery from the day’s workload.':'Protein + carbohydrate for recovery without unnecessary extra volume.'},
+   {id:'2030-recovery',time:'8:30 PM',label:'Evening recovery',detail:recovery,reason:'Finish the day with the established recovery routine.'},
+  )
  } else {
   slots.push(
    {id:'0930-shake',time:'9:30 AM',label:'Protein shake',detail:shake,reason:'Start protein early without making the morning too heavy.'},
    {id:'1100-snack',time:'11:00 AM',label:'Mid-morning snack',detail:snack,reason:moderateRide?'Protein + carbohydrate now helps avoid playing catch-up before the ride.':'Protein-forward snack to support later training.'},
+   {id:'1330-lunch',time:'1:30 PM',label:'Lunch',detail:lunch,reason:longOrHard?'Keep a full carbohydrate serving because today carries meaningful training load.':'Keep a normal carbohydrate serving because training is scheduled.'},
+   {id:'pre-training',time:shiftTime(trainingTime,-45),label:hasRide?'Pre-ride fuel':'Pre-training fuel',detail:pre,reason:'Placed about 45 minutes before the scheduled session so fuel timing follows the calendar.'},
   )
-  const lunchTime=midday?shiftTime(trainingTime,-150):'1:30 PM'
-  slots.push({id:'lunch',time:lunchTime,label:'Lunch',detail:lunch,reason:longOrHard?'Keep a full carbohydrate serving because today carries meaningful training load.':'Keep a normal carbohydrate serving because training is scheduled.'})
-  slots.push({id:'pre-training',time:shiftTime(trainingTime,-45),label:hasRide?'Pre-ride fuel':'Pre-training fuel',detail:pre,reason:'Placed about 45 minutes before the scheduled session so fuel timing follows the calendar.'})
   if(hasRide&&longestRide>=60)slots.push({id:'during-ride',time:'During training',label:'Ride fuel + hydration',detail:longOrHard?'Electrolytes plus 30–45 g carbohydrate per hour':'Electrolytes plus about 20–30 g carbohydrate during the session',reason:'Ride fueling is added only because today has enough cycling volume to justify it.'})
   slots.push(
    {id:'dinner',time:shiftTime(trainingTime,Math.max(90,longestRide+30)),label:'Dinner / recovery meal',detail:dinner,reason:longOrHard?'Use a full carbohydrate serving to replace training fuel.':'Protein + carbohydrate for recovery without unnecessary extra volume.'},
