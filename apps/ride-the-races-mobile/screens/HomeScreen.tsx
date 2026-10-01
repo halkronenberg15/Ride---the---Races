@@ -6,7 +6,7 @@ function localDate(){const d=new Date();return [d.getFullYear(),String(d.getMont
 export default function HomeScreen({career,riderName,ftp,rideCount,onTraining,onLibrary,onProfile,onHistory,onRide,onSignOut}:{career:CloudCareerSnapshot|null;riderName:string;ftp:number|null;rideCount:number;onTraining:()=>void;onLibrary:()=>void;onProfile:()=>void;onHistory:()=>void;onRide:()=>void;onSignOut:()=>void}){
  const today=localDate()
  const assignments=career?.alpha4025?.trainingPlan?.weeks.flatMap(w=>w.assignments)??[]
- const todayItems=assignments.filter(x=>x.date===today&&x.status==='PLANNED'&&Number(x.durationMinutes??0)>0)
+ const todayItems=assignments.filter(x=>x.date===today&&(x.status==='PLANNED'||x.status==='REPLACED')&&Number(x.durationMinutes??0)>0)
  return <ScrollView contentContainerStyle={s.wrap}>
   <View style={s.header}><View><Text style={s.eyebrow}>TEAM LORIOT</Text><Text style={s.title}>Team HQ</Text></View><Pressable onPress={onSignOut}><Text style={s.link}>Sign out</Text></Pressable></View>
 
