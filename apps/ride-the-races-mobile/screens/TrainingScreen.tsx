@@ -21,9 +21,9 @@ export default function TrainingScreen({career,onBack,onRide,onStrength}:{career
  const options=(x:any)=>{
    if(!x.workoutId)return []
    const base=workoutById(x.workoutId)
-   const result:Array<{id:string;label:string;note:string}>=[{id:x.workoutId,label:x.environment==='OUTDOOR'?'OPEN OUTDOOR':'OPEN INDOOR',note:'Planned'}]
+   const result:Array<{id:string;label:string;note:string}>=[{id:x.workoutId,label:x.environment==='OUTDOOR'?'OPEN OUTDOOR':'OPEN INDOOR',note:x.status==='REPLACED'?'Current':'Planned'}]
    if(x.environment==='OUTDOOR'){
-     const same=x.durationMinutes===60?'indoor-endurance-60':x.durationMinutes===90?'indoor-endurance-90':x.durationMinutes===120?'indoor-endurance-120':'indoor-endurance-'+String(x.durationMinutes)
+     const same=x.durationMinutes===60?'indoor-endurance-60':x.durationMinutes===75?'endurance-steady-75':x.durationMinutes===90?'indoor-endurance-90':x.durationMinutes===120?'indoor-endurance-120':'indoor-endurance-'+String(x.durationMinutes)
      if(workoutById(same))result.push({id:same,label:'SWITCH TO INDOOR '+String(x.durationMinutes),note:'Same duration'})
      if(x.durationMinutes>60&&workoutById('indoor-endurance-60'))result.push({id:'indoor-endurance-60',label:'SHORTEN TO INDOOR 60',note:'Reduced load'})
    } else if(base?.environment==='INDOOR'&&x.durationMinutes>=75&&workoutById('indoor-endurance-60')) result.push({id:'indoor-endurance-60',label:'SHORTEN TO 60',note:'Reduced duration'})
