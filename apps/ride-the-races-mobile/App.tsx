@@ -19,10 +19,11 @@ import { commitLegacyCareerImport, pickLegacyCareer, type LegacyImportPreview } 
 import { canUseBackgroundRideTracking, pauseBackgroundRideTracking, readBackgroundRideState, resetBackgroundRideTracking, startBackgroundRideTracking } from './lib/backgroundRide'
 import { loadCloudRideCount, loadLatestCloudCareer, type CloudCareerSnapshot } from './lib/cloudCareer'
 import HomeScreen from './screens/HomeScreen'
+import MissionFranceLandingScreen from './screens/MissionFranceLandingScreen'
+import NutritionScreen from './screens/NutritionScreen'
 import TrainingScreen from './screens/TrainingScreen'
 import LibraryScreen from './screens/LibraryScreen'
 import ProfileScreen, { type EditableRiderProfile } from './screens/ProfileScreen'
-import HistoryScreen from './screens/HistoryScreen'
 import TrainingRideScreen from './screens/TrainingRideScreen'
 import StageRoadbookScreen from './screens/StageRoadbookScreen'
 import StructuredRideScreen from './screens/StructuredRideScreen'
@@ -30,7 +31,7 @@ import StrengthPlanScreen from './screens/StrengthPlanScreen'
 import type { RaceStage } from '../../src/data/raceStages'
 
 type RideState='idle'|'riding'|'paused'|'saving'
-type AppScreen='home'|'training'|'trainingRide'|'strength'|'library'|'profile'|'history'|'roadbook'|'structuredRide'|'ride'
+type AppScreen='mission'|'home'|'nutrition'|'training'|'trainingRide'|'strength'|'library'|'profile'|'roadbook'|'structuredRide'|'ride'
 type Coord={latitude:number;longitude:number;timestamp:number}
 
 function distanceMeters(a:Coord,b:Coord){
@@ -69,7 +70,7 @@ export default function App(){
   const [importPreview,setImportPreview]=useState<LegacyImportPreview|null>(null)
   const [importBusy,setImportBusy]=useState(false)
   const [backgroundMode,setBackgroundMode]=useState(false)
-  const [screen,setScreen]=useState<AppScreen>('home')
+  const [screen,setScreen]=useState<AppScreen>('mission')
   const [career,setCareer]=useState<CloudCareerSnapshot|null>(null)
   const [cloudRideCount,setCloudRideCount]=useState(0)
   const [selectedStage,setSelectedStage]=useState<RaceStage|null>(null)
@@ -351,8 +352,16 @@ export default function App(){
     )
   }
 
+  if(screen==='mission'){
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><MissionFranceLandingScreen career={career} riderName={cloudProfile?.display_name??career?.rider.name??'Rider'} ftp={cloudProfile?.ftp_watts??career?.rider.ftp??null} rideCount={cloudRideCount} onEnterHQ={()=>setScreen('home')} onOpenTraining={()=>setScreen('training')}/></SafeAreaView>
+  }
+
   if(screen==='home'){
-    return <SafeAreaView style={styles.root}><StatusBar style="light"/><HomeScreen career={career} riderName={cloudProfile?.display_name??career?.rider.name??'Rider'} ftp={cloudProfile?.ftp_watts??career?.rider.ftp??null} rideCount={cloudRideCount} onTraining={()=>setScreen('training')} onLibrary={()=>setScreen('library')} onProfile={()=>setScreen('profile')} onHistory={()=>setScreen('history')} onRide={()=>setScreen('ride')} onSignOut={()=>supabase.auth.signOut()}/></SafeAreaView>
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><HomeScreen career={career} riderName={cloudProfile?.display_name??career?.rider.name??'Rider'} ftp={cloudProfile?.ftp_watts??career?.rider.ftp??null} rideCount={cloudRideCount} onBackMission={()=>setScreen('mission')} onTraining={()=>setScreen('training')} onNutrition={()=>setScreen('nutrition')} onLibrary={()=>setScreen('library')} onProfile={()=>setScreen('profile')} onRide={()=>setScreen('ride')} onSignOut={()=>supabase.auth.signOut()}/></SafeAreaView>
+  }
+
+  if(screen==='nutrition'){
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><NutritionScreen onBack={()=>setScreen('home')}/></SafeAreaView>
   }
 
   if(screen==='training'){
@@ -368,7 +377,7 @@ export default function App(){
   }
 
   if(screen==='library'){
-    return <SafeAreaView style={styles.root}><StatusBar style="light"/><LibraryScreen onBack={()=>setScreen('home')} onTraining={()=>setScreen('training')} onRide={()=>setScreen('roadbook')}/></SafeAreaView>
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><LibraryScreen onBack={()=>setScreen('home')} onOpenStage={(stage)=>{setSelectedStage(stage);setScreen('structuredRide')}}/></SafeAreaView>
   }
 
   if(screen==='roadbook'){
@@ -381,10 +390,6 @@ export default function App(){
 
   if(screen==='profile'){
     return <SafeAreaView style={styles.root}><StatusBar style="light"/><ProfileScreen career={career} rideCount={cloudRideCount} profile={cloudProfile} onBack={()=>setScreen('home')} onSave={async(next)=>{if(!session?.user?.id)throw new Error('Rider session is not ready.');const {error}=await supabase.from('athlete_profiles').update({display_name:next.display_name,ftp_watts:next.ftp_watts,weight_kg:next.weight_kg,height_cm:next.height_cm,rider_number:next.rider_number,archetype:next.archetype,season_goal:next.season_goal,preferred_units:next.preferred_units,profile_version:(cloudProfile?1:0)+1,updated_at:new Date().toISOString()}).eq('user_id',session.user.id);if(error)throw error;setCloudProfile(next)}}/></SafeAreaView>
-  }
-
-  if(screen==='history'){
-    return <SafeAreaView style={styles.root}><StatusBar style="light"/><HistoryScreen career={career} onBack={()=>setScreen('home')}/></SafeAreaView>
   }
 
   return(
