@@ -24,7 +24,7 @@ export default function OffSeasonCalendar({ plan, today, rideHistory, ftp, activ
   const visibleForDate = (date:string) => { const items=byDate.get(date)??[]; return items.some(item=>item.durationMinutes>0)?items.filter(item=>item.durationMinutes>0):items }
   const selectedAssignments = selectedDate ? visibleForDate(selectedDate) : []
   const selectedWeek = plan.weeks.find(week => week.assignments.some(item => item.date === selectedDate))
-  useEffect(() => { if (!selectedDate) return; const index=months.findIndex(({key})=>selectedDate.startsWith(key)); if(index>=0&&index!==activeMonthIndex)setActiveMonthIndex(index) }, [selectedDate,months,activeMonthIndex])
+  useEffect(() => { if (!selectedDate) return; const index=months.findIndex(({key})=>selectedDate.startsWith(key)); if(index>=0)setActiveMonthIndex(index) }, [selectedDate,months])
 
   const assignmentDetails = (selected: CalendarAssignment) => {
     const selectedWorkoutChanges = availableRideChanges(plan, selected.id)
