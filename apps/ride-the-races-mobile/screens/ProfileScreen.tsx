@@ -84,6 +84,16 @@ export default function ProfileScreen({
   <Field label="Season goal" value={goal} onChangeText={setGoal} multiline/>
 
   <Pressable style={s.primary} onPress={save} disabled={saving}><Text style={s.primaryText}>{saving?'SAVING…':'SAVE RIDER PROFILE'}</Text></Pressable>
+
+  <View style={s.historySection}>
+   <Text style={s.historyEyebrow}>RIDE HISTORY</Text>
+   <Text style={s.historyTitle}>{career?.rideHistory.length??0} recorded rides</Text>
+   {[...(career?.rideHistory??[])].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,30).map(ride=>{
+    const title=ride.workoutId??ride.source??'Ride'
+    const miles=(ride.distanceKm*0.621371).toFixed(1)
+    return <View key={ride.id} style={s.rideRow}><View style={s.rideTop}><Text style={s.rideTitle}>{title}</Text><Text style={s.rideDate}>{ride.date.slice(0,10)}</Text></View><Text style={s.rideMeta}>{Math.round(ride.durationMinutes)} min · {miles} mi{ride.averagePower?' · '+Math.round(ride.averagePower)+' W':''}</Text></View>
+   })}
+  </View>
  </ScrollView>
 }
 
@@ -91,4 +101,4 @@ function Field({label,value,onChangeText,keyboardType,multiline}:{label:string;v
  return <View style={s.inputCard}><Text style={s.inputLabel}>{label}</Text><TextInput value={value} onChangeText={onChangeText} keyboardType={keyboardType??'default'} multiline={multiline} style={[s.input,multiline&&s.multi]} placeholderTextColor="#707070"/></View>
 }
 
-const s=StyleSheet.create({wrap:{padding:20,gap:14},link:{color:'#ff8b3d',fontWeight:'700'},eyebrow:{color:'#ff6a00',fontWeight:'800',letterSpacing:2},title:{color:'#fff',fontSize:36,fontWeight:'900'},body:{color:'#b8b8b8',fontSize:16,lineHeight:23},grid:{flexDirection:'row',gap:12},card:{flex:1,padding:18,borderRadius:18,backgroundColor:'#151515',borderWidth:1,borderColor:'#353535',gap:8},label:{color:'#858585',fontWeight:'800',letterSpacing:1.2,fontSize:12},value:{color:'#fff',fontSize:28,fontWeight:'900'},inputCard:{padding:14,borderRadius:16,backgroundColor:'#151515',borderWidth:1,borderColor:'#353535',gap:8},inputLabel:{color:'#a0a0a0',fontWeight:'800',fontSize:13},input:{backgroundColor:'#0f0f0f',borderWidth:1,borderColor:'#333',borderRadius:12,padding:14,color:'#fff',fontSize:17},multi:{minHeight:90,textAlignVertical:'top'},choiceWrap:{flexDirection:'row',flexWrap:'wrap',gap:8},choice:{paddingVertical:9,paddingHorizontal:11,borderRadius:999,borderWidth:1,borderColor:'#444'},choiceActive:{backgroundColor:'#ff6a00',borderColor:'#ff6a00'},choiceText:{color:'#bbb',fontWeight:'700'},choiceTextActive:{color:'#fff'},primary:{backgroundColor:'#ff6a00',padding:18,borderRadius:16,alignItems:'center',marginTop:4},primaryText:{color:'#fff',fontWeight:'900',fontSize:16,letterSpacing:.5}})
+const s=StyleSheet.create({wrap:{padding:20,gap:14},link:{color:'#ff8b3d',fontWeight:'700'},eyebrow:{color:'#ff6a00',fontWeight:'800',letterSpacing:2},title:{color:'#fff',fontSize:36,fontWeight:'900'},body:{color:'#b8b8b8',fontSize:16,lineHeight:23},grid:{flexDirection:'row',gap:12},card:{flex:1,padding:18,borderRadius:18,backgroundColor:'#151515',borderWidth:1,borderColor:'#353535',gap:8},label:{color:'#858585',fontWeight:'800',letterSpacing:1.2,fontSize:12},value:{color:'#fff',fontSize:28,fontWeight:'900'},inputCard:{padding:14,borderRadius:16,backgroundColor:'#151515',borderWidth:1,borderColor:'#353535',gap:8},inputLabel:{color:'#a0a0a0',fontWeight:'800',fontSize:13},input:{backgroundColor:'#0f0f0f',borderWidth:1,borderColor:'#333',borderRadius:12,padding:14,color:'#fff',fontSize:17},multi:{minHeight:90,textAlignVertical:'top'},choiceWrap:{flexDirection:'row',flexWrap:'wrap',gap:8},choice:{paddingVertical:9,paddingHorizontal:11,borderRadius:999,borderWidth:1,borderColor:'#444'},choiceActive:{backgroundColor:'#ff6a00',borderColor:'#ff6a00'},choiceText:{color:'#bbb',fontWeight:'700'},choiceTextActive:{color:'#fff'},primary:{backgroundColor:'#ff6a00',padding:18,borderRadius:16,alignItems:'center',marginTop:4},primaryText:{color:'#fff',fontWeight:'900',fontSize:16,letterSpacing:.5},historySection:{marginTop:12,padding:16,borderRadius:18,backgroundColor:'#111',borderWidth:1,borderColor:'#353535',gap:10},historyEyebrow:{color:'#ff6a00',fontSize:11,fontWeight:'900',letterSpacing:1.5},historyTitle:{color:'#fff',fontSize:22,fontWeight:'900'},rideRow:{paddingVertical:11,borderTopWidth:1,borderTopColor:'#292929'},rideTop:{flexDirection:'row',justifyContent:'space-between',gap:10},rideTitle:{color:'#fff',fontWeight:'800',flex:1},rideDate:{color:'#777',fontSize:12,fontWeight:'700'},rideMeta:{color:'#999',fontSize:13,marginTop:4}})
