@@ -72,7 +72,7 @@ export default function MissionFranceCommandCenter({onBack,onOpenHealth,onOpenRi
     <label className="remember-meal"><input type="checkbox" checked={remember} onChange={event=>setRemember(event.target.checked)} /> Remember this meal for one-tap entry</label>
     <button type="submit" className="primary-cta">Log meal</button>
    </form>
-   <label className="secondary-action" style={{display:'inline-grid',gap:6,cursor:'pointer'}}>Import nutrition history<input type="file" accept="application/json,.json" onChange={importHistory} style={{display:'none'}} /></label>
+   <div className="nutrition-import file-picker"><label htmlFor="nutrition-history-file"><strong>Import nutrition history</strong><small>Select the Mission France nutrition JSON file from Files.</small></label><input id="nutrition-history-file" type="file" accept=".json,application/json,text/json" onChange={importHistory} /></div>
    {importMessage&&<p className="success-message">{importMessage}</p>}
    {saved&&<p className="success-message">Logged {saved}. RtR {remember?'remembered it for next time.':'added it to today.'}</p>}
    {todayEntries.length>0&&<details className="today-food-log"><summary>Today’s food · {todayEntries.length} entries</summary>{todayEntries.map(entry=><div key={entry.id}><strong>{entry.name}</strong><small>{entry.mealType} · {entry.proteinG??'—'}g protein · {entry.carbsG??'—'}g carbs · {entry.calories??'—'} cal</small></div>)}</details>}

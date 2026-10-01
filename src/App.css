@@ -1907,3 +1907,8 @@ body{
 @media(max-width:620px){.jimmy-coach-card{grid-template-columns:1fr}.jimmy-coach-card>.primary-cta{width:100%}.jimmy-quick-prompts{grid-template-columns:1fr}}
 @media(max-width:520px){.mission-france-screen{padding-left:12px;padding-right:12px}.mission-france-hero{padding:22px 18px}.mission-today-grid,.mission-pillar-grid{grid-template-columns:1fr}.mission-today-grid .dashboard-card,.mission-pillar{min-height:0}}
 @media(max-width:480px){.nutrition-quick-form{grid-template-columns:1fr}.nutrition-name,.remember-meal{grid-column:auto}.today-food-log>div{flex-direction:column}}
+
+.nutrition-import{display:grid;gap:8px;padding:14px;border:1px solid #3b3b3b;border-radius:14px;background:#111318}
+.nutrition-import label{display:grid;gap:4px;color:#f4f4f5}
+.nutrition-import label small{color:#9d9da5;font-weight:500}
+.nutrition-import input[type='file']{width:100%;max-width:100%;padding:10px;border:1px solid #3b3b3b;border-radius:10px;background:#0d0d0d;color:#fff}
