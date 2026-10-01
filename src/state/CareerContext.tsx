@@ -27,6 +27,7 @@ type CareerContextValue = {
   updateHealth: (entry: HealthEntry) => void
   addNutritionEntry:(entry:NutritionEntry,remember?:boolean)=>void
   addNutritionTemplate:(template:NutritionMealTemplate)=>void
+  importNutritionData:(entries:NutritionEntry[],templates:NutritionMealTemplate[])=>void
   updateRider: (rider: Partial<CareerState['rider']>) => void
   completeOnboarding: (rider: CareerState['rider'],intro?:{answers:IntroCyclingAnswers;plan:IntroCyclingPlan}|null) => void
   completeIntroRide:(rideId:string)=>void
@@ -94,6 +95,7 @@ export function CareerProvider({ children }: { children: React.ReactNode }) {
     },
     addNutritionEntry(entry,remember=false){setCareer(current=>{const now=new Date().toISOString(),normalized=entry.name.trim().toLowerCase(),existing=current.nutrition.mealTemplates.find(item=>item.name.trim().toLowerCase()===normalized||item.aliases?.some(alias=>alias.trim().toLowerCase()===normalized));const mealTemplates=remember?(existing?current.nutrition.mealTemplates.map(item=>item.id===existing.id?{...item,name:entry.name,mealType:entry.mealType,calories:entry.calories,proteinG:entry.proteinG,carbsG:entry.carbsG,fluidOz:entry.fluidOz,timesUsed:item.timesUsed+1,lastUsedAt:now}:item):[{id:crypto.randomUUID(),name:entry.name,mealType:entry.mealType,calories:entry.calories,proteinG:entry.proteinG,carbsG:entry.carbsG,fluidOz:entry.fluidOz,timesUsed:1,lastUsedAt:now},...current.nutrition.mealTemplates]):current.nutrition.mealTemplates;return {...current,nutrition:{entries:[entry,...current.nutrition.entries],mealTemplates}}})},
     addNutritionTemplate(template){setCareer(current=>({...current,nutrition:{...current.nutrition,mealTemplates:[template,...current.nutrition.mealTemplates.filter(item=>item.id!==template.id)]}}))},
+    importNutritionData(entries,templates){setCareer(current=>{const existingEntryIds=new Set(current.nutrition.entries.map(item=>item.id)),existingTemplateIds=new Set(current.nutrition.mealTemplates.map(item=>item.id));return {...current,nutrition:{entries:[...current.nutrition.entries,...entries.filter(item=>!existingEntryIds.has(item.id))].sort((a,b)=>b.date.localeCompare(a.date)||b.loggedAt.localeCompare(a.loggedAt)),mealTemplates:[...current.nutrition.mealTemplates,...templates.filter(item=>!existingTemplateIds.has(item.id))]}}})},
     updateRider(rider) {
       setCareer((current) => ({ ...current, rider: { ...current.rider, ...rider } }))
     },
