@@ -7,6 +7,7 @@ import { useAuth } from './AuthContext.tsx'
 import { careerStorageKey } from '../services/accountStore.ts'
 import { closeSeason } from '../engine/release4024.ts'
 import { fourWeekPreview, hydrateAdaptive, recordExternalOffSeasonCompletion, recordZoneEvidence } from '../engine/adaptiveTraining40251.ts'
+import type { TrainingJournalState } from '../../packages/training-journal/src/index.ts'
 
 export { initialCareer, migrateCareer } from './careerPersistence.ts'
 
@@ -35,6 +36,7 @@ type CareerContextValue = {
   updateRideEntry:(id:string,patch:Partial<EditableRideResult>)=>void
   recordIntroRpe:(value:number)=>void
   updateAlpha4025:(update:(state:Alpha4025State)=>Alpha4025State)=>void
+  updateTrainingJournal:(update:(state:TrainingJournalState)=>TrainingJournalState)=>void
   restartOnboarding: () => void
   setJeanVoiceEnabled: (enabled: boolean) => void
   setMeasurementSystem: (system: MeasurementSystem) => void
@@ -104,6 +106,7 @@ export function CareerProvider({ children }: { children: React.ReactNode }) {
     updateRideEntry(id,patch){setCareer(current=>{const source=current.rideHistory.find(ride=>ride.id===id),updatedAt=new Date().toISOString(),original=source?.originalUserEntry??(source?{durationMinutes:source.durationMinutes,actualEngineDurationSeconds:source.actualEngineDurationSeconds,totalOutputKj:source.totalOutputKj,averagePower:source.averagePower,peakPower:source.peakPower,averageCadence:source.averageCadence,averageResistance:source.averageResistance,averageHeartRate:source.averageHeartRate,maximumHeartRate:source.maximumHeartRate,distanceKm:source.distanceKm,calories:source.calories,striveScore:source.striveScore,rpe:source.rpe,notes:source.notes,equipmentId:source.equipmentId}:undefined);return {...current,rider:source?.activityType==='CALIBRATION'&&patch.rpe?{...current.rider,ftpProvenance:'INTRO_EFFORT_BASELINE',introEffortBaseline:{rpe:patch.rpe,cadence:70,load:'Rider-recorded conservative calibration steps',completedSteps:2,recordedAt:updatedAt,ruleVersion:'alpha4024.2'}}:current.rider,rideHistory:current.rideHistory.map(ride=>ride.id===id?{...ride,originalUserEntry:original,correctedEntry:{...ride.correctedEntry,...patch},updatedAt}:ride)}})},
     recordIntroRpe(value){setCareer(current=>{const prior=current.rider.introEffortBaseline?.checkpointRpe??[],checkpointRpe=[...prior,Math.max(1,Math.min(10,Math.round(value)))].slice(-2),rpe=checkpointRpe.reduce((sum,item)=>sum+item,0)/checkpointRpe.length;return {...current,rider:{...current.rider,ftpProvenance:'INTRO_EFFORT_BASELINE',introEffortBaseline:{rpe,cadence:70,load:'Rider-recorded calibration checkpoints',completedSteps:checkpointRpe.length,checkpointRpe,recordedAt:new Date().toISOString(),ruleVersion:'alpha4024.2'}}}})},
     updateAlpha4025(update){setCareer(current=>({...current,alpha4025:update(current.alpha4025)}))},
+    updateTrainingJournal(update){setCareer(current=>({...current,trainingJournal:update(current.trainingJournal)}))},
     restartOnboarding() {
       setCareer((current) => ({ ...current, onboardingComplete: false }))
     },
