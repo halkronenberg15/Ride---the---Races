@@ -1,5 +1,6 @@
 import type { IntroEffortBaseline, OriginalTargetSnapshot, SeasonClosure } from '../engine/release4024.ts'
 import type { Alpha4025State } from '../engine/alpha4025.ts'
+import type { TrainingJournalState } from '../../packages/training-journal/src/index.ts'
 export type RiderArchetype =
   | 'GC Contender'
   | 'Sprinter'
@@ -129,6 +130,7 @@ export type CareerState = {
   alpha4022: { worldsResults:Record<string,{completed:boolean;place?:number}>; ittSplits:Record<string,number>; raceEvents:Record<string,'accepted'|'declined'|'consumed'>; radioHistory:string[]; rainbowTitles:string[]; profileView:{mode:'OVERVIEW'|'DETAIL';activeRangeId:string|null;autoConsumedIds:string[]} }
   introCycling:{selected:boolean;answers:IntroCyclingAnswers|null;plan:IntroCyclingPlan|null;completedRideIds:string[];dismissed:boolean;outdoorChecklistIds:string[];requestedNextProgram:'Outdoor Ride Readiness'|'RtR Femmes'|'Standard RtR'|null}
   alpha4025:Alpha4025State
+  trainingJournal:TrainingJournalState
   settings: {
     jeanVoiceEnabled: boolean
     jeanVoiceVolume: number
