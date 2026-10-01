@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { missionFranceSnapshot } from '../engine/missionFrance2028.ts'
 import { jimmyCoachContext, jimmyCoachOpeningLine } from '../engine/jimmyCoach.ts'
 import { useCareer } from '../state/CareerContext.tsx'
-import type { NutritionMealType } from '../types/career.ts'
+import type { NutritionEntry, NutritionMealTemplate, NutritionMealType } from '../types/career.ts'
 
 type Props={
  onBack:()=>void
@@ -15,7 +15,7 @@ const miles=(km:number)=>km*0.621371
 const today=()=>{const date=new Date();return [date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-')}
 
 export default function MissionFranceCommandCenter({onBack,onOpenHealth,onOpenRideData,onOpenOffSeason}:Props){
- const {career,addNutritionEntry}=useCareer()
+ const {career,addNutritionEntry,importNutritionData}=useCareer()
  const snapshot=missionFranceSnapshot(career)
  const jimmyContext=jimmyCoachContext(career)
  const [jimmyOpen,setJimmyOpen]=useState(false)
@@ -28,11 +28,13 @@ export default function MissionFranceCommandCenter({onBack,onOpenHealth,onOpenRi
  const [fluid,setFluid]=useState('')
  const [remember,setRemember]=useState(true)
  const [saved,setSaved]=useState('')
+ const [importMessage,setImportMessage]=useState('')
  const templates=useMemo(()=>[...career.nutrition.mealTemplates].sort((a,b)=>b.timesUsed-a.timesUsed||b.lastUsedAt.localeCompare(a.lastUsedAt)),[career.nutrition.mealTemplates])
  const todayEntries=career.nutrition.entries.filter(entry=>entry.date===today())
  const totals=todayEntries.reduce((sum,entry)=>({calories:sum.calories+(entry.calories??0),protein:sum.protein+(entry.proteinG??0),carbs:sum.carbs+(entry.carbsG??0),fluid:sum.fluid+(entry.fluidOz??0)}),{calories:0,protein:0,carbs:0,fluid:0})
  const useTemplate=(id:string)=>{const template=templates.find(item=>item.id===id);if(!template)return;setMealType(template.mealType);setName(template.name);setCalories(template.calories?.toString()??'');setProtein(template.proteinG?.toString()??'');setCarbs(template.carbsG?.toString()??'');setFluid(template.fluidOz?.toString()??'');setSaved('')}
  const submit=(event:React.FormEvent)=>{event.preventDefault();const trimmed=name.trim();if(!trimmed)return;addNutritionEntry({id:crypto.randomUUID(),loggedAt:new Date().toISOString(),date:today(),mealType,name:trimmed,calories:calories===''?undefined:Number(calories),proteinG:protein===''?undefined:Number(protein),carbsG:carbs===''?undefined:Number(carbs),fluidOz:fluid===''?undefined:Number(fluid)},remember);setSaved(trimmed);setName('');setCalories('');setProtein('');setCarbs('');setFluid('')}
+ const importHistory=async(event:React.ChangeEvent<HTMLInputElement>)=>{const file=event.target.files?.[0];if(!file)return;try{const parsed=JSON.parse(await file.text()) as {entries?:NutritionEntry[];mealTemplates?:NutritionMealTemplate[]};const entries=Array.isArray(parsed.entries)?parsed.entries:[],templates=Array.isArray(parsed.mealTemplates)?parsed.mealTemplates:[];importNutritionData(entries,templates);setImportMessage(`Imported ${entries.length} nutrition entries and ${templates.length} meal templates.`)}catch{setImportMessage('Could not import that nutrition file. Use the Mission France nutrition JSON export format.')}finally{event.target.value=''}}
  return <section className="mission-france-screen">
   <button type="button" className="back-button" onClick={onBack}>← Team HQ</button>
   <header className="mission-france-hero">
@@ -70,6 +72,8 @@ export default function MissionFranceCommandCenter({onBack,onOpenHealth,onOpenRi
     <label className="remember-meal"><input type="checkbox" checked={remember} onChange={event=>setRemember(event.target.checked)} /> Remember this meal for one-tap entry</label>
     <button type="submit" className="primary-cta">Log meal</button>
    </form>
+   <label className="secondary-action" style={{display:'inline-grid',gap:6,cursor:'pointer'}}>Import nutrition history<input type="file" accept="application/json,.json" onChange={importHistory} style={{display:'none'}} /></label>
+   {importMessage&&<p className="success-message">{importMessage}</p>}
    {saved&&<p className="success-message">Logged {saved}. RtR {remember?'remembered it for next time.':'added it to today.'}</p>}
    {todayEntries.length>0&&<details className="today-food-log"><summary>Today’s food · {todayEntries.length} entries</summary>{todayEntries.map(entry=><div key={entry.id}><strong>{entry.name}</strong><small>{entry.mealType} · {entry.proteinG??'—'}g protein · {entry.carbsG??'—'}g carbs · {entry.calories??'—'} cal</small></div>)}</details>}
   </section>
