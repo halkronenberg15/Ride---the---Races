@@ -43,8 +43,24 @@ export type CoachInterpretation={
   generatedAt:string
 }
 
+export type StrengthExerciseLog={
+  name:string
+  setsCompleted:number
+  targetSets?:number
+  reps?:string
+  status:'COMPLETED'|'PARTIAL'|'SKIPPED'
+  reason?:string
+}
+
+export type StrengthSessionLog={
+  plan:'STRENGTH_A'|'STRENGTH_B'|'OTHER'
+  exercises:StrengthExerciseLog[]
+  completedMainWork:boolean
+}
+
 export type TrainingJournalEntry={
   schemaVersion:1
+  sessionKind?:'CYCLING'|'STRENGTH'|'RECOVERY'|'OTHER'
   id:string
   date:string
   title:string
@@ -53,6 +69,7 @@ export type TrainingJournalEntry={
   assignmentId?:string
   sources:string[]
   stats:TrainingJournalStats
+  strength?:StrengthSessionLog
   fueling:TrainingFuel[]
   feedback:RiderTrainingFeedback
   coach?:CoachInterpretation
@@ -84,8 +101,83 @@ export function setCoachInterpretation(state:TrainingJournalState,id:string,coac
   return {...state,entries:state.entries.map(entry=>entry.id===id?{...entry,coach,updatedAt}:entry)}
 }
 
+export const HAL_SEP29_ENDURANCE_JOURNAL:TrainingJournalEntry={
+  schemaVersion:1,
+  sessionKind:'CYCLING',
+  id:'hal-2026-09-29-endurance-60',
+  date:'2026-09-29',
+  title:'Endurance Ride · 60 min',
+  sources:['Peloton screenshots','WHOOP','Rider feedback'],
+  stats:{
+    durationSeconds:3624,
+    distanceKm:32.49,
+    totalOutputKj:611,
+    averagePowerWatts:167,
+    averageCadenceRpm:87,
+    averageResistancePercent:44,
+    averageHeartRateBpm:135,
+    ftpWatts:229,
+  },
+  fueling:[],
+  feedback:{
+    legsAfter:'GOOD',
+    workBlocks:'CONTROLLED',
+    recoveryBetweenBlocks:'FULLY_READY',
+    lateSession:'STEADY',
+    freeText:'Ride completed before Strength A. Legs felt really good afterward. WHOOP recorded 1:06:29, 13.5 strain and 135 bpm average heart rate; Peloton remains the cleaner ride-duration and power record.',
+  },
+  coach:{
+    status:'POSITIVE',
+    summary:'Successful endurance session at about 73% of FTP with controlled cardiovascular load and good legs afterward.',
+    signals:['60:24 completed','167 W average at 229 W FTP','87 rpm average cadence','135 bpm WHOOP average heart rate','Rider reported good legs after ride plus strength'],
+    progressionEvidence:'LOCAL',
+    nextAction:'Treat as positive evidence while preserving the planned training structure; combine with strength response and next-day recovery before progressing load.',
+    generatedAt:'2026-09-29T21:30:00-04:00',
+  },
+  createdAt:'2026-09-29T21:30:00-04:00',
+  updatedAt:'2026-09-29T21:30:00-04:00',
+}
+
+export const HAL_SEP29_STRENGTH_A_JOURNAL:TrainingJournalEntry={
+  schemaVersion:1,
+  sessionKind:'STRENGTH',
+  id:'hal-2026-09-29-strength-a',
+  date:'2026-09-29',
+  title:'Strength A',
+  sources:['Rider feedback','RtR strength plan'],
+  stats:{},
+  strength:{
+    plan:'STRENGTH_A',
+    completedMainWork:true,
+    exercises:[
+      {name:'Goblet squat',setsCompleted:3,targetSets:3,reps:'8',status:'COMPLETED'},
+      {name:'Romanian deadlift',setsCompleted:3,targetSets:3,reps:'8',status:'COMPLETED'},
+      {name:'Supported split squat',setsCompleted:2,targetSets:2,reps:'8/side',status:'COMPLETED'},
+      {name:'One-arm row',setsCompleted:2,targetSets:2,reps:'10/side',status:'COMPLETED'},
+      {name:'Pallof press',setsCompleted:0,targetSets:2,reps:'10/side',status:'SKIPPED',reason:'Garage access ended when Michelle needed the space; not fatigue-related.'},
+      {name:'Dead bug',setsCompleted:0,targetSets:2,reps:'8/side',status:'SKIPPED',reason:'Garage access ended when Michelle needed the space; not fatigue-related.'},
+    ],
+  },
+  fueling:[],
+  feedback:{
+    legsAfter:'GOOD',
+    freeText:'Main strength work completed. Pallof press and dead bug were skipped for logistical reasons only, not because of fatigue. Legs felt really good after the combined ride and strength session.',
+  },
+  coach:{
+    status:'POSITIVE',
+    summary:'Strength A main work was completed successfully. Two core exercises were omitted for logistics and must not be interpreted as fatigue or failed completion.',
+    signals:['Main lower-body and pulling work completed','Core omissions were logistical, not physiological','Rider reported good legs after combined endurance and strength workload'],
+    progressionEvidence:'LOCAL',
+    nextAction:'Count the session as successful strength exposure and do not penalize readiness for the skipped core work.',
+    generatedAt:'2026-09-29T21:35:00-04:00',
+  },
+  createdAt:'2026-09-29T21:35:00-04:00',
+  updatedAt:'2026-09-29T21:35:00-04:00',
+}
+
 export const HAL_SEP30_CLIMB_JOURNAL:TrainingJournalEntry={
   schemaVersion:1,
+  sessionKind:'CYCLING',
   id:'hal-2026-09-30-climbing-endurance-75',
   date:'2026-09-30',
   title:'Climbing Endurance 75 · 3 × 10',
@@ -129,6 +221,9 @@ export const HAL_SEP30_CLIMB_JOURNAL:TrainingJournalEntry={
 }
 
 export function ensureHalSep30TrainingJournal(state:TrainingJournalState){
-  if(state.entries.some(entry=>entry.id===HAL_SEP30_CLIMB_JOURNAL.id))return state
-  return upsertTrainingJournalEntry(state,HAL_SEP30_CLIMB_JOURNAL)
+  let next=state
+  for(const entry of [HAL_SEP29_ENDURANCE_JOURNAL,HAL_SEP29_STRENGTH_A_JOURNAL,HAL_SEP30_CLIMB_JOURNAL]){
+    if(!next.entries.some(item=>item.id===entry.id))next=upsertTrainingJournalEntry(next,entry)
+  }
+  return next
 }
