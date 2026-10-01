@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components -- Provider and its typed hook form one public state module. */
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import type { CareerState, EditableRideResult, HealthEntry, IntroCyclingAnswers, IntroCyclingPlan, MeasurementSystem, RideMetricEntry } from '../types/career'
+import type { CareerState, EditableRideResult, HealthEntry, IntroCyclingAnswers, IntroCyclingPlan, MeasurementSystem, NutritionEntry, NutritionMealTemplate, RideMetricEntry } from '../types/career'
 import type { Alpha4025State, ExternalCyclingCompletion } from '../engine/alpha4025.ts'
 import { createInitialCareer, equipmentForDevices, migrateCareer, restoreCareerBeforeRender } from './careerPersistence.ts'
 import { useAuth } from './AuthContext.tsx'
@@ -26,6 +26,9 @@ type CareerContextValue = {
   completeWorlds: (eventId:'men-elite-itt'|'men-elite-road-race',place?:number,splitIds?:string[]) => void
   addRide: (ride: RideMetricEntry) => void
   updateHealth: (entry: HealthEntry) => void
+  addNutritionEntry:(entry:NutritionEntry,remember?:boolean)=>void
+  addNutritionTemplate:(template:NutritionMealTemplate)=>void
+  importNutritionData:(entries:NutritionEntry[],templates:NutritionMealTemplate[])=>void
   updateRider: (rider: Partial<CareerState['rider']>) => void
   completeOnboarding: (rider: CareerState['rider'],intro?:{answers:IntroCyclingAnswers;plan:IntroCyclingPlan}|null) => void
   completeIntroRide:(rideId:string)=>void
@@ -92,6 +95,9 @@ export function CareerProvider({ children }: { children: React.ReactNode }) {
     updateHealth(entry) {
       setCareer((current) => ({ ...current, health: entry,alpha4025:{...current.alpha4025,readinessEntries:[{date:entry.date,updatedAt:new Date().toISOString(),source:'Manual',sleepHours:entry.sleepHours,externalRecoveryScore:entry.recoveryScore,recentStrain:entry.recentStrain,fatigue:entry.fatigue>=67?'High':entry.fatigue>=34?'Moderate':'Low',soreness:'None',motivation:entry.mood==='Low'?'Low':entry.mood==='Steady'?'Moderate':'High',hydrationConcern:false,illnessOrPain:false,recommendedAdjustment:'Use the authoritative phase-aware readiness projection.'},...current.alpha4025.readinessEntries.filter(item=>item.date!==entry.date)]} }))
     },
+    addNutritionEntry(entry,remember=false){setCareer(current=>{const now=new Date().toISOString(),normalized=entry.name.trim().toLowerCase(),existing=current.nutrition.mealTemplates.find(item=>item.name.trim().toLowerCase()===normalized||item.aliases?.some(alias=>alias.trim().toLowerCase()===normalized));const mealTemplates=remember?(existing?current.nutrition.mealTemplates.map(item=>item.id===existing.id?{...item,name:entry.name,mealType:entry.mealType,calories:entry.calories,proteinG:entry.proteinG,carbsG:entry.carbsG,fluidOz:entry.fluidOz,timesUsed:item.timesUsed+1,lastUsedAt:now}:item):[{id:crypto.randomUUID(),name:entry.name,mealType:entry.mealType,calories:entry.calories,proteinG:entry.proteinG,carbsG:entry.carbsG,fluidOz:entry.fluidOz,timesUsed:1,lastUsedAt:now},...current.nutrition.mealTemplates]):current.nutrition.mealTemplates;return {...current,nutrition:{entries:[entry,...current.nutrition.entries],mealTemplates}}})},
+    addNutritionTemplate(template){setCareer(current=>({...current,nutrition:{...current.nutrition,mealTemplates:[template,...current.nutrition.mealTemplates.filter(item=>item.id!==template.id)]}}))},
+    importNutritionData(entries,templates){setCareer(current=>{const existingEntryIds=new Set(current.nutrition.entries.map(item=>item.id)),existingTemplateIds=new Set(current.nutrition.mealTemplates.map(item=>item.id));return {...current,nutrition:{entries:[...current.nutrition.entries,...entries.filter(item=>!existingEntryIds.has(item.id))].sort((a,b)=>b.date.localeCompare(a.date)||b.loggedAt.localeCompare(a.loggedAt)),mealTemplates:[...current.nutrition.mealTemplates,...templates.filter(item=>!existingTemplateIds.has(item.id))]}}})},
     updateRider(rider) {
       setCareer((current) => ({ ...current, rider: { ...current.rider, ...rider } }))
     },
