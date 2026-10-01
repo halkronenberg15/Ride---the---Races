@@ -72,6 +72,33 @@ export type RideMetricEntry = {
 }
 export type EditableRideResult=Pick<RideMetricEntry,'durationMinutes'|'actualEngineDurationSeconds'|'totalOutputKj'|'averagePower'|'peakPower'|'averageCadence'|'averageResistance'|'averageHeartRate'|'maximumHeartRate'|'distanceKm'|'calories'|'striveScore'|'rpe'|'notes'|'equipmentId'>
 
+export type NutritionMealType='Breakfast'|'Lunch'|'Dinner'|'Snack'|'Ride Fuel'|'Recovery'
+export type NutritionEntry={
+  id:string
+  loggedAt:string
+  date:string
+  mealType:NutritionMealType
+  name:string
+  calories?:number
+  proteinG?:number
+  carbsG?:number
+  fluidOz?:number
+  notes?:string
+  templateId?:string
+}
+export type NutritionMealTemplate={
+  id:string
+  name:string
+  mealType:NutritionMealType
+  calories?:number
+  proteinG?:number
+  carbsG?:number
+  fluidOz?:number
+  timesUsed:number
+  lastUsedAt:string
+  aliases?:string[]
+}
+
 export type HealthEntry = {
   date: string
   sleepHours: number
@@ -126,6 +153,7 @@ export type CareerState = {
   trainingHistory: { workoutId:string; durationMinutes:number; completedAt:string; completed:true }[]
   health: HealthEntry
   rideHistory: RideMetricEntry[]
+  nutrition:{entries:NutritionEntry[];mealTemplates:NutritionMealTemplate[]}
   alpha4020: { calendar:{month:number;scrollY:number}; earnedMarkerIds:string[] }
   alpha4022: { worldsResults:Record<string,{completed:boolean;place?:number}>; ittSplits:Record<string,number>; raceEvents:Record<string,'accepted'|'declined'|'consumed'>; radioHistory:string[]; rainbowTitles:string[]; profileView:{mode:'OVERVIEW'|'DETAIL';activeRangeId:string|null;autoConsumedIds:string[]} }
   introCycling:{selected:boolean;answers:IntroCyclingAnswers|null;plan:IntroCyclingPlan|null;completedRideIds:string[];dismissed:boolean;outdoorChecklistIds:string[];requestedNextProgram:'Outdoor Ride Readiness'|'RtR Femmes'|'Standard RtR'|null}
