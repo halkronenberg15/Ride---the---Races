@@ -1,11 +1,17 @@
+import { useEffect, useState } from 'react'
 import { SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { CONNECTOR_REGISTRY } from '../../packages/device-connectors/src/index'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { emptyTrainingJournal, ensureHalSep30TrainingJournal, type TrainingJournalState } from '../../packages/training-journal/src/index'
 
 const featured=['RTR','POWER_METER','WHOOP','PELOTON','GARMIN','STRAVA','APPLE_HEALTH'] as const
 
 export default function App() {
   const sources=CONNECTOR_REGISTRY.filter(item=>featured.includes(item.provider as typeof featured[number]))
+  const [journal,setJournal]=useState<TrainingJournalState>(emptyTrainingJournal())
+  useEffect(()=>{let active=true;(async()=>{const raw=await AsyncStorage.getItem('mission-france:training-journal:v1');const restored=raw?JSON.parse(raw) as TrainingJournalState:emptyTrainingJournal();const next=ensureHalSep30TrainingJournal(restored);if(active)setJournal(next);await AsyncStorage.setItem('mission-france:training-journal:v1',JSON.stringify(next))})().catch(()=>{});return()=>{active=false}},[])
+  const latest=journal.entries[0]??null
   return (
     <SafeAreaView style={styles.root}>
       <StatusBar style="light" />
@@ -20,6 +26,12 @@ export default function App() {
             <Text style={styles.syncTitle}>RtR ride sync</Text>
             <Text style={styles.syncBody}>Completed Ride the Races activities arrive through the shared athlete cloud and become coaching evidence automatically.</Text>
           </View>
+        </View>
+
+        <View style={styles.sources}>
+          <Text style={styles.eyebrow}>TRAINING JOURNAL</Text>
+          <Text style={styles.sectionTitle}>Stats + feedback + coaching.</Text>
+          {latest?<View style={styles.source}><View style={styles.sourceTop}><Text style={styles.sourceName}>{latest.title}</Text><Text style={styles.badge}>{latest.date}</Text></View><Text style={styles.capabilities}>{latest.stats.averagePowerWatts??'—'} W AVG · {latest.stats.averageCadenceRpm??'—'} RPM · {latest.stats.averageHeartRateBpm??'—'} BPM</Text><Text style={styles.note}>{latest.coach?.summary??'Coach interpretation pending.'}</Text><Text style={styles.note}>{latest.fueling.length?latest.fueling.map(item=>(item.minute!==undefined?'MIN '+item.minute+' · ':'')+item.label+(item.carbohydrateGrams!==undefined?' · '+item.carbohydrateGrams+'g carbs':'')).join('\n'):'No ride fueling logged.'}</Text></View>:<Text style={styles.body}>No journal entries yet.</Text>}
         </View>
 
         <View style={styles.sources}>
