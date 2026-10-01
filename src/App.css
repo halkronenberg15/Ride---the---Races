@@ -1912,3 +1912,15 @@ body{
 .nutrition-import label{display:grid;gap:4px;color:#f4f4f5}
 .nutrition-import label small{color:#9d9da5;font-weight:500}
 .nutrition-import input[type='file']{width:100%;max-width:100%;padding:10px;border:1px solid #3b3b3b;border-radius:10px;background:#0d0d0d;color:#fff}
+
+.mission-ride-history{display:grid;gap:14px}
+.mission-ride-list{display:grid;gap:10px}
+.mission-ride-item{border:1px solid #343434;border-radius:14px;background:#111318;overflow:hidden}
+.mission-ride-item>summary{display:grid;gap:4px;padding:14px;cursor:pointer}
+.mission-ride-item>summary strong{color:#fff}
+.mission-ride-item>summary span{color:#9d9da5;font-size:.9rem}
+.mission-ride-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:0 14px 14px}
+.mission-ride-metrics span{display:grid;gap:2px;padding:10px;border:1px solid #2d2d2d;border-radius:10px;color:#9d9da5;font-size:.78rem}
+.mission-ride-metrics strong{color:#fff;font-size:1rem}
+.mission-ride-item>p{padding:0 14px 14px;color:#c5c5cb}
+@media(max-width:620px){.mission-ride-metrics{grid-template-columns:1fr 1fr}}
