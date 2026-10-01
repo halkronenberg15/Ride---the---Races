@@ -361,7 +361,7 @@ export default function App(){
   }
 
   if(screen==='nutrition'){
-    return <SafeAreaView style={styles.root}><StatusBar style="light"/><NutritionScreen onBack={()=>setScreen('home')}/></SafeAreaView>
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><NutritionScreen career={career} onBack={()=>setScreen('home')}/></SafeAreaView>
   }
 
   if(screen==='training'){
