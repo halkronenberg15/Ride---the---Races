@@ -4,6 +4,7 @@ export type CloudCareerSnapshot={
   rider:{name:string;ftp:number|null;weightKg?:number;archetype?:string;seasonGoal?:string}
   rideHistory:Array<{id:string;date:string;durationMinutes:number;distanceKm:number;averagePower?:number;source?:string;workoutId?:string;offSeasonAssignmentId?:string}>
   trainingHistory:Array<{workoutId:string;durationMinutes:number;completedAt:string;completed:true}>
+  nutrition?:{goalWeightLowKg?:number;goalWeightHighKg?:number;favoriteFoods?:string[];avoidFoods?:string[]}
   races?:{tour?:{completedStages:number[]};vuelta?:{completedStages:number[]}}
   season?:{active:boolean;currentRace:string;currentStage:number;completedStages:number[]}
   alpha4025?:{
