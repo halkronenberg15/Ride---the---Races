@@ -77,6 +77,7 @@ export default function App(){
   const [cloudRideCount,setCloudRideCount]=useState(0)
   const [selectedStage,setSelectedStage]=useState<RaceStage|null>(null)
   const [selectedWorkoutId,setSelectedWorkoutId]=useState<string|null>(null)
+  const [selectedTrainingAssignmentId,setSelectedTrainingAssignmentId]=useState<string|null>(null)
   const [selectedStrengthAssignment,setSelectedStrengthAssignment]=useState<any|null>(null)
   const [trainingOverrides,setTrainingOverrides]=useState<Record<string,string>>({})
   const locationSub=useRef<Location.LocationSubscription|null>(null)
@@ -389,7 +390,7 @@ export default function App(){
   }
 
   if(screen==='training'){
-    return <SafeAreaView style={styles.root}><StatusBar style="light"/><TrainingScreen career={effectiveCareer} onBack={()=>setScreen('home')} onRide={(assignment,workoutId)=>{if(assignment.workoutId!==workoutId)replaceTrainingAssignment(assignment.id,workoutId);setSelectedWorkoutId(workoutId);setScreen('trainingRide')}} onStrength={(assignment)=>{setSelectedStrengthAssignment(assignment);setScreen('strength')}}/></SafeAreaView>
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><TrainingScreen career={effectiveCareer} onBack={()=>setScreen('home')} onRide={(assignment,workoutId)=>{if(assignment.workoutId!==workoutId)replaceTrainingAssignment(assignment.id,workoutId);setSelectedTrainingAssignmentId(assignment.id);setSelectedWorkoutId(workoutId);setScreen('trainingRide')}} onStrength={(assignment)=>{setSelectedStrengthAssignment(assignment);setScreen('strength')}}/></SafeAreaView>
   }
 
   if(screen==='strength'&&selectedStrengthAssignment){
@@ -397,7 +398,7 @@ export default function App(){
   }
 
   if(screen==='trainingRide'&&selectedWorkoutId){
-    return <SafeAreaView style={styles.root}><StatusBar style="light"/><TrainingRideScreen workoutId={selectedWorkoutId} ftp={cloudProfile?.ftp_watts??effectiveCareer?.rider.ftp??null} onBack={()=>setScreen('training')} onFinish={async(durationSeconds,workout)=>{if(!profileId)return;const rideId=Crypto.randomUUID();const now=new Date();const started=new Date(now.getTime()-durationSeconds*1000);const row={ride_id:rideId,athlete_id:profileId,source:'RTR',started_at:started.toISOString(),completed_at:now.toISOString(),duration_seconds:durationSeconds,distance_meters:null,workout_id:workout.id,notes:workout.title};const {error}=await supabase.from('rides').insert(row);if(error)throw error;await supabase.from('athlete_events').insert({event_id:Crypto.randomUUID(),athlete_id:profileId,event_type:'ride.completed',schema_version:1,occurred_at:row.completed_at,producer:'ride-the-races',payload:{schemaVersion:1,rideId,athleteId:profileId,source:'RTR',workoutId:workout.id,startedAt:row.started_at,completedAt:row.completed_at,durationSeconds}});setCloudRideCount(count=>count+1);Alert.alert('Workout saved',workout.title+' is in your cloud ride history.');setScreen('training')}}/></SafeAreaView>
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><TrainingRideScreen workoutId={selectedWorkoutId} assignmentId={selectedTrainingAssignmentId??undefined} ftp={cloudProfile?.ftp_watts??effectiveCareer?.rider.ftp??null} onBack={()=>setScreen('training')} onFinish={async(summary,workout)=>{if(!profileId)return;const rideId=Crypto.randomUUID();const now=new Date(summary.endedAt);const started=new Date(now.getTime()-summary.activeSeconds*1000);const row={ride_id:rideId,athlete_id:profileId,source:'RTR',started_at:started.toISOString(),completed_at:now.toISOString(),duration_seconds:summary.activeSeconds,distance_meters:null,workout_id:workout.id,notes:workout.title+' · '+summary.outcome+' · '+summary.completionPercentage+'%'};const {error}=await supabase.from('rides').insert(row);if(error)throw error;await supabase.from('athlete_events').insert({event_id:Crypto.randomUUID(),athlete_id:profileId,event_type:'ride.completed',schema_version:1,occurred_at:row.completed_at,producer:'ride-the-races',payload:{schemaVersion:2,rideId,athleteId:profileId,source:'RTR',workoutId:workout.id,assignmentId:summary.assignmentId,startedAt:row.started_at,completedAt:row.completed_at,durationSeconds:summary.activeSeconds,plannedSeconds:summary.plannedSeconds,completionPercentage:summary.completionPercentage,outcome:summary.outcome,pauseCount:summary.pauseCount,rpe:summary.rpe,legsAfter:summary.legsAfter,completedSectionIds:summary.completedSectionIds}});setCloudRideCount(count=>count+1);Alert.alert('Workout saved',workout.title+' · '+summary.completionPercentage+'% complete · RPE '+(summary.rpe??'—')+'.');setSelectedTrainingAssignmentId(null);setScreen('training')}}/></SafeAreaView>
   }
 
   if(screen==='library'){
