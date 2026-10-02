@@ -1,7 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useEffect, useMemo, useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import * as ImagePicker from 'expo-image-picker'
 import type { CloudCareerSnapshot } from '../lib/cloudCareer'
+import { supabase } from '../lib/supabase'
+import { evaluateFueling } from '../../../src/engine/fuelingEngine'
 
 type Meal={id:string;name:string;notes:string}
 type PlanSlot={id:string;time:string;label:string;detail:string;reason:string}
@@ -14,6 +17,8 @@ type NutritionStore={
  favorites?:string[]
  avoidFoods?:string[]
  recentFoods?:string[]
+ goalLowLb?:string
+ goalHighLb?:string
 }
 const STORAGE_KEY='rtr-mobile-nutrition-v3'
 const days=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
@@ -153,13 +158,25 @@ export default function NutritionScreen({career,onBack}:{career:CloudCareerSnaps
  const [recentFoods,setRecentFoods]=useState<string[]>([])
  const [favoriteDraft,setFavoriteDraft]=useState('')
  const [avoidDraft,setAvoidDraft]=useState('')
+ const [goalLowLb,setGoalLowLb]=useState('')
+ const [goalHighLb,setGoalHighLb]=useState('')
+ const [fridgeBusy,setFridgeBusy]=useState(false)
+ const [fridgeResult,setFridgeResult]=useState<{visibleFoods?:string[];meals?:Array<{name:string;why:string;ingredients?:string[];addIfAvailable?:string[]}>;note?:string}|null>(null)
  const [hydrated,setHydrated]=useState(false)
  const todayLabel=useMemo(()=>new Intl.DateTimeFormat('en-US',{weekday:'long',month:'short',day:'numeric'}).format(new Date()),[])
  const trainingTime=trainingTimes[today]??DEFAULT_TRAINING_TIME
  const todayPlan=useMemo(()=>buildTodayPlan(career,trainingTime,favorites,recentFoods,avoidFoods),[career,trainingTime,favorites,recentFoods,avoidFoods])
+ const assignments=career?.alpha4025?.trainingPlan?.weeks.flatMap(w=>w.assignments)??[]
+ const activeToday=assignments.filter(item=>item.date===today&&(item.status==='PLANNED'||item.status==='REPLACED')&&Number(item.durationMinutes??0)>0)
+ const tomorrowDate=new Date();tomorrowDate.setDate(tomorrowDate.getDate()+1);const tomorrowKey=[tomorrowDate.getFullYear(),String(tomorrowDate.getMonth()+1).padStart(2,'0'),String(tomorrowDate.getDate()).padStart(2,'0')].join('-')
+ const activeTomorrow=assignments.filter(item=>item.date===tomorrowKey&&(item.status==='PLANNED'||item.status==='REPLACED')&&Number(item.durationMinutes??0)>0)
+ const trainingMinutes=activeToday.reduce((sum,item)=>sum+Number(item.durationMinutes??0),0)
+ const rideMinutes=activeToday.filter(item=>item.type==='CYCLING'||item.type==='ASSESSMENT').reduce((sum,item)=>sum+Number(item.durationMinutes??0),0)
+ const tomorrowMinutes=activeTomorrow.reduce((sum,item)=>sum+Number(item.durationMinutes??0),0)
+ const fueling=evaluateFueling({weightKg:career?.rider.weightKg,goalLowKg:goalLowLb?Number(goalLowLb)/2.20462:career?.nutrition?.goalWeightLowKg,goalHighKg:goalHighLb?Number(goalHighLb)/2.20462:career?.nutrition?.goalWeightHighKg,trainingMinutes,rideMinutes,demanding:activeToday.some(item=>item.demandingCycling===true),tomorrowTrainingMinutes:tomorrowMinutes})
 
- useEffect(()=>{AsyncStorage.getItem(STORAGE_KEY).then(raw=>{if(raw){try{const saved=JSON.parse(raw) as NutritionStore;setDayMeals(saved.todayMeals??[]);setWeekMeals({...emptyWeek(),...(saved.weekMeals??{})});setShopping(saved.shopping??[]);setCompletedPlanIds(saved.completedPlanIds??[]);setTrainingTimes(saved.trainingTimes??{});setFavorites(saved.favorites??[]);setAvoidFoods(saved.avoidFoods??[]);setRecentFoods(saved.recentFoods??[])}catch{}}setHydrated(true)})},[])
- useEffect(()=>{if(!hydrated)return;AsyncStorage.setItem(STORAGE_KEY,JSON.stringify({todayMeals:dayMeals,weekMeals,shopping,completedPlanIds,trainingTimes,favorites,avoidFoods,recentFoods}))},[hydrated,dayMeals,weekMeals,shopping,completedPlanIds,trainingTimes,favorites,avoidFoods,recentFoods])
+ useEffect(()=>{AsyncStorage.getItem(STORAGE_KEY).then(raw=>{if(raw){try{const saved=JSON.parse(raw) as NutritionStore;setDayMeals(saved.todayMeals??[]);setWeekMeals({...emptyWeek(),...(saved.weekMeals??{})});setShopping(saved.shopping??[]);setCompletedPlanIds(saved.completedPlanIds??[]);setTrainingTimes(saved.trainingTimes??{});setFavorites(saved.favorites??[]);setAvoidFoods(saved.avoidFoods??[]);setRecentFoods(saved.recentFoods??[]);setGoalLowLb(saved.goalLowLb??'');setGoalHighLb(saved.goalHighLb??'')}catch{}}setHydrated(true)})},[])
+ useEffect(()=>{if(!hydrated)return;AsyncStorage.setItem(STORAGE_KEY,JSON.stringify({todayMeals:dayMeals,weekMeals,shopping,completedPlanIds,trainingTimes,favorites,avoidFoods,recentFoods,goalLowLb,goalHighLb}))},[hydrated,dayMeals,weekMeals,shopping,completedPlanIds,trainingTimes,favorites,avoidFoods,recentFoods,goalLowLb,goalHighLb])
 
  const addMeal=()=>{const name=mealName.trim();if(!name)return;setDayMeals(items=>[...items,{id:String(Date.now()),name,notes:mealNotes.trim()}]);setRecentFoods(items=>[name,...items.filter(item=>normalize(item)!==normalize(name))].slice(0,20));setMealName('');setMealNotes('')}
  const addWeekMeal=()=>{const name=weekDraft.trim();if(!name)return;setWeekMeals(current=>({...current,[selectedDay]:[...(current[selectedDay]??[]),{id:String(Date.now()),name,notes:weekNotes.trim()}]}));setWeekDraft('');setWeekNotes('')}
@@ -167,12 +184,36 @@ export default function NutritionScreen({career,onBack}:{career:CloudCareerSnaps
  const togglePlan=(id:string)=>setCompletedPlanIds(ids=>ids.includes(id)?ids.filter(item=>item!==id):[...ids,id])
  const addFavorite=()=>{const value=favoriteDraft.trim();if(!value)return;setFavorites(items=>[value,...items.filter(item=>normalize(item)!==normalize(value))]);setFavoriteDraft('')}
  const addAvoid=()=>{const value=avoidDraft.trim();if(!value)return;setAvoidFoods(items=>[value,...items.filter(item=>normalize(item)!==normalize(value))]);setAvoidDraft('')}
+ const analyzeFridge=async()=>{
+  const permission=await ImagePicker.requestCameraPermissionsAsync()
+  if(!permission.granted)return Alert.alert('Camera permission required','RtR needs camera access to analyze what is in your fridge.')
+  const result=await ImagePicker.launchCameraAsync({mediaTypes:['images'],quality:.55,base64:true})
+  if(result.canceled)return
+  const asset=result.assets[0]
+  if(!asset.base64)return Alert.alert('Could not read photo','Try taking the fridge photo again.')
+  setFridgeBusy(true);setFridgeResult(null)
+  try{
+   const {data,error}=await supabase.functions.invoke('fridge-meal-suggest',{body:{imageData:`data:${asset.mimeType??'image/jpeg'};base64,${asset.base64}`,dayClass:fueling.dayClass,weightPhase:fueling.weightPhase,trainingSummary:todayPlan.trainingSummary,favorites,avoidFoods}})
+   if(error)throw error
+   if(data?.error)throw new Error(String(data.error))
+   setFridgeResult(data)
+  }catch(error){Alert.alert('Fridge analysis unavailable',error instanceof Error?error.message:'Could not analyze the fridge photo.')}
+  finally{setFridgeBusy(false)}
+ }
 
  return <ScrollView contentContainerStyle={s.wrap}>
   <Pressable onPress={onBack}><Text style={s.link}>← Team HQ</Text></Pressable>
   <Text style={s.eyebrow}>MISSION FRANCE</Text>
   <Text style={s.title}>Nutrition</Text>
-  <Text style={s.body}>Recommendations use today’s training load, the time you plan to train, and the foods this device has learned you prefer or avoid.</Text>
+  <Text style={s.body}>Recommendations use today’s training load, tomorrow’s recovery needs, your weight-loss phase, training time, and the foods this device has learned you prefer or avoid.</Text>
+
+  <View style={s.fuelSummary}>
+   <Text style={s.trainingLabel}>{fueling.dayClass} · {fueling.weightPhase}</Text>
+   <Text style={s.fuelQuestion}>{fueling.question}</Text>
+   <Text style={s.helper}>{fueling.proteinTargetG?`Protein ${fueling.proteinTargetG[0]}–${fueling.proteinTargetG[1]} g`:'Add current weight for protein target'} · {fueling.carbTargetG?`Carbs ${fueling.carbTargetG[0]}–${fueling.carbTargetG[1]} g`:'Add current weight for carb target'}</Text>
+   {fueling.guidance.map(item=><Text key={item} style={s.guidance}>• {item}</Text>)}
+   <View style={s.goalRow}><TextInput style={[s.input,{flex:1}]} value={goalLowLb} onChangeText={setGoalLowLb} keyboardType="decimal-pad" placeholder="Goal low lb" placeholderTextColor="#6f6f6f"/><TextInput style={[s.input,{flex:1}]} value={goalHighLb} onChangeText={setGoalHighLb} keyboardType="decimal-pad" placeholder="Goal high lb" placeholderTextColor="#6f6f6f"/></View>
+  </View>
 
   <Section title="TODAY'S FOOD PLAN" subtitle={todayLabel} open={open==='day'} onPress={()=>setOpen(open==='day'?null:'day')}>
    <View style={s.trainingCard}><Text style={s.trainingLabel}>{todayPlan.loadLabel}</Text><Text style={s.trainingTitle}>{todayPlan.trainingSummary}</Text></View>
@@ -201,6 +242,17 @@ export default function NutritionScreen({career,onBack}:{career:CloudCareerSnaps
    </View>
    {dayMeals.length===0?<Text style={s.empty}>No substitutions or extra foods logged.</Text>:dayMeals.map(meal=><View key={meal.id} style={s.row}><Text style={s.rowTitle}>{meal.name}</Text>{meal.notes?<Text style={s.rowSub}>{meal.notes}</Text>:null}</View>)}
   </Section>
+
+  <View style={s.fridgeCard}>
+   <Text style={s.subhead}>WHAT CAN I MAKE FROM MY FRIDGE?</Text>
+   <Text style={s.helper}>Take a photo. RtR will identify visible foods and suggest meals that fit today’s training, recovery, preferences, and weight phase.</Text>
+   <Pressable style={s.primary} onPress={analyzeFridge} disabled={fridgeBusy}><Text style={s.primaryText}>{fridgeBusy?'ANALYZING FRIDGE…':'TAKE FRIDGE PHOTO'}</Text></Pressable>
+   {fridgeResult&&<View style={s.fridgeResults}>
+    {fridgeResult.visibleFoods?.length?<Text style={s.rowSub}>Visible: {fridgeResult.visibleFoods.join(' · ')}</Text>:null}
+    {fridgeResult.meals?.map((meal,index)=><View key={meal.name+index} style={s.row}><Text style={s.rowTitle}>{meal.name}</Text><Text style={s.rowSub}>{meal.why}</Text>{meal.ingredients?.length?<Text style={s.rowSub}>Use: {meal.ingredients.join(', ')}</Text>:null}{meal.addIfAvailable?.length?<Text style={s.rowSub}>Helpful extras: {meal.addIfAvailable.join(', ')}</Text>:null}</View>)}
+    {fridgeResult.note?<Text style={s.helper}>{fridgeResult.note}</Text>:null}
+   </View>}
+  </View>
 
   <Section title="FOOD PREFERENCES" subtitle="Private on this device" open={open==='profile'} onPress={()=>setOpen(open==='profile'?null:'profile')}>
    <Text style={s.helper}>Favorites are boosted in suggestions. Avoid foods are filtered out.</Text>
@@ -237,5 +289,5 @@ const s=StyleSheet.create({
  timeCard:{flexDirection:'row',gap:12,alignItems:'center',padding:14,borderRadius:14,backgroundColor:'#101010',borderWidth:1,borderColor:'#333'},timeInput:{width:88,backgroundColor:'#0b0b0b',borderWidth:1,borderColor:'#3a3a3a',borderRadius:10,padding:11,color:'#fff',fontWeight:'900',textAlign:'center'},
  planList:{gap:8},planSlot:{flexDirection:'row',gap:12,padding:14,borderRadius:14,backgroundColor:'#101010',borderWidth:1,borderColor:'#2f2f2f'},planSlotDone:{opacity:.55},check:{width:28},checkText:{color:'#ff8b3d',fontSize:24,fontWeight:'900'},planCopy:{flex:1},planTime:{color:'#ff8b3d',fontWeight:'900',fontSize:12},planTitle:{color:'#fff',fontWeight:'900',fontSize:16,marginTop:2},planDetail:{color:'#d0d0d0',fontSize:14,lineHeight:20,marginTop:3},reason:{color:'#777',fontSize:12,lineHeight:17,marginTop:5,fontStyle:'italic'},
  subhead:{color:'#fff',fontWeight:'900',fontSize:14,letterSpacing:.8,marginTop:6},helper:{color:'#888',fontSize:13,lineHeight:18},form:{gap:10},input:{backgroundColor:'#0f0f0f',borderWidth:1,borderColor:'#333',borderRadius:12,padding:13,color:'#fff',fontSize:16},notes:{minHeight:70,textAlignVertical:'top'},primary:{backgroundColor:'#ff6a00',padding:14,borderRadius:12,alignItems:'center'},primaryText:{color:'#fff',fontWeight:'900'},empty:{color:'#777',fontStyle:'italic'},row:{paddingVertical:10,borderTopWidth:1,borderTopColor:'#262626'},rowTitle:{color:'#fff',fontWeight:'800',fontSize:15},rowSub:{color:'#939393',fontSize:13,marginTop:3},inline:{flexDirection:'row',gap:8},add:{backgroundColor:'#ff6a00',paddingHorizontal:18,borderRadius:12,justifyContent:'center'},dayTabs:{gap:7,paddingVertical:2},dayTab:{paddingVertical:8,paddingHorizontal:12,borderRadius:999,borderWidth:1,borderColor:'#414141'},dayTabActive:{backgroundColor:'#ff6a00',borderColor:'#ff6a00'},dayTabText:{color:'#aaa',fontWeight:'800'},dayTabTextActive:{color:'#fff'},selectedDay:{color:'#ff8b3d',fontWeight:'900',fontSize:17},
- chips:{flexDirection:'row',flexWrap:'wrap',gap:7},chip:{paddingVertical:7,paddingHorizontal:10,borderRadius:999,borderWidth:1,borderColor:'#494949'},chipText:{color:'#bbb',fontWeight:'700',fontSize:12}
+ chips:{flexDirection:'row',flexWrap:'wrap',gap:7},chip:{paddingVertical:7,paddingHorizontal:10,borderRadius:999,borderWidth:1,borderColor:'#494949'},chipText:{color:'#bbb',fontWeight:'700',fontSize:12},fuelSummary:{padding:15,borderRadius:16,backgroundColor:'#111318',borderWidth:1,borderColor:'#4b2b17',gap:8},fuelQuestion:{color:'#fff',fontSize:18,fontWeight:'900',lineHeight:24},guidance:{color:'#aaa',fontSize:13,lineHeight:18},goalRow:{flexDirection:'row',gap:8},fridgeCard:{padding:16,borderRadius:18,backgroundColor:'#111318',borderWidth:1,borderColor:'#3d3d3d',gap:10},fridgeResults:{gap:8}
 })
