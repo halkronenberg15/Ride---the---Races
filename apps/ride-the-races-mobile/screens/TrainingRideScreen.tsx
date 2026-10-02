@@ -2,6 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { workoutById, workoutSections, type CuratedWorkout } from '../../../src/engine/adaptiveTraining40251'
 import { buildRideExecutionSummary, rideExecutionSnapshot, transitionCue, type RideExecutionSummary, type RideLegs } from '../../../src/engine/trainingRideExecution'
+import { buildTrainingRideBriefing } from '../../../src/engine/trainingRideBriefing'
+import { CLICK_IN_CUE, PRE_RIDE_COUNTDOWN } from '../../../src/engine/preRide'
+import { speakAsJeanMobile, stopJeanVoiceMobile } from '../lib/jeanVoice'
 import ImmersiveRideProfile from '../components/ImmersiveRideProfile'
 
 function formatTime(seconds:number){const h=Math.floor(seconds/3600),m=Math.floor((seconds%3600)/60),s=seconds%60;return [h,m,s].map((v,i)=>i===0?String(v):String(v).padStart(2,'0')).join(':')}
@@ -11,14 +14,14 @@ function buildProfile(sections:ReturnType<typeof workoutSections>){
  const total=sections.reduce((n,s)=>n+s.durationSeconds,0)
  let cursor=0
  const pts:{x:number;y:number}[]=[{x:0,y:.22}]
- sections.forEach((s,i)=>{
+ sections.forEach((section)=>{
   const start=cursor/Math.max(1,total)
-  const end=(cursor+s.durationSeconds)/Math.max(1,total)
-  const y=intensity(s.zone)
+  const end=(cursor+section.durationSeconds)/Math.max(1,total)
+  const y=intensity(section.zone)
   const lead=Math.max(start,Math.min(end,start+(end-start)*.16))
   const tail=Math.max(start,Math.min(end,end-(end-start)*.12))
   pts.push({x:start,y:Math.max(.18,y-.07)},{x:lead,y},{x:tail,y},{x:end,y:Math.max(.18,y-.05)})
-  cursor+=s.durationSeconds
+  cursor+=section.durationSeconds
  })
  return pts
 }
@@ -26,33 +29,128 @@ function buildProfile(sections:ReturnType<typeof workoutSections>){
 export default function TrainingRideScreen({workoutId,assignmentId,ftp,onBack,onFinish}:{workoutId:string;assignmentId?:string;ftp:number|null;onBack:()=>void;onFinish:(summary:RideExecutionSummary,workout:CuratedWorkout)=>Promise<void>}){
  const workout=workoutById(workoutId)??workoutById('indoor-endurance-60')!
  const sections=useMemo(()=>workoutSections(workout),[workout.id])
- const total=sections.reduce((sum,s)=>sum+s.durationSeconds,0)
+ const total=sections.reduce((sum,section)=>sum+section.durationSeconds,0)
  const profile=useMemo(()=>buildProfile(sections),[sections])
- const [elapsed,setElapsed]=useState(0),[running,setRunning]=useState(false),[saving,setSaving]=useState(false)
- const [pauseCount,setPauseCount]=useState(0),[rpe,setRpe]=useState(5),[legsAfter,setLegsAfter]=useState<RideLegs>('GOOD'),[lastCue,setLastCue]=useState<string|null>(null)
- const startRef=useRef<number|null>(null),baseRef=useRef(0)
+ const briefing=useMemo(()=>buildTrainingRideBriefing(workout,ftp,sections),[workout,ftp,sections])
 
- useEffect(()=>{if(!running)return;const id=setInterval(()=>{const active=startRef.current?Math.floor((Date.now()-startRef.current)/1000):0;setElapsed(Math.min(total,baseRef.current+active))},500);return()=>clearInterval(id)},[running,total])
+ const [elapsed,setElapsed]=useState(0)
+ const [running,setRunning]=useState(false)
+ const [saving,setSaving]=useState(false)
+ const [countdown,setCountdown]=useState<number|null>(null)
+ const [pauseCount,setPauseCount]=useState(0)
+ const [rpe,setRpe]=useState(5)
+ const [legsAfter,setLegsAfter]=useState<RideLegs>('GOOD')
+ const [lastCue,setLastCue]=useState<string|null>(null)
+
+ const startRef=useRef<number|null>(null)
+ const baseRef=useRef(0)
+ const previousSectionRef=useRef(0)
+ const spokenTransitionRef=useRef<string|null>(null)
+ const completionSpokenRef=useRef(false)
+ const countdownTimerRef=useRef<ReturnType<typeof setInterval>|null>(null)
+
+ useEffect(()=>()=>{if(countdownTimerRef.current)clearInterval(countdownTimerRef.current);stopJeanVoiceMobile()},[])
 
  useEffect(()=>{
   if(!running)return
-  const snap=rideExecutionSnapshot(sections,elapsed)
-  const cue=transitionCue(snap.secondsToNextTransition,snap.next?.title)
-  if(cue&&cue!==lastCue)setLastCue(cue)
-  if(snap.completed){baseRef.current=total;startRef.current=null;setRunning(false);setElapsed(total)}
- },[elapsed,running,sections,total,lastCue])
+  const id=setInterval(()=>{
+   const active=startRef.current?Math.floor((Date.now()-startRef.current)/1000):0
+   setElapsed(Math.min(total,baseRef.current+active))
+  },500)
+  return()=>clearInterval(id)
+ },[running,total])
 
  const execution=useMemo(()=>rideExecutionSnapshot(sections,elapsed),[sections,elapsed])
  const currentSection=sections[execution.current.index]
  const progress=execution.progress
  const next=sections[execution.next?.index??-1]
- const start=()=>{startRef.current=Date.now();setRunning(true)}
- const pause=()=>{if(!running)return;const active=startRef.current?Math.floor((Date.now()-startRef.current)/1000):0;baseRef.current=Math.min(total,baseRef.current+active);setElapsed(baseRef.current);startRef.current=null;setRunning(false);setPauseCount(count=>count+1)}
- const resume=()=>{startRef.current=Date.now();setRunning(true)}
- const finish=async()=>{if(running)pause();const active=running?Math.min(total,baseRef.current):elapsed;const summary=buildRideExecutionSummary({workoutId:workout.id,assignmentId,sections,activeSeconds:active,pauseCount,rpe,legsAfter});setSaving(true);await onFinish(summary,workout);setSaving(false)}
+
+ useEffect(()=>{
+  if(!running)return
+
+  if(execution.current.index!==previousSectionRef.current){
+   previousSectionRef.current=execution.current.index
+   spokenTransitionRef.current=null
+   setLastCue(currentSection.jean)
+   speakAsJeanMobile(`${currentSection.title}. ${currentSection.jean}`)
+  }
+
+  const cue=transitionCue(execution.secondsToNextTransition,execution.next?.title)
+  if(cue&&cue!==spokenTransitionRef.current){
+   spokenTransitionRef.current=cue
+   setLastCue(cue)
+   speakAsJeanMobile(cue)
+  }
+
+  if(execution.completed){
+   baseRef.current=total
+   startRef.current=null
+   setRunning(false)
+   setElapsed(total)
+   if(!completionSpokenRef.current){
+    completionSpokenRef.current=true
+    speakAsJeanMobile('Session complete. Ease the pedals and take a moment to recover.')
+   }
+  }
+ },[execution,running,currentSection,total])
+
+ const beginRideClock=()=>{
+  previousSectionRef.current=0
+  spokenTransitionRef.current=null
+  completionSpokenRef.current=false
+  startRef.current=Date.now()
+  setRunning(true)
+  setLastCue(currentSection.jean)
+  setTimeout(()=>speakAsJeanMobile(briefing.jeanOpening),1200)
+ }
+
+ const start=()=>{
+  if(running||countdown!==null)return
+  speakAsJeanMobile(CLICK_IN_CUE)
+  setCountdown(PRE_RIDE_COUNTDOWN[0])
+  let value:number=PRE_RIDE_COUNTDOWN[0]
+  countdownTimerRef.current=setInterval(()=>{
+   value-=1
+   if(value===0){
+    if(countdownTimerRef.current)clearInterval(countdownTimerRef.current)
+    countdownTimerRef.current=null
+    setCountdown(null)
+    beginRideClock()
+   }else setCountdown(value)
+  },1000)
+ }
+
+ const pause=()=>{
+  if(!running)return
+  const active=startRef.current?Math.floor((Date.now()-startRef.current)/1000):0
+  baseRef.current=Math.min(total,baseRef.current+active)
+  setElapsed(baseRef.current)
+  startRef.current=null
+  setRunning(false)
+  setPauseCount(count=>count+1)
+  speakAsJeanMobile('Ride paused. Keep the legs moving gently.')
+ }
+
+ const resume=()=>{
+  startRef.current=Date.now()
+  setRunning(true)
+  speakAsJeanMobile(`Radio reconnected. ${currentSection.title}. ${currentSection.jean}`)
+ }
+
+ const finish=async()=>{
+  if(running)pause()
+  const active=running?Math.min(total,baseRef.current):elapsed
+  const summary=buildRideExecutionSummary({workoutId:workout.id,assignmentId,sections,activeSeconds:active,pauseCount,rpe,legsAfter})
+  setSaving(true)
+  await onFinish(summary,workout)
+  setSaving(false)
+ }
+
+ const preRide=elapsed===0&&!running
 
  return <View style={s.root}>
    <View style={s.topBar}><Pressable onPress={onBack}><Text style={s.link}>← Training</Text></Pressable><Text style={s.topTime}>{formatTime(Math.max(0,total-elapsed))} left</Text></View>
+
    <View>
     <Text style={s.eyebrow}>RTR · INDOOR TRAINING</Text>
     <Text numberOfLines={1} style={s.title}>{workout.title}</Text>
@@ -66,16 +164,32 @@ export default function TrainingRideScreen({workoutId,assignmentId,ftp,onBack,on
      nextLabel={next?.title??'Finish'}
    />
 
-   <View style={s.currentCard}>
-    <View style={s.currentHeader}><View><Text style={s.label}>CURRENT TARGET</Text><Text numberOfLines={1} style={s.sectionTitle}>{currentSection.title}</Text></View><Text style={s.countdown}>{formatTime(execution.sectionRemainingSeconds)}</Text></View>
-    <View style={s.metrics}>
-      <Metric label="POWER" value={watts(currentSection.ftpRange,ftp)}/>
-      <Metric label="CADENCE" value={currentSection.cadence[0]+'–'+currentSection.cadence[1]}/>
-      <Metric label="RESISTANCE" value={currentSection.resistance.replace('Light, gradually supported resistance','Light / supported')}/>
-      <Metric label="ZONE" value={currentSection.zone}/>
+   {preRide&&countdown===null?(
+    <View style={s.briefingCard}>
+      <Text style={s.label}>RIDE BRIEFING</Text>
+      <Text style={s.briefingPurpose}>{briefing.purpose}</Text>
+      <View style={s.briefingGrid}>
+       <BriefMetric label="DURATION" value={briefing.durationLabel}/>
+       <BriefMetric label="PRIMARY WORK" value={briefing.primaryZone}/>
+       <BriefMetric label="POWER / EFFORT" value={briefing.targetPower}/>
+       <BriefMetric label="CADENCE" value={briefing.cadence}/>
+      </View>
+      <View style={s.briefingBlock}><Text style={s.briefingBlockLabel}>STRUCTURE</Text><Text style={s.briefingText}>{briefing.structure}</Text></View>
+      <View style={s.briefingBlock}><Text style={s.briefingBlockLabel}>FUELING</Text><Text style={s.briefingText}>{briefing.fueling}</Text></View>
+      <View style={s.jean}><Text style={s.jeanName}>JEAN</Text><Text style={s.jeanText}>{briefing.jeanOpening}</Text></View>
     </View>
-    <View style={s.jean}><Text style={s.jeanName}>JEAN</Text><Text numberOfLines={3} style={s.jeanText}>{lastCue??currentSection.jean}</Text></View>
-   </View>
+   ):(
+    <View style={s.currentCard}>
+      <View style={s.currentHeader}><View><Text style={s.label}>CURRENT TARGET</Text><Text numberOfLines={1} style={s.sectionTitle}>{currentSection.title}</Text></View><Text style={s.sectionCountdown}>{formatTime(execution.sectionRemainingSeconds)}</Text></View>
+      <View style={s.metrics}>
+        <Metric label="POWER" value={watts(currentSection.ftpRange,ftp)}/>
+        <Metric label="CADENCE" value={currentSection.cadence[0]+'–'+currentSection.cadence[1]}/>
+        <Metric label="RESISTANCE" value={currentSection.resistance.replace('Light, gradually supported resistance','Light / supported')}/>
+        <Metric label="ZONE" value={currentSection.zone}/>
+      </View>
+      <View style={s.jean}><Text style={s.jeanName}>JEAN</Text><Text numberOfLines={3} style={s.jeanText}>{lastCue??currentSection.jean}</Text></View>
+    </View>
+   )}
 
    <View style={s.statusStrip}>
     <View><Text style={s.smallLabel}>ELAPSED</Text><Text style={s.statusValue}>{formatTime(elapsed)}</Text></View>
@@ -84,7 +198,8 @@ export default function TrainingRideScreen({workoutId,assignmentId,ftp,onBack,on
    </View>
 
    <View style={s.controls}>
-    {elapsed===0&&!running&&<Pressable style={s.primary} onPress={start}><Text style={s.primaryText}>START RIDE</Text></Pressable>}
+    {preRide&&countdown===null&&<Pressable style={s.primary} onPress={start}><Text style={s.primaryText}>START RIDE</Text></Pressable>}
+    {countdown!==null&&<View style={s.countdownButton}><Text style={s.primaryText}>CLICKED IN · STARTING…</Text></View>}
     {running&&<Pressable style={s.pause} onPress={pause}><Text style={s.primaryText}>PAUSE</Text></Pressable>}
     {!running&&elapsed>0&&elapsed<total&&<><Pressable style={s.secondary} onPress={resume}><Text style={s.secondaryText}>RESUME</Text></Pressable><Pressable style={s.finish} onPress={finish} disabled={saving}><Text style={s.primaryText}>{saving?'SAVING…':'END RIDE'}</Text></Pressable></>}
     {!running&&elapsed>=total&&<View style={s.postRide}>
@@ -96,10 +211,16 @@ export default function TrainingRideScreen({workoutId,assignmentId,ftp,onBack,on
       <Pressable style={s.finishWide} onPress={finish} disabled={saving}><Text style={s.primaryText}>{saving?'SAVING…':'SAVE RIDE'}</Text></Pressable>
     </View>}
    </View>
+
+   {countdown!==null&&<View style={s.countdownOverlay}>
+     <Text style={s.countdownNumber}>{countdown}</Text>
+     <Text style={s.countdownLabel}>START DEVICES · GET READY</Text>
+   </View>}
  </View>
 }
 
 function Metric({label,value}:{label:string;value:string}){return <View style={s.metric}><Text style={s.metricLabel}>{label}</Text><Text numberOfLines={2} style={s.metricValue}>{value}</Text></View>}
+function BriefMetric({label,value}:{label:string;value:string}){return <View style={s.briefMetric}><Text style={s.metricLabel}>{label}</Text><Text style={s.briefMetricValue}>{value}</Text></View>}
 
 const s=StyleSheet.create({
  root:{flex:1,backgroundColor:'#090909',padding:16,gap:10},
@@ -109,10 +230,18 @@ const s=StyleSheet.create({
  eyebrow:{color:'#ff6a00',fontWeight:'900',letterSpacing:1.5,fontSize:11},
  title:{color:'#fff',fontSize:27,fontWeight:'900',marginTop:2},
  currentCard:{backgroundColor:'#17120f',borderColor:'#6b3211',borderWidth:1,borderRadius:18,padding:14,gap:10,flexShrink:1},
+ briefingCard:{backgroundColor:'#121212',borderColor:'#4d2b16',borderWidth:1,borderRadius:18,padding:14,gap:10,flexShrink:1},
+ briefingPurpose:{color:'#fff',fontSize:17,fontWeight:'900',lineHeight:23},
+ briefingGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},
+ briefMetric:{width:'48%',backgroundColor:'#0d0d0d',borderRadius:12,padding:10,minHeight:64},
+ briefMetricValue:{color:'#fff',fontSize:13,fontWeight:'900',marginTop:4,lineHeight:18},
+ briefingBlock:{backgroundColor:'#0e0e0e',borderRadius:12,padding:10,gap:4},
+ briefingBlockLabel:{color:'#ff8b3d',fontSize:9,fontWeight:'900',letterSpacing:1.1},
+ briefingText:{color:'#c8c8c8',fontSize:12,lineHeight:17},
  currentHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start',gap:10},
  label:{color:'#8b8b8b',fontSize:10,fontWeight:'900',letterSpacing:1.1},
  sectionTitle:{color:'#fff',fontSize:22,fontWeight:'900',maxWidth:240,marginTop:3},
- countdown:{color:'#ff8b3d',fontWeight:'900',fontSize:20},
+ sectionCountdown:{color:'#ff8b3d',fontWeight:'900',fontSize:20},
  metrics:{flexDirection:'row',flexWrap:'wrap',gap:8},
  metric:{width:'48%',backgroundColor:'#0d0d0d',borderRadius:12,padding:10,minHeight:64},
  metricLabel:{color:'#6f6f6f',fontSize:9,fontWeight:'900',letterSpacing:1},
@@ -126,12 +255,22 @@ const s=StyleSheet.create({
  centerStatus:{alignItems:'center',paddingHorizontal:18},
  rightStatus:{flex:1,alignItems:'flex-end'},
  nextText:{color:'#fff',fontWeight:'800',fontSize:13,maxWidth:145,marginTop:2},
- controls:{flexDirection:'row',gap:10,marginTop:'auto'},postRide:{gap:8,flex:1},postLabel:{color:'#bbb',fontWeight:'800',fontSize:12},choiceRow:{flexDirection:'row',flexWrap:'wrap',gap:6},choice:{paddingVertical:7,paddingHorizontal:9,borderRadius:999,borderWidth:1,borderColor:'#444'},choiceActive:{backgroundColor:'#ff6a00',borderColor:'#ff6a00'},choiceText:{color:'#fff',fontSize:11,fontWeight:'800'},
+ controls:{flexDirection:'row',gap:10,marginTop:'auto'},
+ postRide:{gap:8,flex:1},
+ postLabel:{color:'#bbb',fontWeight:'800',fontSize:12},
+ choiceRow:{flexDirection:'row',flexWrap:'wrap',gap:6},
+ choice:{paddingVertical:7,paddingHorizontal:9,borderRadius:999,borderWidth:1,borderColor:'#444'},
+ choiceActive:{backgroundColor:'#ff6a00',borderColor:'#ff6a00'},
+ choiceText:{color:'#fff',fontSize:11,fontWeight:'800'},
  primary:{backgroundColor:'#ff6a00',padding:16,borderRadius:15,alignItems:'center',flex:1},
+ countdownButton:{backgroundColor:'#6a3d1e',padding:16,borderRadius:15,alignItems:'center',flex:1},
  pause:{backgroundColor:'#d98a00',padding:16,borderRadius:15,alignItems:'center',flex:1},
  finish:{backgroundColor:'#c63b2f',padding:16,borderRadius:15,alignItems:'center',flex:1},
  finishWide:{backgroundColor:'#c63b2f',padding:16,borderRadius:15,alignItems:'center',flex:1},
  secondary:{borderColor:'#555',borderWidth:1,padding:16,borderRadius:15,alignItems:'center',flex:1},
  primaryText:{color:'#fff',fontWeight:'900',fontSize:15,letterSpacing:.5},
- secondaryText:{color:'#fff',fontWeight:'900',fontSize:15}
+ secondaryText:{color:'#fff',fontWeight:'900',fontSize:15},
+ countdownOverlay:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(0,0,0,.88)',alignItems:'center',justifyContent:'center',zIndex:20},
+ countdownNumber:{color:'#ff6a00',fontSize:120,fontWeight:'900',lineHeight:130},
+ countdownLabel:{color:'#fff',fontSize:14,fontWeight:'900',letterSpacing:1.5}
 })
