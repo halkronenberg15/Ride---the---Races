@@ -153,7 +153,7 @@ export type CareerState = {
   trainingHistory: { workoutId:string; durationMinutes:number; completedAt:string; completed:true }[]
   health: HealthEntry
   rideHistory: RideMetricEntry[]
-  nutrition:{entries:NutritionEntry[];mealTemplates:NutritionMealTemplate[]}
+  nutrition:{entries:NutritionEntry[];mealTemplates:NutritionMealTemplate[];goalWeightLowKg?:number;goalWeightHighKg?:number;favoriteFoods?:string[];avoidFoods?:string[]}
   alpha4020: { calendar:{month:number;scrollY:number}; earnedMarkerIds:string[] }
   alpha4022: { worldsResults:Record<string,{completed:boolean;place?:number}>; ittSplits:Record<string,number>; raceEvents:Record<string,'accepted'|'declined'|'consumed'>; radioHistory:string[]; rainbowTitles:string[]; profileView:{mode:'OVERVIEW'|'DETAIL';activeRangeId:string|null;autoConsumedIds:string[]} }
   introCycling:{selected:boolean;answers:IntroCyclingAnswers|null;plan:IntroCyclingPlan|null;completedRideIds:string[];dismissed:boolean;outdoorChecklistIds:string[];requestedNextProgram:'Outdoor Ride Readiness'|'RtR Femmes'|'Standard RtR'|null}
