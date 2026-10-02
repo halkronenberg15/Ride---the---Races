@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { missionFranceSnapshot } from '../engine/missionFrance2028.ts'
 import { jimmyCoachContext, jimmyCoachOpeningLine } from '../engine/jimmyCoach.ts'
+import { evaluateFueling } from '../engine/fuelingEngine.ts'
+import { buildMenuHorizon, mealPlanForDay, type MealHorizon } from '../engine/mealPlanningEngine.ts'
 import { useCareer } from '../state/CareerContext.tsx'
 import type { NutritionEntry, NutritionMealTemplate, NutritionMealType } from '../types/career.ts'
 
@@ -15,7 +17,7 @@ const miles=(km:number)=>km*0.621371
 const today=()=>{const date=new Date();return [date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-')}
 
 export default function MissionFranceCommandCenter({onBack,onOpenHealth,onOpenRideData,onOpenOffSeason}:Props){
- const {career,addNutritionEntry,importNutritionData}=useCareer()
+ const {career,addNutritionEntry,importNutritionData,updateNutritionProfile}=useCareer()
  const snapshot=missionFranceSnapshot(career)
  const jimmyContext=jimmyCoachContext(career)
  const [jimmyOpen,setJimmyOpen]=useState(false)
@@ -30,9 +32,24 @@ export default function MissionFranceCommandCenter({onBack,onOpenHealth,onOpenRi
  const [saved,setSaved]=useState('')
  const [importMessage,setImportMessage]=useState('')
  const [rideHistoryOpen,setRideHistoryOpen]=useState(false)
+ const [menuHorizon,setMenuHorizon]=useState<MealHorizon>('DAY')
+ const [goalLowLb,setGoalLowLb]=useState(career.nutrition.goalWeightLowKg?String(Math.round(career.nutrition.goalWeightLowKg*2.20462)):'')
+ const [goalHighLb,setGoalHighLb]=useState(career.nutrition.goalWeightHighKg?String(Math.round(career.nutrition.goalWeightHighKg*2.20462)):'')
  const templates=useMemo(()=>[...career.nutrition.mealTemplates].sort((a,b)=>b.timesUsed-a.timesUsed||b.lastUsedAt.localeCompare(a.lastUsedAt)),[career.nutrition.mealTemplates])
+ const todayKey=today(),tomorrowDate=new Date();tomorrowDate.setDate(tomorrowDate.getDate()+1);const tomorrowKey=[tomorrowDate.getFullYear(),String(tomorrowDate.getMonth()+1).padStart(2,'0'),String(tomorrowDate.getDate()).padStart(2,'0')].join('-')
+ const assignments=career.alpha4025.trainingPlan?.weeks.flatMap(week=>week.assignments)??[]
+ const activeToday=assignments.filter(item=>item.date===todayKey&&(item.status==='PLANNED'||item.status==='REPLACED')&&Number(item.durationMinutes??0)>0)
+ const activeTomorrow=assignments.filter(item=>item.date===tomorrowKey&&(item.status==='PLANNED'||item.status==='REPLACED')&&Number(item.durationMinutes??0)>0)
+ const trainingMinutes=activeToday.reduce((sum,item)=>sum+Number(item.durationMinutes??0),0)
+ const rideMinutes=activeToday.filter(item=>item.type==='CYCLING'||item.type==='ASSESSMENT').reduce((sum,item)=>sum+Number(item.durationMinutes??0),0)
+ const demanding=activeToday.some(item=>item.demandingCycling===true)
+ const tomorrowMinutes=activeTomorrow.reduce((sum,item)=>sum+Number(item.durationMinutes??0),0)
  const todayEntries=career.nutrition.entries.filter(entry=>entry.date===today())
  const totals=todayEntries.reduce((sum,entry)=>({calories:sum.calories+(entry.calories??0),protein:sum.protein+(entry.proteinG??0),carbs:sum.carbs+(entry.carbsG??0),fluid:sum.fluid+(entry.fluidOz??0)}),{calories:0,protein:0,carbs:0,fluid:0})
+ const fueling=evaluateFueling({weightKg:career.rider.weightKg,goalLowKg:career.nutrition.goalWeightLowKg,goalHighKg:career.nutrition.goalWeightHighKg,trainingMinutes,rideMinutes,demanding,tomorrowTrainingMinutes:tomorrowMinutes,loggedProteinG:totals.protein,loggedCarbsG:totals.carbs,loggedCalories:totals.calories})
+ const plan=mealPlanForDay({dayClass:fueling.dayClass,favorites:career.nutrition.favoriteFoods,recentFoods:templates.slice(0,8).map(item=>item.name),avoidFoods:career.nutrition.avoidFoods,userRecipes:templates.map(item=>({id:item.id,name:item.name,mealType:item.mealType,proteinG:item.proteinG,carbsG:item.carbsG,calories:item.calories,tags:['user','saved'],source:'USER' as const}))})
+ const menu=buildMenuHorizon(menuHorizon,plan)
+ const saveWeightGoals=()=>updateNutritionProfile({goalWeightLowKg:goalLowLb?Number(goalLowLb)/2.20462:undefined,goalWeightHighKg:goalHighLb?Number(goalHighLb)/2.20462:undefined})
  const useTemplate=(id:string)=>{const template=templates.find(item=>item.id===id);if(!template)return;setMealType(template.mealType);setName(template.name);setCalories(template.calories?.toString()??'');setProtein(template.proteinG?.toString()??'');setCarbs(template.carbsG?.toString()??'');setFluid(template.fluidOz?.toString()??'');setSaved('')}
  const submit=(event:React.FormEvent)=>{event.preventDefault();const trimmed=name.trim();if(!trimmed)return;addNutritionEntry({id:crypto.randomUUID(),loggedAt:new Date().toISOString(),date:today(),mealType,name:trimmed,calories:calories===''?undefined:Number(calories),proteinG:protein===''?undefined:Number(protein),carbsG:carbs===''?undefined:Number(carbs),fluidOz:fluid===''?undefined:Number(fluid)},remember);setSaved(trimmed);setName('');setCalories('');setProtein('');setCarbs('');setFluid('')}
  const importHistory=async(event:React.ChangeEvent<HTMLInputElement>)=>{const file=event.target.files?.[0];if(!file)return;try{const parsed=JSON.parse(await file.text()) as {entries?:NutritionEntry[];mealTemplates?:NutritionMealTemplate[]};const entries=Array.isArray(parsed.entries)?parsed.entries:[],templates=Array.isArray(parsed.mealTemplates)?parsed.mealTemplates:[];importNutritionData(entries,templates);setImportMessage(`Imported ${entries.length} nutrition entries and ${templates.length} meal templates.`)}catch{setImportMessage('Could not import that nutrition file. Use the Mission France nutrition JSON export format.')}finally{event.target.value=''}}
@@ -66,7 +83,11 @@ export default function MissionFranceCommandCenter({onBack,onOpenHealth,onOpenRi
   </section>
 
   <section className="dashboard-card mission-nutrition">
-   <div className="section-title-row"><div><p className="eyebrow">NUTRITION · QUICK LOG</p><h2>Tell RtR what you ate.</h2><p>Save a meal once. Next time, tap it and log it in seconds.</p></div><div className="nutrition-totals"><strong>{Math.round(totals.protein)}g</strong><span>protein</span><strong>{Math.round(totals.carbs)}g</strong><span>carbs</span></div></div>
+   <div className="section-title-row"><div><p className="eyebrow">NUTRITION · FUELING ENGINE</p><h2>{fueling.question}</h2><p>Training demand sets the fueling floor. Weight loss happens around the work, not by starving the work.</p></div><div className="nutrition-totals"><strong>{Math.round(totals.protein)}g</strong><span>protein</span><strong>{Math.round(totals.carbs)}g</strong><span>carbs</span></div></div>
+   <div className="nutrition-fuel-grid"><article><small>DAY CLASS</small><strong>{fueling.dayClass}</strong></article><article><small>PROTEIN</small><strong>{fueling.proteinStatus}</strong><span>{fueling.proteinTargetG?fueling.proteinTargetG.join('–')+' g target':'Add current weight'}</span></article><article><small>CARBS</small><strong>{fueling.carbStatus}</strong><span>{fueling.carbTargetG?fueling.carbTargetG.join('–')+' g target':'Add current weight'}</span></article><article><small>WEIGHT PHASE</small><strong>{fueling.weightPhase}</strong></article></div>
+   <div className="nutrition-goal-row"><label>Goal low (lb)<input type="number" value={goalLowLb} onChange={event=>setGoalLowLb(event.target.value)}/></label><label>Goal high (lb)<input type="number" value={goalHighLb} onChange={event=>setGoalHighLb(event.target.value)}/></label><button type="button" onClick={saveWeightGoals}>Save goal range</button></div>
+   <div className="fuel-guidance">{fueling.guidance.map(item=><p key={item}>{item}</p>)}</div>
+   <div className="menu-horizon"><div>{(['HOUR','DAY','WEEK','MONTH'] as MealHorizon[]).map(item=><button type="button" key={item} className={menuHorizon===item?'active':''} onClick={()=>setMenuHorizon(item)}>{item}</button>)}</div>{menu.map(section=><article key={section.label}><h3>{section.label}</h3>{section.meals.map(meal=><div key={meal.id} className="planned-meal"><strong>{meal.time} · {meal.recipe.name}</strong><span>{meal.rationale}</span></div>)}</article>)}</div>
    {templates.length>0&&<div className="remembered-meals" aria-label="Remembered meals">{templates.slice(0,8).map(template=><button type="button" key={template.id} onClick={()=>useTemplate(template.id)}><strong>{template.name}</strong><small>{template.proteinG!==undefined?template.proteinG+'g P · ':''}{template.carbsG!==undefined?template.carbsG+'g C · ':''}{template.calories!==undefined?template.calories+' cal':''}</small></button>)}</div>}
    <form className="nutrition-quick-form" onSubmit={submit}>
     <label>Meal<select value={mealType} onChange={event=>setMealType(event.target.value as NutritionMealType)}><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option><option>Ride Fuel</option><option>Recovery</option></select></label>
