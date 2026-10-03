@@ -9,7 +9,7 @@ import { buildJeanTimeline, isClimb, jeanCourseEventsCrossed, type JeanTimelineE
 import { useActiveRide } from '../state/ActiveRideContext'
 import { createRoadModel, markerLabelOffset } from '../engine/roadModel'
 import { jeanCue, jeanMode } from '../engine/jeanDirector'
-import { canUseJeanVoice, speakAsJean } from '../services/jeanVoice'
+import { canUseJimmyVoice, speakAsJimmy } from '../services/jimmyVoice'
 import { createJeanEvent, JeanEventBus } from '../engine/jeanEvents'
 import { CLICK_IN_CUE, PRE_RIDE_COUNTDOWN } from '../engine/preRide'
 import { jimmyAmbientDelay } from '../engine/jimmyRadio'
@@ -80,7 +80,7 @@ type WakeLockSentinelLike = {
 
 function OutdoorRideCockpit({onBack,onCompletion}:{onBack:()=>void;onCompletion:(endedEarly:boolean)=>void}){
  const {career}=useCareer(),{ride,elapsed,pause,resume,setLocationEnabled,setJeanMuted,markJeanCues}=useOutdoorRide(),assignment=career.alpha4025.trainingPlan?.weeks.flatMap(week=>week.assignments).find(item=>item.id===ride?.assignmentId),durationMinutes=assignment?.durationMinutes??90,snapshot=outdoorWorkoutSnapshot(elapsed,durationMinutes),requested=useRef(false),visualCue=currentOutdoorJeanCue(elapsed,durationMinutes)
- const speak=(text:string)=>{if(career.settings.jeanVoiceEnabled&&!ride?.jeanMuted)speakAsJean(text,undefined,career.settings.jeanVoiceVolume)}
+ const speak=(text:string)=>{if(career.settings.jeanVoiceEnabled&&!ride?.jeanMuted)speakAsJimmy(text,undefined,career.settings.jeanVoiceVolume)}
  useEffect(()=>{if(!ride)return;const pending=nextOutdoorJeanCue(elapsed,ride.deliveredJeanCueIds??[],durationMinutes);if(!pending.cue)return;markJeanCues(pending.consumedIds);speak(pending.cue.text)},[elapsed,ride?.id,durationMinutes])
   useEffect(()=>{if(snapshot.complete&&!requested.current){requested.current=true;pause();onCompletion(false)}},[snapshot.complete,pause,onCompletion])
   if(!ride)return <section className="ride-screen outdoor-cockpit"><h1>No active outdoor workout</h1><button type="button" onClick={onBack}>Return to Off-Season Training</button></section>
@@ -343,8 +343,8 @@ function StandardRideScreen({
     jeanEventBus.current.dispatch(createJeanEvent(eventId, 'coaching', normalized),
       event => {setRadioText(event.message);setDismissedJeanMessage(null);const message:TeamRadioMessage={id:event.id,text:event.message,priority:'coaching',createdAt:new Date().toISOString(),coachingContext:jeanContext,activityKey:jeanActivityKey};if(activeRide.ride&&!activeRide.ride.radioHistory.some(item=>item.id===message.id))activeRide.updateRide({radioHistory:[...activeRide.ride.radioHistory,message].slice(-50)})},
       event => {
-        if (!canUseJeanVoice()) { console.info(`[Jean] speech unavailable: ${event.id}`); return false }
-        speakAsJean(event.message, undefined, career.settings.jeanVoiceVolume)
+        if (!canUseJimmyVoice()) { console.info(`[Jimmy] speech unavailable: ${event.id}`); return false }
+        speakAsJimmy(event.message, undefined, career.settings.jeanVoiceVolume)
         return true
       }, {
         courseDistance: engine.courseDistance,
