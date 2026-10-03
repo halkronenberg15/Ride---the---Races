@@ -27,9 +27,11 @@ test('summary distinguishes partial from complete',()=>{
  assert.equal(complete.completionPercentage,100)
 })
 
-test('transition cues fire at useful boundaries',()=>{
- assert.equal(transitionCue(60,'Work'),'1 minute until Work')
- assert.equal(transitionCue(30,'Work'),'30 seconds until Work')
- assert.equal(transitionCue(10,'Work'),'10 seconds. Get ready for Work')
- assert.equal(transitionCue(29,'Work'),null)
+test('transition cues stay quiet for steady work and brace hard work',()=>{
+ assert.equal(transitionCue(60,'Work','Endurance'),null)
+ assert.equal(transitionCue(30,'Work','Endurance'),'Thirty seconds. Work next.')
+ assert.equal(transitionCue(10,'Work','Endurance'),null)
+ assert.equal(transitionCue(30,'Threshold block','Threshold'),'Thirty seconds. Threshold block next.')
+ assert.equal(transitionCue(10,'Threshold block','Threshold'),'Ten seconds. Get ready for Threshold block.')
+ assert.equal(transitionCue(29,'Work','Endurance'),null)
 })
