@@ -7,11 +7,10 @@ import CourseMarkerStrip from '../components/CourseMarkerStrip'
 import RoadAheadCard from '../components/RoadAheadCard'
 import { isClimbStage, routeThemeFor } from '../lib/routeThemes'
 import type { OfficialCourseMarker } from '../../../src/data/courseMarkers'
-import type { RaceStage, RideSegment } from '../../../src/data/raceStages'
+import type { RaceStage } from '../../../src/data/raceStages'
 
 function formatTime(seconds:number){const h=Math.floor(seconds/3600),m=Math.floor((seconds%3600)/60),s=seconds%60;return [h,m,s].map((v,i)=>i===0?String(v):String(v).padStart(2,'0')).join(':')}
 function segmentAt(stage:RaceStage,elapsed:number){let cursor=0;for(let i=0;i<stage.segments.length;i++){const seg=stage.segments[i];if(elapsed<cursor+seg.sec)return {segment:seg,index:i,segmentElapsed:elapsed-cursor,segmentRemaining:cursor+seg.sec-elapsed};cursor+=seg.sec}return {segment:stage.segments[stage.segments.length-1],index:stage.segments.length-1,segmentElapsed:0,segmentRemaining:0}}
-function profileHeights(stage:RaceStage){const pts=stage.profilePoints;if(!pts.length)return [20,35,25,50,40,70,30];if(typeof pts[0]==='string')return pts.map(p=>{const y=Number(String(p).split(',')[1]??70);return Math.max(8,100-y)});const elevations=(pts as {distanceKm:number;elevationM:number}[]).map(p=>p.elevationM);const min=Math.min(...elevations),max=Math.max(...elevations);return elevations.map(v=>12+((v-min)/Math.max(1,max-min))*72)}
 
 export default function StructuredRideScreen({stage,onBack,onFinish}:{stage:RaceStage;onBack:()=>void;onFinish:(durationSeconds:number)=>Promise<void>}){
  const total=useMemo(()=>stage.segments.reduce((sum,s)=>sum+s.sec,0),[stage])
@@ -36,9 +35,14 @@ export default function StructuredRideScreen({stage,onBack,onFinish}:{stage:Race
   <Text style={s.theme}>{routeTheme.name}</Text>
   <Text style={s.body}>{stage.objective}</Text>
 
+  {stage.routeMap?.points?.length?<RouteMapCard points={stage.routeMap.points} progress={progress} alt={stage.routeMap.alt}/>:null}
+
   {climbRide&&gradientPoints.length>1
    ? <GradientClimbProfile points={gradientPoints} progress={progress}/>
    : <ImmersiveRideProfile points={profilePoints} progress={progress} label="COURSE PROFILE" currentLabel={current.segment.name} nextLabel={stage.segments[current.index+1]?.name??'Finish'}/>}
+
+  <CourseMarkerStrip markers={markers} distanceKm={stage.distanceKm} courseKm={courseKm}/>
+  <RoadAheadCard current={current.segment} next={stage.segments[current.index+1]} remaining={current.segmentRemaining}/>
 
   <View style={s.timeCard}><Text style={s.label}>STAGE TIME</Text><Text style={s.time}>{formatTime(elapsed)}</Text><Text style={s.subtle}>{formatTime(Math.max(0,total-elapsed))} remaining · {virtualMiles.toFixed(1)} virtual mi</Text></View>
 
