@@ -12,7 +12,7 @@ import { jeanCue, jeanMode } from '../engine/jeanDirector'
 import { canUseJimmyVoice, speakAsJimmy } from '../services/jimmyVoice'
 import { createJeanEvent, JeanEventBus } from '../engine/jeanEvents'
 import { CLICK_IN_CUE, PRE_RIDE_COUNTDOWN } from '../engine/preRide'
-import { jimmyAmbientDelay } from '../engine/jimmyRadio'
+import { jimmyAmbientDelay, jimmySpeechAllowed, type JimmyRadioPriority } from '../engine/jimmyRadio'
 import { raceIdentities } from '../data/raceLibrary'
 import { isIndividualTimeTrial, officialSegments, ttStartSnapshot } from '../engine/startArchitecture'
 import { applyDurationSelection, durationSelectionForStage, type DurationSelection } from '../engine/durationEngine'
@@ -136,6 +136,7 @@ function StandardRideScreen({
   >('inactive')
 
   const lastSpokenCue = useRef('')
+  const lastJimmySpeech = useRef<{at:number;priority:JimmyRadioPriority}>({at:-999,priority:'ambient'})
   const lastRandomCueTime = useRef(-999)
   const nextRandomCueTime = useRef(50)
   const previousSegmentIndex = useRef(0)
@@ -276,6 +277,8 @@ function StandardRideScreen({
     if(decision==='DROP')return false
     const message=normalizeJeanCopy(currentSegment.name,cue.message)
     if(!cueAllowed(jeanContext,message,Boolean(cue.explicitlyAuthoredTerrain)))return false
+    if(!jimmySpeechAllowed({lastSpokenAt:lastJimmySpeech.current.at,now:elapsedSeconds,currentPriority:lastJimmySpeech.current.priority,nextPriority:cue.priority}))return false
+    lastJimmySpeech.current={at:elapsedSeconds,priority:cue.priority}
     speak(message,cue.id,{explicitlyAuthoredTerrain:Boolean(cue.explicitlyAuthoredTerrain)});return true
   }
 
