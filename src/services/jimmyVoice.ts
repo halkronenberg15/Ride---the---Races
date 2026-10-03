@@ -1,0 +1,64 @@
+export type JimmyVoiceStatus = 'idle' | 'speaking' | 'unsupported'
+
+export function canUseJimmyVoice(): boolean {
+  return typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window
+}
+
+function chooseJimmyVoice(): SpeechSynthesisVoice | undefined {
+  const voices = window.speechSynthesis.getVoices()
+
+  return (
+    voices.find((voice) => voice.lang.toLowerCase().startsWith('en') && /male|daniel|alex|arthur/i.test(voice.name)) ??
+    voices.find((voice) => voice.lang.toLowerCase().startsWith('en')) ??
+    voices.find((voice) => voice.lang.toLowerCase().startsWith('fr')) ??
+    voices[0]
+  )
+}
+
+/** Visible copy stays authentic; only Jimmy's speech receives phonetic help. */
+export const pronunciationOverrides: Record<string, string> = {
+  'Alpe d’Huez': 'Alp doo-ez', 'Alpe d\'Huez': 'Alp doo-ez',
+  'Côte': 'Coat', 'Mont Ventoux': 'Mon Von-too', 'Tourmalet': 'Toor-ma-lay',
+  'Le Bourg-d’Oisans': 'Luh Boor dwah-zon', 'Gavarnie-Gèdre': 'Gah-var-nee Zhed-ruh',
+  'maillot jaune': 'my-oh zhohn', 'peloton': 'pell-oh-ton', 'domestique': 'doh-mess-teek',
+}
+
+export function speechText(text: string) {
+  return Object.entries(pronunciationOverrides).reduce((spoken, [label, pronunciation]) => spoken.replaceAll(label, pronunciation), text)
+}
+
+export function speakAsJimmy(text: string, onStatusChange?: (status: JimmyVoiceStatus) => void, volume = 1): () => void {
+  if (!canUseJimmyVoice()) {
+    onStatusChange?.('unsupported')
+    return () => undefined
+  }
+
+  window.speechSynthesis.cancel()
+
+  const utterance = new SpeechSynthesisUtterance(speechText(text))
+  utterance.lang = 'en-GB'
+  utterance.rate = 0.96
+  utterance.pitch = 0.94
+  utterance.volume = Math.max(0, Math.min(1, volume))
+
+  const assignVoice = () => {
+    const voice = chooseJimmyVoice()
+    if (voice) utterance.voice = voice
+  }
+
+  assignVoice()
+  utterance.onstart = () => onStatusChange?.('speaking')
+  utterance.onend = () => onStatusChange?.('idle')
+  utterance.onerror = () => onStatusChange?.('idle')
+
+  window.speechSynthesis.speak(utterance)
+
+  return () => {
+    window.speechSynthesis.cancel()
+    onStatusChange?.('idle')
+  }
+}
+
+export function stopJimmyVoice(): void {
+  if (canUseJimmyVoice()) window.speechSynthesis.cancel()
+}

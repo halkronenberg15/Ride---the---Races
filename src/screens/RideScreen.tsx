@@ -9,9 +9,10 @@ import { buildJeanTimeline, isClimb, jeanCourseEventsCrossed, type JeanTimelineE
 import { useActiveRide } from '../state/ActiveRideContext'
 import { createRoadModel, markerLabelOffset } from '../engine/roadModel'
 import { jeanCue, jeanMode } from '../engine/jeanDirector'
-import { canUseJeanVoice, speakAsJean } from '../services/jeanVoice'
+import { canUseJimmyVoice, speakAsJimmy } from '../services/jimmyVoice'
 import { createJeanEvent, JeanEventBus } from '../engine/jeanEvents'
 import { CLICK_IN_CUE, PRE_RIDE_COUNTDOWN } from '../engine/preRide'
+import { jimmyAmbientDelay, jimmySpeechAllowed, type JimmyRadioPriority } from '../engine/jimmyRadio'
 import { raceIdentities } from '../data/raceLibrary'
 import { isIndividualTimeTrial, officialSegments, ttStartSnapshot } from '../engine/startArchitecture'
 import { applyDurationSelection, durationSelectionForStage, type DurationSelection } from '../engine/durationEngine'
@@ -79,13 +80,13 @@ type WakeLockSentinelLike = {
 
 function OutdoorRideCockpit({onBack,onCompletion}:{onBack:()=>void;onCompletion:(endedEarly:boolean)=>void}){
  const {career}=useCareer(),{ride,elapsed,pause,resume,setLocationEnabled,setJeanMuted,markJeanCues}=useOutdoorRide(),assignment=career.alpha4025.trainingPlan?.weeks.flatMap(week=>week.assignments).find(item=>item.id===ride?.assignmentId),durationMinutes=assignment?.durationMinutes??90,snapshot=outdoorWorkoutSnapshot(elapsed,durationMinutes),requested=useRef(false),visualCue=currentOutdoorJeanCue(elapsed,durationMinutes)
- const speak=(text:string)=>{if(career.settings.jeanVoiceEnabled&&!ride?.jeanMuted)speakAsJean(text,undefined,career.settings.jeanVoiceVolume)}
+ const speak=(text:string)=>{if(career.settings.jeanVoiceEnabled&&!ride?.jeanMuted)speakAsJimmy(text,undefined,career.settings.jeanVoiceVolume)}
  useEffect(()=>{if(!ride)return;const pending=nextOutdoorJeanCue(elapsed,ride.deliveredJeanCueIds??[],durationMinutes);if(!pending.cue)return;markJeanCues(pending.consumedIds);speak(pending.cue.text)},[elapsed,ride?.id,durationMinutes])
   useEffect(()=>{if(snapshot.complete&&!requested.current){requested.current=true;pause();onCompletion(false)}},[snapshot.complete,pause,onCompletion])
   if(!ride)return <section className="ride-screen outdoor-cockpit"><h1>No active outdoor workout</h1><button type="button" onClick={onBack}>Return to Off-Season Training</button></section>
  const togglePause=()=>{if(ride.runningSince===null){const id=`resume:${ride.accumulatedSeconds}`;if(!ride.deliveredJeanCueIds?.includes(id)){markJeanCues([id]);speak(outdoorResumeMessage(snapshot.current.title,snapshot.totalRemaining,`${snapshot.current.rpe}, ${snapshot.current.effort}`))}resume()}else{const id=`pause:${ride.runningSince}`;if(!ride.deliveredJeanCueIds?.includes(id)){markJeanCues([id]);speak(OUTDOOR_PAUSE_MESSAGE)}pause()}}
  const endEarly=()=>{if(!window.confirm('End this outdoor workout early and continue to completion?'))return;markJeanCues(['early-end']);speak(OUTDOOR_EARLY_END_MESSAGE);onCompletion(true)}
- return <section className="ride-screen ride-cockpit outdoor-cockpit" data-presentation-mode="training/outdoor"><header><p className="eyebrow">WORKOUT · OUTDOOR</p><h1>{assignment?.title??`Outdoor Endurance ${durationMinutes}`}</h1><p>RtR manages the prescribed workout and elapsed time. Optional live location shows your current position but does not record a continuous GPS route.</p></header><div className="outdoor-cockpit-primary"><article className="cockpit-card outdoor-current"><p className="eyebrow">CURRENT INTERVAL</p><h2>{snapshot.current.title}</h2><strong>{snapshot.current.rpe} · {snapshot.current.effort}</strong><div className="outdoor-clock">{formatTime(snapshot.currentRemaining)}</div><p>{snapshot.current.guidance}</p><div className="outdoor-jean" role="status"><strong>JEAN</strong><span>{visualCue.text}</span><button type="button" aria-pressed={Boolean(ride.jeanMuted)} onClick={()=>setJeanMuted(!ride.jeanMuted)}>{ride.jeanMuted?'Unmute Jean':'Mute Jean'}</button></div></article><div className="outdoor-total"><span><small>TOTAL ELAPSED</small><strong>{formatTime(elapsed)}</strong></span><span><small>WORKOUT REMAINING</small><strong>{formatTime(snapshot.totalRemaining)}</strong></span></div><OutdoorLocationMap enabled={Boolean(ride.locationEnabled)} onEnable={()=>setLocationEnabled(true)} onDisable={()=>setLocationEnabled(false)}/><article className="cockpit-card outdoor-next"><p className="eyebrow">UP NEXT</p><h2>{snapshot.upNext?.title??'Workout Complete'}</h2><p>{snapshot.upNext?`${snapshot.upNext.rpe} · ${snapshot.upNext.effort}`:'Save genuinely measured ride information.'}</p></article><div className="outdoor-cockpit-controls"><button type="button" onClick={togglePause}>{ride.runningSince===null?'Resume':'Pause'}</button><button type="button" onClick={endEarly}>End Early Safely</button></div></div><aside className="dashboard-card outdoor-secondary"><p><strong>Fueling:</strong> 30–45 g carbohydrate/hour · 500–750 ml fluid/hour, adjusted for Florida heat and sweat rate.</p><p>No outdoor watts are prescribed. Live location is optional and does not calculate a route, distance, speed or elevation.</p><small>Assignment {ride.assignmentId} · Active session {ride.id}</small></aside><button type="button" className="leave-cockpit bottom-leave" onClick={onBack}>← Leave Cockpit</button></section>
+ return <section className="ride-screen ride-cockpit outdoor-cockpit" data-presentation-mode="training/outdoor"><header><p className="eyebrow">WORKOUT · OUTDOOR</p><h1>{assignment?.title??`Outdoor Endurance ${durationMinutes}`}</h1><p>RtR manages the prescribed workout and elapsed time. Optional live location shows your current position but does not record a continuous GPS route.</p></header><div className="outdoor-cockpit-primary"><article className="cockpit-card outdoor-current"><p className="eyebrow">CURRENT INTERVAL</p><h2>{snapshot.current.title}</h2><strong>{snapshot.current.rpe} · {snapshot.current.effort}</strong><div className="outdoor-clock">{formatTime(snapshot.currentRemaining)}</div><p>{snapshot.current.guidance}</p><div className="outdoor-jean" role="status"><strong>JIMMY</strong><span>{visualCue.text}</span><button type="button" aria-pressed={Boolean(ride.jeanMuted)} onClick={()=>setJeanMuted(!ride.jeanMuted)}>{ride.jeanMuted?'Unmute Jimmy':'Mute Jimmy'}</button></div></article><div className="outdoor-total"><span><small>TOTAL ELAPSED</small><strong>{formatTime(elapsed)}</strong></span><span><small>WORKOUT REMAINING</small><strong>{formatTime(snapshot.totalRemaining)}</strong></span></div><OutdoorLocationMap enabled={Boolean(ride.locationEnabled)} onEnable={()=>setLocationEnabled(true)} onDisable={()=>setLocationEnabled(false)}/><article className="cockpit-card outdoor-next"><p className="eyebrow">UP NEXT</p><h2>{snapshot.upNext?.title??'Workout Complete'}</h2><p>{snapshot.upNext?`${snapshot.upNext.rpe} · ${snapshot.upNext.effort}`:'Save genuinely measured ride information.'}</p></article><div className="outdoor-cockpit-controls"><button type="button" onClick={togglePause}>{ride.runningSince===null?'Resume':'Pause'}</button><button type="button" onClick={endEarly}>End Early Safely</button></div></div><aside className="dashboard-card outdoor-secondary"><p><strong>Fueling:</strong> 30–45 g carbohydrate/hour · 500–750 ml fluid/hour, adjusted for Florida heat and sweat rate.</p><p>No outdoor watts are prescribed. Live location is optional and does not calculate a route, distance, speed or elevation.</p><small>Assignment {ride.assignmentId} · Active session {ride.id}</small></aside><button type="button" className="leave-cockpit bottom-leave" onClick={onBack}>← Leave Cockpit</button></section>
 }
 
 function StandardRideScreen({
@@ -135,6 +136,7 @@ function StandardRideScreen({
   >('inactive')
 
   const lastSpokenCue = useRef('')
+  const lastJimmySpeech = useRef<{at:number;priority:JimmyRadioPriority}>({at:-999,priority:'ambient'})
   const lastRandomCueTime = useRef(-999)
   const nextRandomCueTime = useRef(50)
   const previousSegmentIndex = useRef(0)
@@ -275,6 +277,8 @@ function StandardRideScreen({
     if(decision==='DROP')return false
     const message=normalizeJeanCopy(currentSegment.name,cue.message)
     if(!cueAllowed(jeanContext,message,Boolean(cue.explicitlyAuthoredTerrain)))return false
+    if(!jimmySpeechAllowed({lastSpokenAt:lastJimmySpeech.current.at,now:elapsedSeconds,currentPriority:lastJimmySpeech.current.priority,nextPriority:cue.priority}))return false
+    lastJimmySpeech.current={at:elapsedSeconds,priority:cue.priority}
     speak(message,cue.id,{explicitlyAuthoredTerrain:Boolean(cue.explicitlyAuthoredTerrain)});return true
   }
 
@@ -342,8 +346,8 @@ function StandardRideScreen({
     jeanEventBus.current.dispatch(createJeanEvent(eventId, 'coaching', normalized),
       event => {setRadioText(event.message);setDismissedJeanMessage(null);const message:TeamRadioMessage={id:event.id,text:event.message,priority:'coaching',createdAt:new Date().toISOString(),coachingContext:jeanContext,activityKey:jeanActivityKey};if(activeRide.ride&&!activeRide.ride.radioHistory.some(item=>item.id===message.id))activeRide.updateRide({radioHistory:[...activeRide.ride.radioHistory,message].slice(-50)})},
       event => {
-        if (!canUseJeanVoice()) { console.info(`[Jean] speech unavailable: ${event.id}`); return false }
-        speakAsJean(event.message, undefined, career.settings.jeanVoiceVolume)
+        if (!canUseJimmyVoice()) { console.info(`[Jimmy] speech unavailable: ${event.id}`); return false }
+        speakAsJimmy(event.message, undefined, career.settings.jeanVoiceVolume)
         return true
       }, {
         courseDistance: engine.courseDistance,
@@ -510,7 +514,7 @@ function StandardRideScreen({
     previousSegmentIndex.current = segmentData.index
     lastSpokenCue.current = ''
     lastRandomCueTime.current = -999
-    nextRandomCueTime.current =45+((segmentData.index*17)%45)
+    nextRandomCueTime.current = jimmyAmbientDelay(segmentData.index*17, stage.isTraining?'TRAINING':'RACE')
 
 
     if (!isRunning) return

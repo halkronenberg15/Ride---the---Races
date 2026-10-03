@@ -2,9 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { workoutById, workoutSections, type CuratedWorkout } from '../../../src/engine/adaptiveTraining40251'
 import { buildRideExecutionSummary, rideExecutionSnapshot, transitionCue, type RideExecutionSummary, type RideLegs } from '../../../src/engine/trainingRideExecution'
+import { JIMMY_LIFECYCLE, jimmyOpening } from '../../../src/engine/jimmyRadio'
 import { buildTrainingRideBriefing } from '../../../src/engine/trainingRideBriefing'
 import { CLICK_IN_CUE, PRE_RIDE_COUNTDOWN } from '../../../src/engine/preRide'
-import { speakAsJeanMobile, stopJeanVoiceMobile } from '../lib/jeanVoice'
+import { speakAsJimmyMobile, stopJimmyVoiceMobile } from '../lib/jimmyVoice'
 import ImmersiveRideProfile from '../components/ImmersiveRideProfile'
 
 function formatTime(seconds:number){const h=Math.floor(seconds/3600),m=Math.floor((seconds%3600)/60),s=seconds%60;return [h,m,s].map((v,i)=>i===0?String(v):String(v).padStart(2,'0')).join(':')}
@@ -50,7 +51,7 @@ export default function TrainingRideScreen({workoutId,assignmentId,ftp,onBack,on
  const completionSpokenRef=useRef(false)
  const countdownTimerRef=useRef<ReturnType<typeof setInterval>|null>(null)
 
- useEffect(()=>()=>{if(countdownTimerRef.current)clearInterval(countdownTimerRef.current);stopJeanVoiceMobile()},[])
+ useEffect(()=>()=>{if(countdownTimerRef.current)clearInterval(countdownTimerRef.current);stopJimmyVoiceMobile()},[])
 
  useEffect(()=>{
   if(!running)return
@@ -72,13 +73,13 @@ export default function TrainingRideScreen({workoutId,assignmentId,ftp,onBack,on
    previousSectionRef.current=execution.current.index
    spokenTransitionRef.current=null
    setLastCue(currentSection.jean)
-   speakAsJeanMobile(`${currentSection.title}. ${currentSection.jean}`)
+   speakAsJimmyMobile(`${currentSection.title}. ${currentSection.jean}`)
   }
-  const cue=transitionCue(execution.secondsToNextTransition,execution.next?.title)
+  const cue=transitionCue(execution.secondsToNextTransition,execution.next?.title,next?.zone)
   if(cue&&cue!==spokenTransitionRef.current){
    spokenTransitionRef.current=cue
    setLastCue(cue)
-   speakAsJeanMobile(cue)
+   speakAsJimmyMobile(cue)
   }
   if(execution.completed){
    baseRef.current=total
@@ -87,7 +88,7 @@ export default function TrainingRideScreen({workoutId,assignmentId,ftp,onBack,on
    setElapsed(total)
    if(!completionSpokenRef.current){
     completionSpokenRef.current=true
-    speakAsJeanMobile('Session complete. Ease the pedals and take a moment to recover.')
+    speakAsJimmyMobile(JIMMY_LIFECYCLE.complete)
    }
   }
  },[execution,running,currentSection,total])
@@ -106,13 +107,13 @@ export default function TrainingRideScreen({workoutId,assignmentId,ftp,onBack,on
   setView('COCKPIT')
   setRunning(true)
   setLastCue(sections[0].jean)
-  setTimeout(()=>speakAsJeanMobile(briefing.jeanOpening),1200)
+  setTimeout(()=>speakAsJimmyMobile(jimmyOpening(sections[0].title,sections[0].jean)),900)
  }
 
  const start=()=>{
   if(running||countdown!==null)return
-  stopJeanVoiceMobile()
-  speakAsJeanMobile(CLICK_IN_CUE)
+  stopJimmyVoiceMobile()
+  speakAsJimmyMobile(CLICK_IN_CUE)
   setCountdown(PRE_RIDE_COUNTDOWN[0])
   let value:number=PRE_RIDE_COUNTDOWN[0]
   countdownTimerRef.current=setInterval(()=>{
@@ -132,18 +133,18 @@ export default function TrainingRideScreen({workoutId,assignmentId,ftp,onBack,on
   startRef.current=null
   setRunning(false)
   setPauseCount(count=>count+1)
-  speakAsJeanMobile('Ride paused. Keep the legs moving gently.')
+  speakAsJimmyMobile(JIMMY_LIFECYCLE.paused)
  }
 
  const resume=()=>{
   startRef.current=Date.now()
   setRunning(true)
-  speakAsJeanMobile(`Radio reconnected. ${currentSection.title}. ${currentSection.jean}`)
+  speakAsJimmyMobile(`Radio reconnected. ${currentSection.title}. ${currentSection.jean}`)
  }
 
  const resetRide=()=>{
   clearCountdown()
-  stopJeanVoiceMobile()
+  stopJimmyVoiceMobile()
   startRef.current=null
   baseRef.current=0
   previousSectionRef.current=0
@@ -197,7 +198,7 @@ export default function TrainingRideScreen({workoutId,assignmentId,ftp,onBack,on
       </View>
       <View style={s.briefingBlock}><Text style={s.briefingBlockLabel}>STRUCTURE</Text><Text style={s.briefingText}>{briefing.structure}</Text></View>
       <View style={s.briefingBlock}><Text style={s.briefingBlockLabel}>FUELING</Text><Text style={s.briefingText}>{briefing.fueling}</Text></View>
-      <View style={s.jean}><Text style={s.jeanName}>JEAN</Text><Text style={s.jeanText}>{briefing.jeanOpening}</Text></View>
+      <View style={s.jimmy}><Text style={s.jimmyName}>JIMMY</Text><Text style={s.jimmyText}>{briefing.jeanOpening}</Text></View>
     </View>
    </ScrollView>
    <View style={s.controls}>
@@ -220,7 +221,7 @@ export default function TrainingRideScreen({workoutId,assignmentId,ftp,onBack,on
       <Metric label="RESISTANCE" value={currentSection.resistance.replace('Light, gradually supported resistance','Light / supported')}/>
       <Metric label="ZONE" value={currentSection.zone}/>
     </View>
-    <View style={s.jean}><Text style={s.jeanName}>JEAN</Text><Text numberOfLines={3} style={s.jeanText}>{lastCue??currentSection.jean}</Text></View>
+    <View style={s.jimmy}><Text style={s.jimmyName}>JIMMY</Text><Text numberOfLines={3} style={s.jimmyText}>{lastCue??currentSection.jean}</Text></View>
    </View>
    <View style={s.statusStrip}>
     <View><Text style={s.smallLabel}>ELAPSED</Text><Text style={s.statusValue}>{formatTime(elapsed)}</Text></View>
@@ -274,9 +275,9 @@ const s=StyleSheet.create({
  metric:{width:'48%',backgroundColor:'#0d0d0d',borderRadius:12,padding:10,minHeight:64},
  metricLabel:{color:'#6f6f6f',fontSize:9,fontWeight:'900',letterSpacing:1},
  metricValue:{color:'#fff',fontSize:15,fontWeight:'900',marginTop:4},
- jean:{flexDirection:'row',alignItems:'flex-start',gap:8,backgroundColor:'#0e0e0e',borderRadius:12,padding:10},
- jeanName:{color:'#ff8b3d',fontWeight:'900',fontSize:11,letterSpacing:1},
- jeanText:{color:'#d0d0d0',fontSize:13,lineHeight:18,flex:1},
+ jimmy:{flexDirection:'row',alignItems:'flex-start',gap:8,backgroundColor:'#0e0e0e',borderRadius:12,padding:10},
+ jimmyName:{color:'#ff8b3d',fontWeight:'900',fontSize:11,letterSpacing:1},
+ jimmyText:{color:'#d0d0d0',fontSize:13,lineHeight:18,flex:1},
  statusStrip:{flexDirection:'row',backgroundColor:'#101010',borderRadius:14,padding:11,alignItems:'center'},
  smallLabel:{color:'#6f6f6f',fontSize:8,fontWeight:'900',letterSpacing:1},
  statusValue:{color:'#fff',fontWeight:'900',fontSize:15,marginTop:2},

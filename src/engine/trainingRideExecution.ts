@@ -1,4 +1,5 @@
 import type { ExecutableWorkoutSection } from './adaptiveTraining40251.ts'
+import { jimmyTransitionCue } from './jimmyRadio.ts'
 
 export type RideExecutionOutcome='COMPLETED'|'PARTIAL'
 export type RideLegs='FRESH'|'GOOD'|'NOTICEABLE_FATIGUE'|'HEAVY'|'VERY_HEAVY'
@@ -102,10 +103,6 @@ export function buildRideExecutionSummary(args:{
  }
 }
 
-export function transitionCue(secondsRemaining:number,nextTitle?:string){
- if(!nextTitle)return null
- if(secondsRemaining===60)return `1 minute until ${nextTitle}`
- if(secondsRemaining===30)return `30 seconds until ${nextTitle}`
- if(secondsRemaining===10)return `10 seconds. Get ready for ${nextTitle}`
- return null
+export function transitionCue(secondsRemaining:number,nextTitle?:string,nextZone?:string){
+ return jimmyTransitionCue(secondsRemaining,nextTitle,nextZone)
 }
