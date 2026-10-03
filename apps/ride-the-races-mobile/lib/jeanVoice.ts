@@ -8,6 +8,7 @@ export function speakAsJeanMobile(text:string,volume=1){
    rate:.96,
    pitch:.94,
    volume:Math.max(0,Math.min(1,volume)),
+   useApplicationAudioSession:false,
  })
 }
 
