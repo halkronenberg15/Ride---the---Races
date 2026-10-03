@@ -44,3 +44,22 @@ export const JIMMY_LIFECYCLE={
  paused:'Ride paused. Keep the legs moving gently.',
  complete:'Session complete. Ease the pedals and start recovery.',
 } as const
+
+
+export function jimmyMinimumSpeechGap(priority:JimmyRadioPriority){
+ if(priority==='ambient')return 45
+ if(priority==='course')return 8
+ if(priority==='tactical')return 5
+ return 0
+}
+
+export function jimmySpeechAllowed(args:{
+ lastSpokenAt:number
+ now:number
+ currentPriority:JimmyRadioPriority
+ nextPriority:JimmyRadioPriority
+}){
+ if(args.lastSpokenAt<0)return true
+ if(jimmyMayInterrupt(args.currentPriority,args.nextPriority))return true
+ return args.now-args.lastSpokenAt>=jimmyMinimumSpeechGap(args.nextPriority)
+}
