@@ -22,7 +22,8 @@ function isFlat(stage:RaceStage){return /flat|sprint|lead-out|leadout|speed/i.te
 function isRolling(stage:RaceStage){return /rolling|hilly|foothill|rollers|undulat|staircase/i.test(text(stage))}
 function isCoastal(stage:RaceStage){return /coast|coastal|sea|shore|riverfront|lake|monaco|barcelona|mediterranean/i.test(text(stage))}
 
-const pro=[...raceStages,...vueltaRideStages,...worldsStages]
+const tourRideStages=tour2026.stages.filter(stage=>stage.rideable).map(stage=>toRaceStage(tour2026,stage))
+const pro=[...tourRideStages,...vueltaRideStages,...worldsStages]
 const training=[...trainingRides.map(r=>r.stage),...curatedOffSeasonTrainingRides.map(r=>r.stage)]
 const all=[...pro,...training]
 
