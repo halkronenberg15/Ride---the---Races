@@ -1,5 +1,5 @@
 import * as Speech from 'expo-speech'
-import { speechText } from '../../../src/services/jeanVoice'
+import { speechText } from '../../../src/services/jimmyVoice'
 
 export function speakAsJimmyMobile(text:string,volume=1){
  Speech.stop()
