@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { curatedOffSeasonTrainingRides, trainingRides, vueltaRideStages } from '../../../src/data/raceLibrary'
-import { raceStages, type RaceStage } from '../../../src/data/raceStages'
+import type { RaceStage } from '../../../src/data/raceStages'
+import { tour2026, toRaceStage } from '../../../src/data/professionalRaces'
 import { worldsStages } from '../../../src/data/uciWorlds2026'
 import { routeThemes, sourceLabel } from '../lib/routeThemes'
 
@@ -11,8 +12,9 @@ function minutes(stage:RaceStage){return Math.round(stage.segments.reduce((sum,s
 
 export default function LibraryScreen({onBack,onOpenStage}:{onBack:()=>void;onOpenStage:(stage:RaceStage)=>void}){
  const [open,setOpen]=useState<OpenId>('theme-alpine')
+ const tourRideStages=tour2026.stages.filter(stage=>stage.rideable).map(stage=>toRaceStage(tour2026,stage))
  const raceGroups=[
-  {id:'race-tour',title:'Tour de France 2026',subtitle:String(raceStages.length)+' created stages',stages:raceStages},
+  {id:'race-tour',title:'Tour de France 2026',subtitle:String(tourRideStages.length)+' created stages',stages:tourRideStages},
   {id:'race-vuelta',title:'Vuelta 2026',subtitle:String(vueltaRideStages.length)+' created stages',stages:vueltaRideStages},
   {id:'race-worlds',title:'World Championships 2026',subtitle:String(worldsStages.length)+' created rides',stages:worldsStages},
   {id:'race-training',title:'Training Rides',subtitle:String(trainingRides.length+curatedOffSeasonTrainingRides.length)+' created rides',stages:[...trainingRides.map(r=>r.stage),...curatedOffSeasonTrainingRides.map(r=>r.stage)]},

@@ -16,6 +16,7 @@ export type RaceStage = {
   verification?: { profile:boolean; distance:boolean; ascent:boolean; markers:boolean; map:boolean; source:string; reference:string; updatedAt:string }
   workoutReady?: boolean
   officialCourseMarkers?: OfficialCourseMarker[]
+  routeMap?: { type:'asset'|'simplified-route'; asset?:string; alt:string; verified:boolean; source:string; points?:Array<{x:number;y:number;label?:string}> }
 }
 
 type RawSegment = { [key: string]: unknown; name:string; type:string; zone:string; power:string; cadence:string; resistance:string; routeKm:number; sec:number; desc:string; fixed?:StageCue[]; random?:string[] }
