@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { workoutById, workoutSections, type CuratedWorkout } from '../../../src/engine/adaptiveTraining40251'
 import { buildRideExecutionSummary, rideExecutionSnapshot, transitionCue, type RideExecutionSummary, type RideLegs } from '../../../src/engine/trainingRideExecution'
+import { JIMMY_LIFECYCLE, jimmyOpening } from '../../../src/engine/jimmyRadio'
 import { buildTrainingRideBriefing } from '../../../src/engine/trainingRideBriefing'
 import { CLICK_IN_CUE, PRE_RIDE_COUNTDOWN } from '../../../src/engine/preRide'
 import { speakAsJeanMobile, stopJeanVoiceMobile } from '../lib/jeanVoice'
@@ -74,7 +75,7 @@ export default function TrainingRideScreen({workoutId,assignmentId,ftp,onBack,on
    setLastCue(currentSection.jean)
    speakAsJeanMobile(`${currentSection.title}. ${currentSection.jean}`)
   }
-  const cue=transitionCue(execution.secondsToNextTransition,execution.next?.title)
+  const cue=transitionCue(execution.secondsToNextTransition,execution.next?.title,next?.zone)
   if(cue&&cue!==spokenTransitionRef.current){
    spokenTransitionRef.current=cue
    setLastCue(cue)
@@ -87,7 +88,7 @@ export default function TrainingRideScreen({workoutId,assignmentId,ftp,onBack,on
    setElapsed(total)
    if(!completionSpokenRef.current){
     completionSpokenRef.current=true
-    speakAsJeanMobile('Session complete. Ease the pedals and take a moment to recover.')
+    speakAsJeanMobile(JIMMY_LIFECYCLE.complete)
    }
   }
  },[execution,running,currentSection,total])
@@ -106,7 +107,7 @@ export default function TrainingRideScreen({workoutId,assignmentId,ftp,onBack,on
   setView('COCKPIT')
   setRunning(true)
   setLastCue(sections[0].jean)
-  setTimeout(()=>speakAsJeanMobile(briefing.jeanOpening),1200)
+  setTimeout(()=>speakAsJeanMobile(jimmyOpening(sections[0].title,sections[0].jean)),900)
  }
 
  const start=()=>{
@@ -132,7 +133,7 @@ export default function TrainingRideScreen({workoutId,assignmentId,ftp,onBack,on
   startRef.current=null
   setRunning(false)
   setPauseCount(count=>count+1)
-  speakAsJeanMobile('Ride paused. Keep the legs moving gently.')
+  speakAsJeanMobile(JIMMY_LIFECYCLE.paused)
  }
 
  const resume=()=>{
@@ -197,7 +198,7 @@ export default function TrainingRideScreen({workoutId,assignmentId,ftp,onBack,on
       </View>
       <View style={s.briefingBlock}><Text style={s.briefingBlockLabel}>STRUCTURE</Text><Text style={s.briefingText}>{briefing.structure}</Text></View>
       <View style={s.briefingBlock}><Text style={s.briefingBlockLabel}>FUELING</Text><Text style={s.briefingText}>{briefing.fueling}</Text></View>
-      <View style={s.jean}><Text style={s.jeanName}>JEAN</Text><Text style={s.jeanText}>{briefing.jeanOpening}</Text></View>
+      <View style={s.jean}><Text style={s.jeanName}>JIMMY</Text><Text style={s.jeanText}>{briefing.jeanOpening}</Text></View>
     </View>
    </ScrollView>
    <View style={s.controls}>
@@ -220,7 +221,7 @@ export default function TrainingRideScreen({workoutId,assignmentId,ftp,onBack,on
       <Metric label="RESISTANCE" value={currentSection.resistance.replace('Light, gradually supported resistance','Light / supported')}/>
       <Metric label="ZONE" value={currentSection.zone}/>
     </View>
-    <View style={s.jean}><Text style={s.jeanName}>JEAN</Text><Text numberOfLines={3} style={s.jeanText}>{lastCue??currentSection.jean}</Text></View>
+    <View style={s.jean}><Text style={s.jeanName}>JIMMY</Text><Text numberOfLines={3} style={s.jeanText}>{lastCue??currentSection.jean}</Text></View>
    </View>
    <View style={s.statusStrip}>
     <View><Text style={s.smallLabel}>ELAPSED</Text><Text style={s.statusValue}>{formatTime(elapsed)}</Text></View>
