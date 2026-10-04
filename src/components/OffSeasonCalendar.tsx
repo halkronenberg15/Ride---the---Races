@@ -35,6 +35,12 @@ export default function OffSeasonCalendar({ plan, today, rideHistory, ftp, activ
       <header className="training-session-heading"><div><p className="eyebrow">{shortLabel(selected)} · {selected.status}</p><h3>{selected.title}</h3></div><strong>{selected.durationMinutes} min</strong></header>
       <p>{selected.purpose}</p>
       <p><strong>Plan:</strong> {selected.environment.toLowerCase()} · {selected.effort}</p>
+      {(selected.type==='CYCLING'||selected.type==='ASSESSMENT')&&<div className="metric-grid training-prescription-metrics">
+        <span><small>DURATION</small><strong>{selected.durationMinutes} min</strong></span>
+        <span><small>SESSION POWER</small><strong>{selected.powerTarget?selected.powerTarget.minimum+'–'+selected.powerTarget.maximum+' W':'Effort guided'}</strong></span>
+        <span><small>CADENCE</small><strong>{selected.workoutId==='controlled-endurance-60'?'85–95 rpm':'See workout'}</strong></span>
+        <span><small>INTENSITY</small><strong>{selected.intensity==='EASY'?'Easy Z2':selected.intensity}</strong></span>
+      </div>}
       <p>{selected.primary}</p>
       {selected.completion && <p><strong>Recorded:</strong> {new Date(selected.completion.completedAt).toLocaleString()} · {selected.completion.durationMinutes} minutes{selected.completion.notes ? ` · ${selected.completion.notes}` : ''}</p>}
       {selected.substitution && <p><strong>Adjustment:</strong> {selected.substitution.reason}</p>}

@@ -252,9 +252,13 @@ export function createRoadModel(stageNumber: number, segments: RideSegment[], di
         const ceiling=55-20*base.segmentProgress,floor=Math.max(25,ceiling-10)
         prescription={...prescription,zone:'RECOVERY',ftpPercent:{min:floor,max:ceiling},power:`${Math.round(riderFtp*floor/100)}–${Math.round(riderFtp*ceiling/100)} W`,cadence:`${Math.round(88-5*base.segmentProgress)}–${Math.round(98-5*base.segmentProgress)} rpm`}
       }
-      const terrain=gradient<0?'descent':gradient>2?'climb':/rolling/i.test(text(base.segment))?'rolling':'flat'
+      // Time-based training owns its target metrics. Synthetic profile geometry
+      // may drive the visual road/climb view, but it must not rewrite the authored
+      // power, cadence or resistance prescription.
+      const prescriptionGradient=raceName==='training'?0:gradient
+      const terrain=prescriptionGradient<0?'descent':prescriptionGradient>2?'climb':raceName==='training'?'flat':/rolling/i.test(text(base.segment))?'rolling':'flat'
       const bikeProfile=bikeProfileForEquipment(equipment)??PELOTON_MANUAL_PROFILE
-      const livePrescription=applyTerrainModifier(prescription,gradient,terrain,riderFtp,bikeProfile,undefined,equipment,cadencePreferences)
+      const livePrescription=applyTerrainModifier(prescription,prescriptionGradient,terrain,riderFtp,bikeProfile,undefined,equipment,cadencePreferences)
       return {
         ...base,
         roadPosition: base.courseProgress,

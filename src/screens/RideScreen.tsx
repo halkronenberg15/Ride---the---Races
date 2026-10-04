@@ -37,6 +37,7 @@ import { climbPresentationMode, evaluateJeanCue, initialClimbPresentationState, 
 import { applyIntroPrescription } from '../engine/introCycling.ts'
 import { coachingContext, completeSessionTime, coordinatedDistance, cueAllowed, explicitlyAuthoredTerrain, jeanTimelineEventAllowed, noFtpPresentation, normalizeJeanCopy, restoredJeanMessageAllowed, rideOpeningMessage, wakeLockMessage, type OriginalTargetSnapshot } from '../engine/release4024.ts'
 import { outdoorWorkoutSnapshot } from '../engine/outdoorRide40252.ts'
+import { workoutById } from '../engine/adaptiveTraining40251.ts'
 import { useOutdoorRide } from '../state/OutdoorRideContext.tsx'
 import OutdoorLocationMap from '../components/OutdoorLocationMap.tsx'
 import { currentOutdoorJeanCue,nextOutdoorJeanCue,outdoorResumeMessage,OUTDOOR_EARLY_END_MESSAGE,OUTDOOR_PAUSE_MESSAGE } from '../engine/outdoorJean40252.ts'
@@ -99,6 +100,8 @@ function StandardRideScreen({
   const { career,recordIntroRpe } = useCareer()
   const measurementSystem = career.settings.measurementSystem
   const stage = useMemo(() => stageData ?? getRaceStage(stageNumber), [stageNumber, stageData])
+  const sessionWorkout=library==='training'&&workoutId?workoutById(workoutId):null
+  const sessionPower=sessionWorkout?.ftpRange?`${Math.round((targetFtpOverride??career.rider.ftp??150)*sessionWorkout.ftpRange[0])}–${Math.round((targetFtpOverride??career.rider.ftp??150)*sessionWorkout.ftpRange[1])} W`:null
   const isWorlds=stage.raceId==='worlds-2026',targetFtp=targetFtpOverride??career.rider.ftp??150
   const adaptedSegments = useMemo(() => {let adapted=adaptSegments(stage.segments,targetFtp,strategy);if(activityType==='STAGE_REPLAY'&&originalTargetSnapshots?.length===adapted.length)adapted=adapted.map((segment,index)=>({...segment,sec:originalTargetSnapshots[index].duration,zone:originalTargetSnapshots[index].zone,power:originalTargetSnapshots[index].power,cadence:originalTargetSnapshots[index].cadence,resistance:originalTargetSnapshots[index].resistance}));return library==='training'&&career.introCycling.plan&&career.introCycling.plan.rides.some(ride=>ride.id===workoutId)?applyIntroPrescription(adapted,career.rider.ftp||150,career.introCycling.plan):adapted}, [stage,targetFtp,strategy,library,workoutId,career.introCycling.plan,activityType,originalTargetSnapshots])
   const resolvedDuration=useMemo(()=>durationSelectionForStage(stage,durationSelection),[stage,durationSelection])
@@ -769,6 +772,7 @@ function StandardRideScreen({
           font-variant-numeric: tabular-nums;
         }
 
+        .session-prescription{margin:6px 0 8px;padding:8px 10px;border-radius:9px;background:rgba(244,106,0,.08);border:1px solid rgba(244,106,0,.28)}.session-prescription small,.session-prescription strong,.session-prescription span{display:block}.session-prescription small{color:#ff9a4d;font-size:.62rem;font-weight:900;letter-spacing:.08em}.session-prescription strong{margin-top:3px;font-size:.88rem;color:#fff}.session-prescription span{margin-top:2px;font-size:.67rem;color:#aaa}
         .target-grid {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1061,6 +1065,7 @@ function StandardRideScreen({
 
             {massStart?.phase==='PRE_RACE_WARMUP'&&<button type="button" className="skip-warmup" onClick={skipPreRaceWarmup}>SKIP WARM-UP</button>}
 
+            {stage.isTraining&&sessionWorkout&&<div className="session-prescription" aria-label="Overall session prescription"><small>SESSION TARGET</small><strong>{sessionWorkout.durationMinutes} min · {sessionPower??sessionWorkout.unknownFtpEffort} · {sessionWorkout.cadence[0]}–{sessionWorkout.cadence[1]} rpm</strong><span>Current interval targets below may be easier during warm-up and finish.</span></div>}
             <div className="target-grid">
               <div className="target-tile">
                 <small>{displayEffort?'EFFORT':'POWER'}</small>
