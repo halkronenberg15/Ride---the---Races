@@ -39,7 +39,7 @@ export default function TrainingScreen({career,onBack,onRide,onStrength}:{career
  return <ScrollView contentContainerStyle={s.wrap}>
   <Pressable onPress={onBack}><Text style={s.link}>← Team HQ</Text></Pressable>
   <Text style={s.eyebrow}>OFF-SEASON TRAINING</Text><Text style={s.title}>24-Week Calendar</Text>
-  <Text style={s.body}>Tap a day to see the full ride or strength prescription. Ride setting and duration can be adjusted before the cockpit opens.</Text>
+  <Text style={s.body}>Monday rest · Tuesday endurance + Strength A · Wednesday quality · Thursday endurance · Friday recovery · Saturday long ride · Sunday endurance + Strength B. Normal cycling floor: 100 miles/week.</Text>
 
   <View style={s.monthToolbar}>
    <Pressable disabled={monthIndex===0} onPress={()=>setMonthIndex(i=>Math.max(0,i-1))}><Text style={[s.nav,monthIndex===0&&s.disabled]}>‹</Text></Pressable>
