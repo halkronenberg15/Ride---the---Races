@@ -31,6 +31,7 @@ import StructuredRideScreen from './screens/StructuredRideScreen'
 import StrengthPlanScreen from './screens/StrengthPlanScreen'
 import type { RaceStage } from '../../src/data/raceStages'
 import { workoutById } from '../../src/engine/adaptiveTraining40251'
+import { applyHalWeeklyRhythmV2 } from '../../src/engine/alpha4025'
 
 type RideState='idle'|'riding'|'paused'|'saving'
 type AppScreen='mission'|'home'|'nutrition'|'training'|'trainingRide'|'strength'|'library'|'profile'|'roadbook'|'structuredRide'|'ride'
@@ -134,14 +135,15 @@ export default function App(){
   useEffect(()=>()=>{locationSub.current?.remove();deactivateKeepAwake()},[])
 
   const effectiveCareer=useMemo(()=>{if(!career||!career.alpha4025?.trainingPlan)return career
-    const weeks=career.alpha4025.trainingPlan.weeks.map(week=>({...week,assignments:week.assignments.map(item=>{
+    const rhythmPlan=applyHalWeeklyRhythmV2(career.alpha4025.trainingPlan as any)
+    const weeks=rhythmPlan.weeks.map(week=>({...week,assignments:week.assignments.map(item=>{
       const replacementId=trainingOverrides[item.id]
       if(!replacementId)return item
       const workout=workoutById(replacementId)
       if(!workout)return item
       return {...item,status:'REPLACED',workoutId:replacementId,title:workout.title,durationMinutes:workout.durationMinutes,environment:workout.environment}
     })}))
-    return {...career,alpha4025:{...career.alpha4025,trainingPlan:{...career.alpha4025.trainingPlan,weeks}}}
+    return {...career,alpha4025:{...career.alpha4025,trainingPlan:{...rhythmPlan,weeks}}}
   },[career,trainingOverrides])
 
   const replaceTrainingAssignment=(assignmentId:string,workoutId:string)=>{
