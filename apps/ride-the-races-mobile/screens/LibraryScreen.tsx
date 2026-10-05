@@ -21,13 +21,13 @@ export default function LibraryScreen({onBack,onOpenStage}:{onBack:()=>void;onOp
  ]
  return <ScrollView contentContainerStyle={s.wrap}>
   <Pressable onPress={onBack}><Text style={s.link}>← Team HQ</Text></Pressable>
-  <Text style={s.eyebrow}>TEAM LORIOT</Text><Text style={s.title}>Ride Catalogue</Text>
-  <Text style={s.body}>Browse by the kind of road you want to ride, or open the original race collection. Tour, Vuelta, Worlds and training routes can live together inside the terrain themes that fit them.</Text>
+  <Text style={s.eyebrow}>TEAM LORIOT · RACE INTELLIGENCE</Text><Text style={s.title}>Race Library</Text>
+  <Text style={s.body}>Choose the road, then enter the Team Loriot briefing room before you ride. Every stage now opens with route intelligence, profile context and race preparation.</Text>
 
   <View style={s.hero}>
    <Text style={s.heroEyebrow}>ROUTE THEMES</Text>
-   <Text style={s.heroTitle}>Pick the road first.</Text>
-   <Text style={s.heroBody}>Mountain day, rolling countryside, fast roads or a championship circuit. The catalogue then shows every matching ride we have already built.</Text>
+   <Text style={s.heroTitle}>Pick the road. Get the briefing.</Text>
+   <Text style={s.heroBody}>Tour, Vuelta, Worlds and training routes stay organized by terrain. Tap a ride to open its Team Loriot race briefing before entering the cockpit.</Text>
   </View>
 
   {routeThemes.map(theme=>{
