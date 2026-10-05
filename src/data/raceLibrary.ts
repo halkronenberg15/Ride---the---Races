@@ -13,8 +13,10 @@ export const raceIdentities: Record<'tour-2026' | 'vuelta-2026' | 'worlds-2026' 
 export type RaceStageShell = { number:number; date?:string; start:string; finish:string; distanceKm:number; type:string; plannedDurationMinutes?:number; sections:RideSegment[]; climbs:string[]; intermediateSprints:string[]; komMarkers:string[]; finishMarker?:string; jeanObjectives:string[]; rideable:boolean; stage?:RaceStage }
 export type RaceSeries = { id:string; name:string; year:number; status:'rideable'|'calendar'; identity:RaceIdentity; stages:RaceStageShell[]; restDays:{afterStage:number;label:string}[] }
 
-export { tour2026, vuelta2026, vueltaRideStages, uciWorlds2026 } from './professionalRaces.ts'
-import { tour2026, toRaceStage, vuelta2026, vueltaRideStages } from './professionalRaces.ts'
+export { vuelta2026, vueltaRideStages, uciWorlds2026 } from './professionalRaces.ts'
+export { tour2026 } from './tour2026.ts'
+import { tour2026 } from './tour2026.ts'
+import { toRaceStage, vuelta2026, vueltaRideStages } from './professionalRaces.ts'
 
 type SegmentSeed = [string,string,number,string,string,string]
 const segment = (seed:SegmentSeed, routeKm:number, index:number):RideSegment => ({ name:seed[0], type:seed[1], sec:seed[2]*60, zone:seed[3], power:seed[4], cadence:seed[5], resistance:'25–40%', routeKm, icon:'🚴', description:seed[0], objective:seed[1], secondaryObjective:'Ride smoothly.', terrainLabel:seed[1], fixed:index===0?[{at:5,text:'Settle in.'}]:[], random:[] })
