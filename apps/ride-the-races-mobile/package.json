@@ -6,7 +6,14 @@
   "scripts": {
     "start": "expo start",
     "ios": "expo start --ios",
-    "android": "expo start --android"
+    "android": "expo start --android",
+    "doctor": "npx expo-doctor",
+    "eas:init": "npx eas-cli@latest init",
+    "eas:configure-updates": "npx eas-cli@latest update:configure",
+    "eas:build:ios:preview": "npx eas-cli@latest build --platform ios --profile preview",
+    "eas:build:ios:production": "npx eas-cli@latest build --platform ios --profile production",
+    "eas:update:preview": "npx eas-cli@latest update --channel preview",
+    "eas:update:production": "npx eas-cli@latest update --channel production"
   },
   "dependencies": {
     "expo": "^57.0.0",
@@ -23,7 +30,8 @@
     "expo-task-manager": "~57.0.20",
     "react-native-svg": "~15.15.1",
     "expo-image-picker": "~57.0.20",
-    "expo-speech": "~57.0.3"
+    "expo-speech": "~57.0.3",
+    "expo-updates": "~57.0.23"
   },
   "devDependencies": {
     "@types/react": "~19.2.4",

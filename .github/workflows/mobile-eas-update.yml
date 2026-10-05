@@ -1,0 +1,56 @@
+name: Mobile OTA Update
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: EAS Update channel
+        required: true
+        default: preview
+        type: choice
+        options:
+          - preview
+          - production
+      message:
+        description: Update message
+        required: false
+        default: Manual RtR mobile update
+  push:
+    branches: [main]
+    paths:
+      - 'apps/ride-the-races-mobile/**'
+      - 'src/data/**'
+      - 'src/engine/**'
+
+concurrency:
+  group: mobile-ota-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    if: ${{ vars.EAS_AUTOMATION_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/ride-the-races-mobile
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install mobile dependencies
+        run: npm install
+
+      - name: Validate Expo project
+        run: npx expo-doctor
+
+      - name: Publish EAS Update
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          UPDATE_CHANNEL: ${{ github.event_name == 'workflow_dispatch' && inputs.channel || 'preview' }}
+          UPDATE_MESSAGE: ${{ github.event_name == 'workflow_dispatch' && inputs.message || format('main {0}', github.sha) }}
+        run: npx eas-cli@latest update --channel "$UPDATE_CHANNEL" --message "$UPDATE_MESSAGE" --non-interactive

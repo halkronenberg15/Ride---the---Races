@@ -1,0 +1,45 @@
+name: Mobile iOS Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: EAS build profile
+        required: true
+        default: preview
+        type: choice
+        options:
+          - preview
+          - production
+
+concurrency:
+  group: mobile-ios-build-${{ inputs.profile }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: ${{ vars.EAS_AUTOMATION_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/ride-the-races-mobile
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install mobile dependencies
+        run: npm install
+
+      - name: Validate Expo project
+        run: npx expo-doctor
+
+      - name: Start EAS iOS build
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          BUILD_PROFILE: ${{ inputs.profile }}
+        run: npx eas-cli@latest build --platform ios --profile "$BUILD_PROFILE" --non-interactive --no-wait
