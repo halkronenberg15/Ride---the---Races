@@ -28,13 +28,14 @@ import ProfileScreen, { type EditableRiderProfile } from './screens/ProfileScree
 import TrainingRideScreen from './screens/TrainingRideScreen'
 import StageRoadbookScreen from './screens/StageRoadbookScreen'
 import StructuredRideScreen from './screens/StructuredRideScreen'
+import RaceBriefingsScreen from './screens/RaceBriefingsScreen'
 import StrengthPlanScreen from './screens/StrengthPlanScreen'
 import type { RaceStage } from '../../src/data/raceStages'
 import { workoutById } from '../../src/engine/adaptiveTraining40251'
 import { applyHalWeeklyRhythmV2 } from '../../src/engine/alpha4025'
 
 type RideState='idle'|'riding'|'paused'|'saving'
-type AppScreen='mission'|'home'|'nutrition'|'training'|'trainingRide'|'strength'|'library'|'profile'|'roadbook'|'structuredRide'|'ride'
+type AppScreen='mission'|'home'|'nutrition'|'training'|'trainingRide'|'strength'|'library'|'briefing'|'profile'|'roadbook'|'structuredRide'|'ride'
 type Coord={latitude:number;longitude:number;timestamp:number}
 
 function distanceMeters(a:Coord,b:Coord){
@@ -404,7 +405,11 @@ export default function App(){
   }
 
   if(screen==='library'){
-    return <SafeAreaView style={styles.root}><StatusBar style="light"/><LibraryScreen onBack={()=>setScreen('home')} onOpenStage={(stage)=>{setSelectedStage(stage);setScreen('structuredRide')}}/></SafeAreaView>
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><LibraryScreen onBack={()=>setScreen('home')} onOpenStage={(stage)=>{setSelectedStage(stage);setScreen('briefing')}}/></SafeAreaView>
+  }
+
+  if(screen==='briefing'&&selectedStage){
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><RaceBriefingsScreen stage={selectedStage} onBack={()=>setScreen('library')} onStart={()=>setScreen('structuredRide')}/></SafeAreaView>
   }
 
   if(screen==='roadbook'){
@@ -412,7 +417,7 @@ export default function App(){
   }
 
   if(screen==='structuredRide'&&selectedStage){
-    return <SafeAreaView style={styles.root}><StatusBar style="light"/><StructuredRideScreen stage={selectedStage} onBack={()=>setScreen('roadbook')} onFinish={async(durationSeconds)=>{if(!profileId)return;const rideId=Crypto.randomUUID();const now=new Date();const started=new Date(now.getTime()-durationSeconds*1000);const row={ride_id:rideId,athlete_id:profileId,source:'RTR',started_at:started.toISOString(),completed_at:now.toISOString(),duration_seconds:durationSeconds,distance_meters:Math.round(selectedStage.distanceKm*1000),stage_number:selectedStage.number,race_id:'tour-2026',notes:selectedStage.title};const {error}=await supabase.from('rides').insert(row);if(error)throw error;await supabase.from('athlete_events').insert({event_id:Crypto.randomUUID(),athlete_id:profileId,event_type:'ride.completed',schema_version:1,occurred_at:row.completed_at,producer:'ride-the-races',payload:{schemaVersion:1,rideId,athleteId:profileId,source:'RTR',stageNumber:selectedStage.number,raceId:'tour-2026',startedAt:row.started_at,completedAt:row.completed_at,durationSeconds,distanceMeters:row.distance_meters}});setCloudRideCount(count=>count+1);Alert.alert('Stage saved','Stage '+selectedStage.number+' is in your cloud ride history.');setScreen('roadbook')}}/></SafeAreaView>
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><StructuredRideScreen stage={selectedStage} onBack={()=>setScreen('briefing')} onFinish={async(durationSeconds)=>{if(!profileId)return;const rideId=Crypto.randomUUID();const now=new Date();const started=new Date(now.getTime()-durationSeconds*1000);const row={ride_id:rideId,athlete_id:profileId,source:'RTR',started_at:started.toISOString(),completed_at:now.toISOString(),duration_seconds:durationSeconds,distance_meters:Math.round(selectedStage.distanceKm*1000),stage_number:selectedStage.number,race_id:'tour-2026',notes:selectedStage.title};const {error}=await supabase.from('rides').insert(row);if(error)throw error;await supabase.from('athlete_events').insert({event_id:Crypto.randomUUID(),athlete_id:profileId,event_type:'ride.completed',schema_version:1,occurred_at:row.completed_at,producer:'ride-the-races',payload:{schemaVersion:1,rideId,athleteId:profileId,source:'RTR',stageNumber:selectedStage.number,raceId:'tour-2026',startedAt:row.started_at,completedAt:row.completed_at,durationSeconds,distanceMeters:row.distance_meters}});setCloudRideCount(count=>count+1);Alert.alert('Stage saved','Stage '+selectedStage.number+' is in your cloud ride history.');setScreen('roadbook')}}/></SafeAreaView>
   }
 
   if(screen==='profile'){
