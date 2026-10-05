@@ -2,6 +2,8 @@ import type { RaceStage } from '../../../src/data/raceStages'
 import { raceStages } from '../../../src/data/raceStages'
 import { curatedOffSeasonTrainingRides, trainingRides, vueltaRideStages } from '../../../src/data/raceLibrary'
 import { worldsStages } from '../../../src/data/uciWorlds2026'
+import { tour2026 } from '../../../src/data/tour2026'
+import { toRaceStage } from '../../../src/data/professionalRaces'
 
 export type RouteThemeId='alpine'|'rolling'|'coastal'|'flat-fast'|'time-trial'|'championship'
 export type RouteTheme={id:RouteThemeId;name:string;subtitle:string;stages:RaceStage[]}
