@@ -35,6 +35,7 @@ export default function TrainingRideScreen({workoutId,assignmentId,ftp,onBack,on
  const briefing=useMemo(()=>buildTrainingRideBriefing(workout,ftp,sections),[workout,ftp,sections])
 
  const [view,setView]=useState<'BRIEFING'|'COCKPIT'>('BRIEFING')
+ const [cockpitView,setCockpitView]=useState<'TARGETS'|'COURSE'|'JIMMY'>('TARGETS')
  const [elapsed,setElapsed]=useState(0)
  const [running,setRunning]=useState(false)
  const [saving,setSaving]=useState(false)
@@ -212,8 +213,11 @@ export default function TrainingRideScreen({workoutId,assignmentId,ftp,onBack,on
   <ScrollView style={s.scroll} contentContainerStyle={s.cockpitContent} showsVerticalScrollIndicator={false}>
    <View style={s.topBar}><Pressable onPress={onBack}><Text style={s.link}>← Training</Text></Pressable><Text style={s.topTime}>{formatTime(Math.max(0,total-elapsed))} left</Text></View>
    <View><Text style={s.eyebrow}>RTR · INDOOR TRAINING</Text><Text numberOfLines={1} style={s.title}>{workout.title}</Text></View>
-   <ImmersiveRideProfile points={profile} progress={progress} label="RIDE PROFILE" currentLabel={currentSection.title} nextLabel={next?.title??'Finish'}/>
-   <View style={s.currentCard}>
+   <View style={s.viewTabs}>
+    {(['TARGETS','COURSE','JIMMY'] as const).map(tab=><Pressable key={tab} onPress={()=>setCockpitView(tab)} style={[s.viewTab,cockpitView===tab&&s.viewTabActive]}><Text style={[s.viewTabText,cockpitView===tab&&s.viewTabTextActive]}>{tab}</Text></Pressable>)}
+   </View>
+   {cockpitView==='COURSE'&&<ImmersiveRideProfile points={profile} progress={progress} label="RIDE PROFILE" currentLabel={currentSection.title} nextLabel={next?.title??'Finish'}/>}
+   {cockpitView==='TARGETS'&&<View style={s.currentCard}>
     <View style={s.currentHeader}><View><Text style={s.label}>CURRENT TARGET</Text><Text numberOfLines={1} style={s.sectionTitle}>{currentSection.title}</Text></View><Text style={s.sectionCountdown}>{formatTime(execution.sectionRemainingSeconds)}</Text></View>
     <View style={s.metrics}>
       <Metric label="POWER" value={watts(currentSection.ftpRange,ftp)}/>
@@ -221,13 +225,13 @@ export default function TrainingRideScreen({workoutId,assignmentId,ftp,onBack,on
       <Metric label="RESISTANCE" value={currentSection.resistance.replace('Light, gradually supported resistance','Light / supported')}/>
       <Metric label="ZONE" value={currentSection.zone}/>
     </View>
-    <View style={s.jimmy}><Text style={s.jimmyName}>JIMMY</Text><Text numberOfLines={3} style={s.jimmyText}>{lastCue??currentSection.jean}</Text></View>
-   </View>
-   <View style={s.statusStrip}>
+   </View>}
+   {cockpitView==='JIMMY'&&<View style={s.jimmyFocus}><Text style={s.jimmyName}>JIMMY RADIO</Text><Text style={s.jimmyFocusText}>{lastCue??currentSection.jean}</Text><Text style={s.jimmyContext}>Current: {currentSection.title} · Next: {next?.title??'Finish'}</Text></View>}
+   {cockpitView==='TARGETS'&&<View style={s.statusStrip}>
     <View><Text style={s.smallLabel}>ELAPSED</Text><Text style={s.statusValue}>{formatTime(elapsed)}</Text></View>
     <View style={s.centerStatus}><Text style={s.smallLabel}>SECTION</Text><Text style={s.statusValue}>{execution.current.index+1}/{sections.length}</Text></View>
     <View style={s.rightStatus}><Text style={s.smallLabel}>UP NEXT</Text><Text numberOfLines={1} style={s.nextText}>{next?.title??'Finish'}</Text></View>
-   </View>
+   </View>}
    {!running&&elapsed>=total&&<View style={s.postRide}>
     <Text style={s.label}>POST-RIDE CHECK</Text>
     <Text style={s.postLabel}>RPE {rpe}/10</Text>
@@ -252,7 +256,7 @@ const s=StyleSheet.create({
  root:{flex:1,backgroundColor:'#090909'},
  scroll:{flex:1},
  briefingContent:{padding:16,paddingBottom:24,gap:12},
- cockpitContent:{padding:16,paddingBottom:24,gap:10},
+ cockpitContent:{padding:16,paddingBottom:24,gap:10},viewTabs:{flexDirection:'row',gap:8},viewTab:{flex:1,paddingVertical:10,borderRadius:12,borderWidth:1,borderColor:'#34383a',alignItems:'center',backgroundColor:'#101214'},viewTabActive:{backgroundColor:'#ff6a00',borderColor:'#ff6a00'},viewTabText:{color:'#8f9396',fontSize:11,fontWeight:'900',letterSpacing:.7},viewTabTextActive:{color:'#111'},
  topBar:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
  link:{color:'#ff8b3d',fontWeight:'800',fontSize:14},
  topTime:{color:'#8a8a8a',fontWeight:'800',fontSize:13},
@@ -277,7 +281,7 @@ const s=StyleSheet.create({
  metricValue:{color:'#fff',fontSize:15,fontWeight:'900',marginTop:4},
  jimmy:{flexDirection:'row',alignItems:'flex-start',gap:8,backgroundColor:'#0e0e0e',borderRadius:12,padding:10},
  jimmyName:{color:'#ff8b3d',fontWeight:'900',fontSize:11,letterSpacing:1},
- jimmyText:{color:'#d0d0d0',fontSize:13,lineHeight:18,flex:1},
+ jimmyText:{color:'#d0d0d0',fontSize:13,lineHeight:18,flex:1},jimmyFocus:{backgroundColor:'#101010',borderRadius:16,padding:16,borderWidth:1,borderColor:'#3a2a20',gap:10},jimmyFocusText:{color:'#fff',fontSize:17,lineHeight:24,fontWeight:'700'},jimmyContext:{color:'#7d8184',fontSize:11,fontWeight:'800'},
  statusStrip:{flexDirection:'row',backgroundColor:'#101010',borderRadius:14,padding:11,alignItems:'center'},
  smallLabel:{color:'#6f6f6f',fontSize:8,fontWeight:'900',letterSpacing:1},
  statusValue:{color:'#fff',fontWeight:'900',fontSize:15,marginTop:2},
