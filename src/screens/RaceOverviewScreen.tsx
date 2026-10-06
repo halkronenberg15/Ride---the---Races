@@ -1,5 +1,6 @@
 import { useCareer } from '../state/CareerContext'
-import { tour2026, vuelta2026 } from '../data/professionalRaces'
+import { vuelta2026 } from '../data/professionalRaces'
+import { tour2026 } from '../data/tour2026'
 import { getSeason } from '../data/seasonCalendar'
 
 const dateLabel=(value:string)=>new Intl.DateTimeFormat('en',{weekday:'short',month:'short',day:'numeric',timeZone:'UTC'}).format(new Date(value+'T00:00:00Z'))
