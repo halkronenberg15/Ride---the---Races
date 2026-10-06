@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { tour2026, vuelta2026 } from './professionalRaces.ts'
+import { vuelta2026 } from './professionalRaces.ts'
+import { tour2026 } from './tour2026.ts'
 import { auditProfessionalRace, validateProfessionalRace } from './professionalWorkoutValidation.ts'
 import { createStageTimeline } from '../engine/stageEngine.ts'
 
