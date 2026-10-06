@@ -398,7 +398,7 @@ export default function App(){
   }
 
   if(screen==='strength'&&selectedStrengthAssignment){
-    return <SafeAreaView style={styles.root}><StatusBar style="light"/><StrengthPlanScreen assignment={selectedStrengthAssignment} onBack={()=>setScreen('training')} onSave={async(log:MobileStrengthLog)=>{const raw=await AsyncStorage.getItem('rtr-mobile-strength-logs-v1');let existing:MobileStrengthLog[]=[];if(raw){try{existing=JSON.parse(raw) as MobileStrengthLog[]}catch{}}const next=[log,...existing.filter(item=>item.assignmentId!==log.assignmentId)];await AsyncStorage.setItem('rtr-mobile-strength-logs-v1',JSON.stringify(next))}}/></SafeAreaView>
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><StrengthPlanScreen assignment={selectedStrengthAssignment} onBack={()=>setScreen('training')} onSave={async(log:MobileStrengthLog)=>{const raw=await AsyncStorage.getItem('rtr-mobile-strength-logs-v1');let existing:MobileStrengthLog[]=[];if(raw){try{existing=JSON.parse(raw) as MobileStrengthLog[]}catch{}}const next=[log,...existing.filter(item=>item.assignmentId!==log.assignmentId)];await AsyncStorage.setItem('rtr-mobile-strength-logs-v1',JSON.stringify(next));if(profileId){await supabase.from('athlete_events').insert({event_id:Crypto.randomUUID(),athlete_id:profileId,event_type:'strength.completed',schema_version:1,occurred_at:log.completedAt,producer:'ride-the-races',payload:{schemaVersion:1,assignmentId:log.assignmentId,exercises:log.exercises}})}}}/></SafeAreaView>
   }
 
   if(screen==='trainingRide'&&selectedWorkoutId){
