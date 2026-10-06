@@ -30,3 +30,39 @@ export function completeTacticalEvent(state: TacticalState): TacticalState {
 }
 
 export type { NormalizedTelemetry, RiderPerformance, DeviceAdapter } from './telemetry.ts'
+import type { RiderPerformance } from './telemetry.ts'
+
+
+/**
+ * Evolves a tactical gap from rider performance only.
+ * It cannot return or mutate professional geography.
+ */
+export function evolveRaceGapFromPerformance(
+ state:TacticalState,
+ performance:RiderPerformance,
+ elapsedSeconds:number,
+):TacticalState{
+ if(!state.gap||performance.stale||performance.targetCompliance===null)return state
+ const compliance=performance.targetCompliance
+ const effort=compliance>=.9?-.7:compliance>=.7?-.2:compliance>=.5?.15:.55
+ const fatiguePressure=Math.max(0,performance.fatigue-70)/100
+ const delta=(effort+fatiguePressure)*Math.max(1,elapsedSeconds/10)
+ const gapSeconds=Math.max(0,Number((state.gap.gapSeconds+delta).toFixed(1)))
+ const gapTrend:GapTrend=delta<-.05?'closing':delta>.05?'opening':'stable'
+ return {...state,gap:{...state.gap,gapSeconds,gapTrend}}
+}
+
+/**
+ * Resolves a deterministic tactical outcome label from canonical tactical state
+ * and rider performance. Geography remains external to this function.
+ */
+export function tacticalOutcome(
+ state:TacticalState,
+ performance:RiderPerformance,
+):'NO_EVENT'|'STRONG'|'HOLDING'|'UNDER_PRESSURE'{
+ if(!state.activeEvent&&!state.gap)return 'NO_EVENT'
+ if(performance.stale||performance.targetCompliance===null)return 'HOLDING'
+ if(performance.targetCompliance>=.9&&performance.fatigue<75)return 'STRONG'
+ if(performance.targetCompliance>=.65&&performance.fatigue<90)return 'HOLDING'
+ return 'UNDER_PRESSURE'
+}
