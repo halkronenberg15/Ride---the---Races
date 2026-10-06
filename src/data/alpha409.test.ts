@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { tour2026, toRaceStage, vuelta2026 } from './professionalRaces.ts'
+import { toRaceStage, vuelta2026 } from './professionalRaces.ts'
+import { tour2026 } from './tour2026.ts'
 import { createRoadModel, COURSE_MARKER_HEIGHT } from '../engine/roadModel.ts'
 import { raceIdentities } from './raceLibrary.ts'
 
