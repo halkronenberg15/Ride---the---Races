@@ -2070,3 +2070,167 @@ body{
   .web-route-intel-panel h3{font-size:1.2rem}
   .briefing-mission h2{font-size:1.05rem}
 }
+
+
+/* Canonical cockpit broadcast pass 1.
+   Presentation only. Geography, timing, prescription and tactical state remain engine-owned. */
+.ride-cockpit.official-cockpit .live-profile-card{
+  overflow:hidden!important;
+  border-color:rgba(255,255,255,.2)!important;
+  background:
+    radial-gradient(circle at 72% 14%,color-mix(in srgb,var(--cockpit-accent) 12%,transparent),transparent 24%),
+    linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.008) 42%,rgba(0,0,0,.16)),
+    #0a0c0f!important;
+  box-shadow:0 26px 70px rgba(0,0,0,.44),inset 0 1px 0 rgba(255,255,255,.045)!important;
+}
+.ride-cockpit.official-cockpit .live-profile-card::after{
+  content:"";
+  position:absolute;
+  inset:-35% -20%;
+  z-index:-1;
+  pointer-events:none;
+  background:linear-gradient(112deg,transparent 38%,rgba(255,255,255,.045) 47%,transparent 56%);
+  transform:translateX(-34%);
+  opacity:.7;
+}
+html[data-motion="full"] .ride-cockpit.official-cockpit .live-profile-card::after{animation:cockpitBroadcastSweep 9s linear infinite}
+@keyframes cockpitBroadcastSweep{0%{transform:translateX(-42%)}50%{transform:translateX(16%)}100%{transform:translateX(62%)}}
+
+.live-profile-wrap{
+  border:1px solid rgba(255,255,255,.11);
+  box-shadow:inset 0 -28px 50px rgba(0,0,0,.28),0 10px 30px rgba(0,0,0,.22);
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.032),transparent 42%),
+    radial-gradient(circle at 65% 40%,color-mix(in srgb,var(--cockpit-accent) 10%,transparent),transparent 34%),
+    #090b0e;
+}
+.live-profile-wrap::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  background:
+    repeating-linear-gradient(0deg,transparent 0 20px,rgba(255,255,255,.025) 21px),
+    repeating-linear-gradient(90deg,transparent 0 39px,rgba(255,255,255,.02) 40px);
+  mask-image:linear-gradient(to bottom,rgba(0,0,0,.85),rgba(0,0,0,.18));
+}
+.live-profile-wrap svg{position:relative;z-index:1}
+.live-profile-wrap .race-marker,.live-profile-wrap .profile-rider,.live-profile-wrap .worlds-group-layer,.live-profile-wrap .course-endpoint-layer,.live-profile-wrap .course-finish-label{z-index:8}
+
+.profile-rider,.climb-rider{
+  width:46px!important;
+  height:34px!important;
+  transform:translate(-50%,-72%)!important;
+  filter:drop-shadow(0 5px 7px rgba(0,0,0,.85)) drop-shadow(0 0 9px color-mix(in srgb,var(--cockpit-accent) 40%,transparent))!important;
+}
+.profile-rider .rider-glyph,.climb-rider .rider-glyph{color:#fff}
+.profile-rider .rider-glyph svg,.climb-rider .rider-glyph svg{width:44px!important;height:29px!important}
+.rider-wheel{fill:rgba(7,8,10,.95);stroke:#fff;stroke-width:1.7}
+.rider-frame{fill:none;stroke:var(--cockpit-accent);stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}
+.rider-body{fill:#fff;stroke:rgba(0,0,0,.4);stroke-width:.55}
+.rider-head{fill:#fff}
+.rider-limb{fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.rider-marker-halo{
+  width:33px!important;
+  height:33px!important;
+  border:1px solid rgba(255,255,255,.5)!important;
+  background:radial-gradient(circle,rgba(255,255,255,.2),color-mix(in srgb,var(--cockpit-accent) 30%,rgba(5,6,8,.82)) 55%,rgba(5,6,8,.25))!important;
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--cockpit-accent) 13%,transparent),0 0 24px color-mix(in srgb,var(--cockpit-accent) 48%,transparent)!important;
+}
+html[data-motion="full"] .profile-rider .rider-marker-halo,
+html[data-motion="full"] .climb-rider .rider-marker-halo{animation:riderBeacon 2.2s ease-in-out infinite}
+@keyframes riderBeacon{0%,100%{box-shadow:0 0 0 3px color-mix(in srgb,var(--cockpit-accent) 10%,transparent),0 0 16px color-mix(in srgb,var(--cockpit-accent) 34%,transparent)}50%{box-shadow:0 0 0 7px color-mix(in srgb,var(--cockpit-accent) 2%,transparent),0 0 29px color-mix(in srgb,var(--cockpit-accent) 58%,transparent)}}
+
+.live-tracker-4023{
+  position:relative;
+  padding-bottom:8px;
+}
+.live-tracker-4023::after{
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:-1px;
+  height:1px;
+  background:linear-gradient(90deg,var(--cockpit-accent),rgba(255,255,255,.2) 42%,transparent 88%);
+}
+.cockpit-road-state{
+  margin-top:8px;
+  border-color:rgba(255,255,255,.16);
+  box-shadow:0 8px 22px rgba(0,0,0,.18);
+}
+.cockpit-road-state span{
+  background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,.005)),rgba(8,9,11,.96);
+}
+.compact-section-clock{
+  display:flex!important;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:10px;
+  padding:4px 2px 1px;
+}
+.compact-section-clock strong{
+  text-shadow:0 0 20px color-mix(in srgb,var(--cockpit-accent) 28%,transparent);
+}
+.ride-cockpit .target-grid{
+  box-shadow:0 10px 28px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.025);
+}
+.ride-cockpit .target-tile{
+  position:relative;
+  overflow:hidden;
+}
+.ride-cockpit .target-tile::after{
+  content:"";
+  position:absolute;
+  left:16%;
+  right:16%;
+  bottom:0;
+  height:1px;
+  background:linear-gradient(90deg,transparent,var(--cockpit-accent),transparent);
+  opacity:.35;
+}
+.ride-cockpit .target-tile:first-child{
+  background:linear-gradient(180deg,color-mix(in srgb,var(--cockpit-accent) 8%,transparent),transparent)!important;
+}
+.tactical-status-strip{
+  border:1px solid color-mix(in srgb,var(--cockpit-accent) 55%,transparent);
+  border-radius:8px;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--cockpit-accent) 20%,rgba(9,10,12,.95)),rgba(9,10,12,.95));
+  box-shadow:0 0 20px color-mix(in srgb,var(--cockpit-accent) 10%,transparent);
+}
+.ride-cockpit .authoritative-jean{
+  box-shadow:0 10px 30px rgba(0,0,0,.2);
+}
+.ride-cockpit .progress-track{
+  position:relative;
+  height:7px;
+  box-shadow:inset 0 1px 4px rgba(0,0,0,.65);
+}
+.ride-cockpit .progress-fill{
+  position:relative;
+  overflow:visible;
+}
+.ride-cockpit .progress-fill::after{
+  content:"";
+  position:absolute;
+  right:-3px;
+  top:50%;
+  width:9px;
+  height:9px;
+  transform:translateY(-50%);
+  border-radius:50%;
+  background:#fff;
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--cockpit-accent) 40%,transparent),0 0 16px var(--cockpit-accent);
+}
+
+@media(max-width:520px){
+  .profile-rider,.climb-rider{width:40px!important;height:31px!important}
+  .profile-rider .rider-glyph svg,.climb-rider .rider-glyph svg{width:38px!important;height:26px!important}
+  .compact-section-clock{align-items:flex-end}
+  .compact-section-clock small{text-align:right;max-width:48%}
+}
+@media (orientation:landscape) and (max-height:600px){
+  .live-profile-wrap,.profile-detail-4022,.climb-profile-4023{height:138px!important;min-height:138px!important;max-height:138px!important}
+  .profile-rider,.climb-rider{width:42px!important}
+}
