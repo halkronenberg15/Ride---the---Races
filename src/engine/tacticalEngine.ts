@@ -29,6 +29,4 @@ export function completeTacticalEvent(state: TacticalState): TacticalState {
   return { ...state, activeEvent: null, gap: null, completedEventIds: [...state.completedEventIds, state.activeEvent.id] }
 }
 
-export type NormalizedTelemetry = { power?: number; cadence?: number; resistance?: number; heartRate?: number; speed?: number; timestamp: number }
-export type RiderPerformance = { targetCompliance: number; fatigue: number; telemetryTimestamp: number }
-export interface DeviceAdapter<DeviceSample> { normalize(sample: DeviceSample): NormalizedTelemetry }
+export type { NormalizedTelemetry, RiderPerformance, DeviceAdapter } from './telemetry.ts'
