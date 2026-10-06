@@ -56,10 +56,9 @@ export default function StructuredRideScreen({stage,onBack,onFinish}:{stage:Race
    <View style={s.nextStrip}><Text style={s.nextLabel}>NEXT</Text><Text style={s.nextTitle}>{next?.name??'Finish line'}</Text><Text style={s.nextTime}>{next?Math.ceil(next.sec/60)+' min':'—'}</Text></View>
   </View>}
 
-  {cockpitView==='JIMMY'&&<View style={s.jimmy}><View style={s.jimmyBadge}><Text style={s.jimmyBadgeText}>J</Text></View><View style={{flex:1}}><Text style={s.jimmyName}>JIMMY RADIO</Text><Text style={s.jimmyText}>{lastCue??current.segment.description??stage.objective}</Text></View></View>
+  {cockpitView==='JIMMY'&&<View style={s.jimmy}><View style={s.jimmyBadge}><Text style={s.jimmyBadgeText}>J</Text></View><View style={{flex:1}}><Text style={s.jimmyName}>JIMMY RADIO</Text><Text style={s.jimmyText}>{lastCue??current.segment.description??stage.objective}</Text><Text style={s.jimmyContext}>{routeTheme.name} · Next: {next?.name??'Finish'}</Text></View></View>}
 
-  <Pressable style={s.courseToggle} onPress={()=>setShowCourse(v=>!v)}><Text style={s.courseToggleText}>{showCourse?'HIDE COURSE INTELLIGENCE':'SHOW COURSE INTELLIGENCE'}</Text><Text style={s.courseToggleArrow}>{showCourse?'⌃':'⌄'}</Text></Pressable>
-  {showCourse&&<>
+  {cockpitView==='COURSE'&&<>
    {stage.routeMap?.points?.length?<RouteMapCard points={stage.routeMap.points} progress={progress} alt={stage.routeMap.alt}/>:null}
    {climbRide&&gradientPoints.length>1?<GradientClimbProfile points={gradientPoints} progress={progress}/>:<ImmersiveRideProfile points={profilePoints} progress={progress} label="COURSE PROFILE" currentLabel={current.segment.name} nextLabel={next?.name??'Finish'}/>}
    <CourseMarkerStrip markers={markers} distanceKm={stage.distanceKm} courseKm={courseKm}/>
@@ -82,7 +81,6 @@ const s=StyleSheet.create({
  metrics:{flexDirection:'row',flexWrap:'wrap',gap:8},metric:{width:'48.5%',padding:11,borderRadius:12,backgroundColor:'#0b0c0d',minHeight:67},metricLabel:{color:'#777b7e',fontSize:8,fontWeight:'900',letterSpacing:1},metricValue:{color:'#fff',fontSize:16,fontWeight:'900',marginTop:5,lineHeight:18},
  nextStrip:{flexDirection:'row',alignItems:'center',gap:10,paddingTop:2},nextLabel:{color:'#777b7e',fontSize:9,fontWeight:'900',letterSpacing:1},nextTitle:{color:'#fff',fontSize:14,fontWeight:'900',flex:1},nextTime:{color:'#9a9da0',fontSize:11,fontWeight:'800'},
  jimmy:{flexDirection:'row',gap:10,padding:13,borderRadius:16,backgroundColor:'#101010',borderWidth:1,borderColor:'#2f3234'},jimmyBadge:{width:38,height:38,borderRadius:19,backgroundColor:'#ff6a00',alignItems:'center',justifyContent:'center'},jimmyBadgeText:{color:'#111',fontSize:19,fontWeight:'900'},jimmyName:{color:'#ff8b3d',fontSize:9,fontWeight:'900',letterSpacing:1.1},jimmyText:{color:'#d0d0d0',fontSize:15,lineHeight:21,marginTop:5},jimmyContext:{color:'#7e8386',fontSize:11,fontWeight:'800',marginTop:10},
- courseToggle:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',padding:13,borderRadius:14,borderWidth:1,borderColor:'#35383a',backgroundColor:'#111315'},courseToggleText:{color:'#fff',fontSize:11,fontWeight:'900',letterSpacing:.8},courseToggleArrow:{color:'#ff8b3d',fontSize:20,fontWeight:'900'},
  contextCard:{padding:13,borderRadius:15,backgroundColor:'#111315',borderWidth:1,borderColor:'#2f3234'},contextTitle:{color:'#fff',fontSize:15,fontWeight:'900',marginTop:3},contextText:{color:'#9d9fa1',fontSize:12,lineHeight:17,marginTop:4},
  primary:{backgroundColor:'#ff6a00',padding:18,borderRadius:16,alignItems:'center'},warn:{backgroundColor:'#d98a00',padding:18,borderRadius:16,alignItems:'center'},finish:{backgroundColor:'#c63b2f',padding:18,borderRadius:16,alignItems:'center',flex:1},finishWide:{backgroundColor:'#c63b2f',padding:18,borderRadius:16,alignItems:'center'},secondary:{borderWidth:1,borderColor:'#555',padding:18,borderRadius:16,alignItems:'center',flex:1},actions:{flexDirection:'row',gap:12},primaryText:{color:'#fff',fontWeight:'900',fontSize:16},secondaryText:{color:'#fff',fontWeight:'800'}
 })
