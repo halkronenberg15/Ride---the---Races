@@ -30,8 +30,22 @@ export default function TeamBusScreen({ onBack, seasons, onOpenSeason, onOpenTra
   const hearJean=()=>{if(voiceStatus==='speaking'){stopJeanVoice();setVoiceStatus('idle')}else speakAsJean(motto,setVoiceStatus,career.settings.jeanVoiceVolume)}
   return <section className="team-bus-screen alpha38-team-bus">
     <button type="button" onClick={onBack}>← Back Home</button>
-    <header className="compact-page-header"><p className="eyebrow">{teamLoriot.name.toUpperCase()}</p><h1>Team Bus</h1><p>Plan the season, prepare the team, and choose where we race.</p></header>
-    <article className="jean-command-card team-bus-jean"><div className="jean-identity"><div className="jean-avatar" aria-hidden="true">JM</div><div><p className="eyebrow">DIRECTEUR SPORTIF</p><h2>Jean Moreau</h2><span>Live from the Team Loriot car</span></div></div><div className="radio-message team-motto"><span className="radio-indicator"><i/> TEAM PHILOSOPHY</span><blockquote>“{motto}”</blockquote></div><div className="jean-voice-controls"><button type="button" className="voice-button" onClick={hearJean} disabled={!career.settings.jeanVoiceEnabled}>{voiceStatus==='speaking'?'■ Stop Jean':'▶ Hear Jean'}</button><label><input type="checkbox" checked={career.settings.jeanVoiceEnabled} onChange={event=>{stopJeanVoice();setVoiceStatus('idle');setJeanVoiceEnabled(event.target.checked)}}/> Jean voice</label></div></article>
+    <header className="compact-page-header web-team-bus-title"><p className="eyebrow">{teamLoriot.name.toUpperCase()}</p><h1>Mission France Team Bus</h1><p>Plan the season, prepare the rider, and roll toward July 2028.</p></header>
+    <section className="web-team-bus-hero" aria-label="Team Loriot bus exterior">
+      <div className="web-bus-sky"><span className="web-bus-sun"/></div>
+      <div className="web-bus-awning"/>
+      <div className="web-bus-shell">
+        <div className="web-bus-roof"><strong>TEAM LORIOT</strong><span>MISSION FRANCE 2028</span></div>
+        <div className="web-bus-windows">{[0,1,2,3,4].map(index=><i key={index}/>)}</div>
+        <div className="web-bus-stripe"/>
+        <div className="web-bus-door"/>
+        <div className="web-bus-wheel web-bus-wheel-left"/>
+        <div className="web-bus-wheel web-bus-wheel-right"/>
+      </div>
+      <div className="web-bus-bikes">{[0,1,2].map(index=><span key={index}><i/><b/><i/></span>)}</div>
+      <div className="web-bus-caption"><p className="eyebrow">OUTSIDE THE TEAM BUS</p><strong>Mission France starts here.</strong><span>Training · Nutrition · Rider Passport · Race Intelligence</span></div>
+    </section>
+    <article className="jean-command-card team-bus-jean"><div className="jean-identity"><div className="jean-avatar" aria-hidden="true">JM</div><div><p className="eyebrow">DIRECTEUR SPORTIF</p><h2>Jimmy</h2><span>Live from the Team Loriot car</span></div></div><div className="radio-message team-motto"><span className="radio-indicator"><i/> TEAM PHILOSOPHY</span><blockquote>“{motto}”</blockquote></div><div className="jean-voice-controls"><button type="button" className="voice-button" onClick={hearJean} disabled={!career.settings.jeanVoiceEnabled}>{voiceStatus==='speaking'?'■ Stop Jimmy':'▶ Hear Jimmy'}</button><label><input type="checkbox" checked={career.settings.jeanVoiceEnabled} onChange={event=>{stopJeanVoice();setVoiceStatus('idle');setJeanVoiceEnabled(event.target.checked)}}/> Jimmy voice</label></div></article>
     <nav className="team-bus-destinations" aria-label="Team Bus destinations">
       <p className="eyebrow destination-heading">CURRENT SEASON</p>
       {career.season.closure.status==='ACTIVE'&&<article className="dashboard-card end-season-card"><p className="eyebrow">SEASON HANDOFF</p><h2>{career.season.completedStages.length<21?'End Season Early':'Finish Season'}</h2><p>Closing the season preserves completed rides and results, archives the season once, and unlocks Off-Season Training.</p>{ride?<p role="status">Finish or end the active ride first.</p>:<button type="button" onClick={()=>{const early=career.season.completedStages.length<21;if(window.confirm(early?`End the season early? ${21-career.season.completedStages.length} stages remain incomplete. Completed history will be preserved.`:'Finish the season and open Off-Season Training?'))endSeason(early)}}>{career.season.completedStages.length<21?'END SEASON EARLY':'FINISH SEASON'}</button>}</article>}
