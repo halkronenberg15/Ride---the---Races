@@ -1,7 +1,8 @@
 import { createRoadModel } from '../engine/roadModel'
 import { raceIdentities } from '../data/raceLibrary'
 import { raceStages } from '../data/raceStages'
-import { tour2026, vuelta2026, toRaceStage } from '../data/professionalRaces'
+import { vuelta2026, toRaceStage } from '../data/professionalRaces'
+import { tour2026 } from '../data/tour2026'
 import { durationSelectionForStage, stageDurationPlan, type DurationSelection } from '../engine/durationEngine'
 import { useCareer } from '../state/CareerContext.tsx'
 const humanDate=(date:string)=>new Intl.DateTimeFormat('en-US',{weekday:'short',month:'short',day:'numeric',timeZone:'UTC'}).format(new Date(`${date}T00:00:00Z`)).toUpperCase()

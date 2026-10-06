@@ -1,0 +1,33 @@
+name: Web Build Check
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run web build
+        shell: bash
+        run: |
+          set +e
+          OUTPUT="$(npm run build 2>&1)"
+          STATUS=$?
+          {
+            echo "## npm run build"
+            echo '~~~text'
+            echo "$OUTPUT"
+            echo '~~~'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "$OUTPUT"
+          exit $STATUS
