@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { vuelta2026, tour2026, toRaceStage } from '../data/professionalRaces.ts'
+import { vuelta2026, toRaceStage } from '../data/professionalRaces.ts'
+import { tour2026 } from '../data/tour2026.ts'
 import { adaptSegments } from './adaptiveRide.ts'
 import { JeanEventBus, createJeanEvent } from './jeanEvents.ts'
 import { createRoadModel } from './roadModel.ts'
