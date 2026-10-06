@@ -19,6 +19,7 @@ const today=()=>{const date=new Date();return [date.getFullYear(),String(date.ge
 export default function MissionFranceCommandCenter({onBack,onOpenHealth,onOpenRideData,onOpenOffSeason}:Props){
  const {career,addNutritionEntry,importNutritionData,updateNutritionProfile}=useCareer()
  const snapshot=missionFranceSnapshot(career)
+ const franceDays=Math.max(0,Math.ceil((new Date('2028-07-01T00:00:00').getTime()-Date.now())/86400000))
  const jimmyContext=jimmyCoachContext(career)
  const [jimmyOpen,setJimmyOpen]=useState(false)
  const powerToWeight=snapshot.ftp!==null&&snapshot.weightKg?snapshot.ftp/snapshot.weightKg:null
@@ -62,9 +63,8 @@ export default function MissionFranceCommandCenter({onBack,onOpenHealth,onOpenRi
  return <section className="mission-france-screen">
   <button type="button" className="back-button" onClick={onBack}>← Team HQ</button>
   <header className="mission-france-hero">
-   <p className="eyebrow">MISSION FRANCE 2028</p>
-   <h1>Build the rider for the mountains.</h1>
-   <p>One place to connect training, recovery, body composition, fueling and mountain-readiness evidence. No invented readiness score. Every conclusion below comes from data already recorded in RtR.</p>
+   <div className="mission-france-hero-copy"><p className="eyebrow">TEAM LORIOT · MISSION FRANCE 2028</p><h1>Build the rider for July 2028.</h1><p>Training, recovery, body composition, fueling and mountain-readiness evidence in one command center. No invented readiness score.</p></div>
+   <div className="mission-france-countdown"><strong>{franceDays}</strong><span>DAYS TO FRANCE</span><small>{activeToday.length?activeToday.map(item=>item.title??item.type).join(' + '):'Recovery day'}</small></div>
   </header>
 
   <section className="mission-today-grid" aria-label="Current Mission France evidence">
