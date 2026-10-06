@@ -29,7 +29,8 @@ import TrainingRideScreen from './screens/TrainingRideScreen'
 import StageRoadbookScreen from './screens/StageRoadbookScreen'
 import StructuredRideScreen from './screens/StructuredRideScreen'
 import RaceBriefingsScreen from './screens/RaceBriefingsScreen'
-import StrengthPlanScreen from './screens/StrengthPlanScreen'
+import StrengthPlanScreen, { type MobileStrengthLog } from './screens/StrengthPlanScreen'
+import { openCanonicalCockpit } from './lib/canonicalCockpit'
 import type { RaceStage } from '../../src/data/raceStages'
 import { workoutById } from '../../src/engine/adaptiveTraining40251'
 import { applyHalWeeklyRhythmV2 } from '../../src/engine/alpha4025'
@@ -393,11 +394,11 @@ export default function App(){
   }
 
   if(screen==='training'){
-    return <SafeAreaView style={styles.root}><StatusBar style="light"/><TrainingScreen career={effectiveCareer} onBack={()=>setScreen('home')} onRide={(assignment,workoutId)=>{if(assignment.workoutId!==workoutId)replaceTrainingAssignment(assignment.id,workoutId);setSelectedTrainingAssignmentId(assignment.id);setSelectedWorkoutId(workoutId);setScreen('trainingRide')}} onStrength={(assignment)=>{setSelectedStrengthAssignment(assignment);setScreen('strength')}}/></SafeAreaView>
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><TrainingScreen career={effectiveCareer} onBack={()=>setScreen('home')} onRide={async(assignment,workoutId)=>{if(assignment.workoutId!==workoutId)replaceTrainingAssignment(assignment.id,workoutId);setSelectedTrainingAssignmentId(assignment.id);setSelectedWorkoutId(workoutId);try{await openCanonicalCockpit({kind:'training',workoutId,assignmentId:assignment.id,environment:(assignment.environment??'AUTO') as 'INDOOR'|'OUTDOOR'|'AUTO'})}catch(error){Alert.alert('Could not open cockpit',error instanceof Error?error.message:'Unknown error');setScreen('trainingRide')}} onStrength={(assignment)=>{setSelectedStrengthAssignment(assignment);setScreen('strength')}}/></SafeAreaView>
   }
 
   if(screen==='strength'&&selectedStrengthAssignment){
-    return <SafeAreaView style={styles.root}><StatusBar style="light"/><StrengthPlanScreen assignment={selectedStrengthAssignment} onBack={()=>setScreen('training')}/></SafeAreaView>
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><StrengthPlanScreen assignment={selectedStrengthAssignment} onBack={()=>setScreen('training')} onSave={async(log:MobileStrengthLog)=>{const raw=await AsyncStorage.getItem('rtr-mobile-strength-logs-v1');let existing:MobileStrengthLog[]=[];if(raw){try{existing=JSON.parse(raw) as MobileStrengthLog[]}catch{}}const next=[log,...existing.filter(item=>item.assignmentId!==log.assignmentId)];await AsyncStorage.setItem('rtr-mobile-strength-logs-v1',JSON.stringify(next))}}/></SafeAreaView>
   }
 
   if(screen==='trainingRide'&&selectedWorkoutId){
@@ -409,7 +410,7 @@ export default function App(){
   }
 
   if(screen==='briefing'&&selectedStage){
-    return <SafeAreaView style={styles.root}><StatusBar style="light"/><RaceBriefingsScreen stage={selectedStage} onBack={()=>setScreen('library')} onStart={()=>setScreen('structuredRide')}/></SafeAreaView>
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><RaceBriefingsScreen stage={selectedStage} onBack={()=>setScreen('library')} onStart={async()=>{try{await openCanonicalCockpit({kind:'race',library:'tour-2026',stageNumber:selectedStage.number,environment:'AUTO'})}catch(error){Alert.alert('Could not open cockpit',error instanceof Error?error.message:'Unknown error');setScreen('structuredRide')}}}/></SafeAreaView>
   }
 
   if(screen==='roadbook'){
