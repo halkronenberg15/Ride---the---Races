@@ -66,6 +66,37 @@ function RideTheRacesApp() {
   const { ride, elapsed, end } = useActiveRide()
   const outdoor=useOutdoorRide()
 
+  useEffect(()=>{
+    const params=new URLSearchParams(window.location.search)
+    if(params.get('rtrLaunch')!=='cockpit')return
+    const kind=params.get('kind')
+    const environment=params.get('environment')??'AUTO'
+
+    if(kind==='training'){
+      const workoutId=params.get('workoutId')
+      const assignmentId=params.get('assignmentId')
+      if(!workoutId)return
+      setSelectedRace('training')
+      setSelectedWorkout(workoutId)
+      if(assignmentId)setSelectedOffSeasonAssignment(assignmentId)
+      if(environment==='OUTDOOR'&&assignmentId){
+        setSelectedOutdoorAssignment(assignmentId)
+        setScreen('outdoorBriefing')
+      }else{
+        setScreen('tactics')
+      }
+    }else if(kind==='race'){
+      const library=params.get('library')??'tour-2026'
+      const stage=Number(params.get('stage')??'1')
+      if(!Number.isFinite(stage)||stage<1)return
+      setSelectedRace(library)
+      setSelectedStageNumber(stage)
+      setScreen('tactics')
+    }
+
+    window.history.replaceState({},'',window.location.pathname)
+  },[])
+
   useEffect(() => {
     const root = document.documentElement
     const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches
