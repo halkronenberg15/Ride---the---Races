@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { missionFranceSnapshot } from '../engine/missionFrance2028.ts'
 import { jimmyCoachContext, jimmyCoachOpeningLine } from '../engine/jimmyCoach.ts'
 import { evaluateFueling } from '../engine/fuelingEngine.ts'
-import { buildMenuHorizon, mealPlanForDay, type MealHorizon } from '../engine/mealPlanningEngine.ts'
+import { buildMenuHorizon, mealPlanForDay, type AppetiteLevel, type MealHorizon } from '../engine/mealPlanningEngine.ts'
 import { useCareer } from '../state/CareerContext.tsx'
 import type { NutritionEntry, NutritionMealTemplate, NutritionMealType } from '../types/career.ts'
 
@@ -19,6 +19,7 @@ const today=()=>{const date=new Date();return [date.getFullYear(),String(date.ge
 export default function MissionFranceCommandCenter({onBack,onOpenHealth,onOpenRideData,onOpenOffSeason}:Props){
  const {career,addNutritionEntry,importNutritionData,updateNutritionProfile}=useCareer()
  const snapshot=missionFranceSnapshot(career)
+ const franceDays=Math.max(0,Math.ceil((new Date('2028-07-01T00:00:00').getTime()-Date.now())/86400000))
  const jimmyContext=jimmyCoachContext(career)
  const [jimmyOpen,setJimmyOpen]=useState(false)
  const powerToWeight=snapshot.ftp!==null&&snapshot.weightKg?snapshot.ftp/snapshot.weightKg:null
@@ -33,9 +34,15 @@ export default function MissionFranceCommandCenter({onBack,onOpenHealth,onOpenRi
  const [importMessage,setImportMessage]=useState('')
  const [rideHistoryOpen,setRideHistoryOpen]=useState(false)
  const [menuHorizon,setMenuHorizon]=useState<MealHorizon>('DAY')
+ const [appetite,setAppetite]=useState<AppetiteLevel>('NORMAL')
+ const [trainingTime,setTrainingTime]=useState('17:00')
+ const [lockedDinner,setLockedDinner]=useState('')
+ const [plannerHydrated,setPlannerHydrated]=useState(false)
  const [goalLowLb,setGoalLowLb]=useState(career.nutrition.goalWeightLowKg?String(Math.round(career.nutrition.goalWeightLowKg*2.20462)):'')
  const [goalHighLb,setGoalHighLb]=useState(career.nutrition.goalWeightHighKg?String(Math.round(career.nutrition.goalWeightHighKg*2.20462)):'')
  const templates=useMemo(()=>[...career.nutrition.mealTemplates].sort((a,b)=>b.timesUsed-a.timesUsed||b.lastUsedAt.localeCompare(a.lastUsedAt)),[career.nutrition.mealTemplates])
+ useEffect(()=>{try{const raw=localStorage.getItem('rtr-jimmy-nutrition-settings-v1');if(raw){const saved=JSON.parse(raw) as {appetite?:AppetiteLevel;trainingTime?:string;lockedDinner?:string};setAppetite(saved.appetite??'NORMAL');setTrainingTime(saved.trainingTime??'17:00');setLockedDinner(saved.lockedDinner??'')}}finally{setPlannerHydrated(true)}},[])
+ useEffect(()=>{if(plannerHydrated)localStorage.setItem('rtr-jimmy-nutrition-settings-v1',JSON.stringify({appetite,trainingTime,lockedDinner}))},[plannerHydrated,appetite,trainingTime,lockedDinner])
  const todayKey=today(),tomorrowDate=new Date();tomorrowDate.setDate(tomorrowDate.getDate()+1);const tomorrowKey=[tomorrowDate.getFullYear(),String(tomorrowDate.getMonth()+1).padStart(2,'0'),String(tomorrowDate.getDate()).padStart(2,'0')].join('-')
  const assignments=career.alpha4025.trainingPlan?.weeks.flatMap(week=>week.assignments)??[]
  const activeToday=assignments.filter(item=>item.date===todayKey&&(item.status==='PLANNED'||item.status==='REPLACED')&&Number(item.durationMinutes??0)>0)
@@ -47,7 +54,7 @@ export default function MissionFranceCommandCenter({onBack,onOpenHealth,onOpenRi
  const todayEntries=career.nutrition.entries.filter(entry=>entry.date===today())
  const totals=todayEntries.reduce((sum,entry)=>({calories:sum.calories+(entry.calories??0),protein:sum.protein+(entry.proteinG??0),carbs:sum.carbs+(entry.carbsG??0),fluid:sum.fluid+(entry.fluidOz??0)}),{calories:0,protein:0,carbs:0,fluid:0})
  const fueling=evaluateFueling({weightKg:career.rider.weightKg,goalLowKg:career.nutrition.goalWeightLowKg,goalHighKg:career.nutrition.goalWeightHighKg,trainingMinutes,rideMinutes,demanding,tomorrowTrainingMinutes:tomorrowMinutes,loggedProteinG:totals.protein,loggedCarbsG:totals.carbs,loggedCalories:totals.calories})
- const plan=mealPlanForDay({dayClass:fueling.dayClass,favorites:career.nutrition.favoriteFoods,recentFoods:templates.slice(0,8).map(item=>item.name),avoidFoods:career.nutrition.avoidFoods,userRecipes:templates.map(item=>({id:item.id,name:item.name,mealType:item.mealType,proteinG:item.proteinG,carbsG:item.carbsG,calories:item.calories,tags:['user','saved'],source:'USER' as const}))})
+ const plan=mealPlanForDay({dayClass:fueling.dayClass,trainingTime,appetite,lockedDinner,favorites:career.nutrition.favoriteFoods,recentFoods:templates.slice(0,8).map(item=>item.name),avoidFoods:career.nutrition.avoidFoods,userRecipes:templates.map(item=>({id:item.id,name:item.name,mealType:item.mealType,proteinG:item.proteinG,carbsG:item.carbsG,calories:item.calories,tags:['user','saved'],source:'USER' as const}))})
  const menu=buildMenuHorizon(menuHorizon,plan)
  const saveWeightGoals=()=>updateNutritionProfile({goalWeightLowKg:goalLowLb?Number(goalLowLb)/2.20462:undefined,goalWeightHighKg:goalHighLb?Number(goalHighLb)/2.20462:undefined})
  const useTemplate=(id:string)=>{const template=templates.find(item=>item.id===id);if(!template)return;setMealType(template.mealType);setName(template.name);setCalories(template.calories?.toString()??'');setProtein(template.proteinG?.toString()??'');setCarbs(template.carbsG?.toString()??'');setFluid(template.fluidOz?.toString()??'');setSaved('')}
@@ -56,9 +63,8 @@ export default function MissionFranceCommandCenter({onBack,onOpenHealth,onOpenRi
  return <section className="mission-france-screen">
   <button type="button" className="back-button" onClick={onBack}>← Team HQ</button>
   <header className="mission-france-hero">
-   <p className="eyebrow">MISSION FRANCE 2028</p>
-   <h1>Build the rider for the mountains.</h1>
-   <p>One place to connect training, recovery, body composition, fueling and mountain-readiness evidence. No invented readiness score. Every conclusion below comes from data already recorded in RtR.</p>
+   <div className="mission-france-hero-copy"><p className="eyebrow">TEAM LORIOT · MISSION FRANCE 2028</p><h1>Build the rider for July 2028.</h1><p>Training, recovery, body composition, fueling and mountain-readiness evidence in one command center. No invented readiness score.</p></div>
+   <div className="mission-france-countdown"><strong>{franceDays}</strong><span>DAYS TO FRANCE</span><small>{activeToday.length?activeToday.map(item=>item.title??item.type).join(' + '):'Recovery day'}</small></div>
   </header>
 
   <section className="mission-today-grid" aria-label="Current Mission France evidence">
@@ -87,7 +93,16 @@ export default function MissionFranceCommandCenter({onBack,onOpenHealth,onOpenRi
    <div className="nutrition-fuel-grid"><article><small>DAY CLASS</small><strong>{fueling.dayClass}</strong></article><article><small>PROTEIN</small><strong>{fueling.proteinStatus}</strong><span>{fueling.proteinTargetG?fueling.proteinTargetG.join('–')+' g target':'Add current weight'}</span></article><article><small>CARBS</small><strong>{fueling.carbStatus}</strong><span>{fueling.carbTargetG?fueling.carbTargetG.join('–')+' g target':'Add current weight'}</span></article><article><small>WEIGHT PHASE</small><strong>{fueling.weightPhase}</strong></article></div>
    <div className="nutrition-goal-row"><label>Goal low (lb)<input type="number" value={goalLowLb} onChange={event=>setGoalLowLb(event.target.value)}/></label><label>Goal high (lb)<input type="number" value={goalHighLb} onChange={event=>setGoalHighLb(event.target.value)}/></label><button type="button" onClick={saveWeightGoals}>Save goal range</button></div>
    <div className="fuel-guidance">{fueling.guidance.map(item=><p key={item}>{item}</p>)}</div>
-   <div className="menu-horizon"><div>{(['HOUR','DAY','WEEK','MONTH'] as MealHorizon[]).map(item=><button type="button" key={item} className={menuHorizon===item?'active':''} onClick={()=>setMenuHorizon(item)}>{item}</button>)}</div>{menu.map(section=><article key={section.label}><h3>{section.label}</h3>{section.meals.map(meal=><div key={meal.id} className="planned-meal"><strong>{meal.time} · {meal.recipe.name}</strong><span>{meal.rationale}</span></div>)}</article>)}</div>
+   <section className="jimmy-meal-planner">
+    <div className="section-title-row"><div><p className="eyebrow">JIMMY'S PLAN FOR TODAY</p><h3>Plan around appetite, training and dinner</h3><p>Tell Jimmy when you expect to train, how appetite feels today, and whether dinner is already decided.</p></div><span className="stage-chip">{fueling.dayClass} DAY</span></div>
+    <div className="jimmy-planner-controls">
+      <label>Appetite<select value={appetite} onChange={event=>setAppetite(event.target.value as AppetiteLevel)}><option value="LOW">Low</option><option value="NORMAL">Normal</option><option value="HUNGRY">Hungry</option></select></label>
+      <label>Training time<input type="time" value={trainingTime} onChange={event=>setTrainingTime(event.target.value)}/></label>
+      <label className="planner-dinner">Locked dinner<input value={lockedDinner} onChange={event=>setLockedDinner(event.target.value)} placeholder="What is dinner tonight?" /></label>
+    </div>
+    {appetite==='LOW'&&<p className="planner-note"><strong>Low-appetite mode:</strong> Jimmy will favor smaller, lighter and liquid daytime options while protecting ride fuel and recovery.</p>}
+   </section>
+   <div className="menu-horizon"><div>{(['HOUR','DAY','WEEK','MONTH'] as MealHorizon[]).map(item=><button type="button" key={item} className={menuHorizon===item?'active':''} onClick={()=>setMenuHorizon(item)}>{item}</button>)}</div>{menu.map(section=><article key={section.label}><h3>{section.label}</h3>{section.meals.map(meal=><div key={meal.id} className={`planned-meal meal-priority-${meal.priority.toLowerCase()}`}><strong>{meal.time} · {meal.recipe.name}</strong><span>{meal.rationale}</span><small>{meal.priority==='RIDE_FUEL'?'Protected ride fuel':meal.priority==='OPTIONAL'?'Optional if appetite allows':'Core fuel'}</small></div>)}</article>)}</div>
    {templates.length>0&&<div className="remembered-meals" aria-label="Remembered meals">{templates.slice(0,8).map(template=><button type="button" key={template.id} onClick={()=>useTemplate(template.id)}><strong>{template.name}</strong><small>{template.proteinG!==undefined?template.proteinG+'g P · ':''}{template.carbsG!==undefined?template.carbsG+'g C · ':''}{template.calories!==undefined?template.calories+' cal':''}</small></button>)}</div>}
    <form className="nutrition-quick-form" onSubmit={submit}>
     <label>Meal<select value={mealType} onChange={event=>setMealType(event.target.value as NutritionMealType)}><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option><option>Ride Fuel</option><option>Recovery</option></select></label>

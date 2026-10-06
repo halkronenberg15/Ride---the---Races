@@ -5,9 +5,10 @@ import * as ImagePicker from 'expo-image-picker'
 import type { CloudCareerSnapshot } from '../lib/cloudCareer'
 import { supabase } from '../lib/supabase'
 import { evaluateFueling } from '../../../src/engine/fuelingEngine'
+import { mealPlanForDay, type AppetiteLevel } from '../../../src/engine/mealPlanningEngine'
 
 type Meal={id:string;name:string;notes:string}
-type PlanSlot={id:string;time:string;label:string;detail:string;reason:string}
+type PlanSlot={id:string;time:string;label:string;detail:string;reason:string;priority?:'CORE'|'OPTIONAL'|'RIDE_FUEL'}
 type NutritionStore={
  todayMeals:Meal[]
  weekMeals:Record<string,Meal[]>
@@ -17,6 +18,8 @@ type NutritionStore={
  favorites?:string[]
  avoidFoods?:string[]
  recentFoods?:string[]
+ appetite?:AppetiteLevel
+ lockedDinner?:string
  goalLowLb?:string
  goalHighLb?:string
 }
@@ -62,7 +65,9 @@ function buildTodayPlan(
  trainingTime:string,
  favorites:string[],
  recentFoods:string[],
- avoidFoods:string[]
+ avoidFoods:string[],
+ appetite:AppetiteLevel,
+ lockedDinner:string
 ):{slots:PlanSlot[];trainingSummary:string;loadLabel:string}{
  const today=localDate()
  const assignments=career?.alpha4025?.trainingPlan?.weeks.flatMap(w=>w.assignments)??[]
@@ -78,62 +83,24 @@ function buildTodayPlan(
  const start=hmToMinutes(trainingTime)
  const early=start<11*60
  const midday=start>=11*60&&start<15*60
- const slots:PlanSlot[]=[]
-
- const shake=rankFood(['protein','quick'],favorites,recentFoods,avoidFoods)
- const snack=rankFood(['protein','carb','snack'],favorites,recentFoods,avoidFoods)
- const lunch=rankFood(['protein','carb','meal'],favorites,recentFoods,avoidFoods)
- const pre=rankFood(['carb','quick','pre-ride'],favorites,recentFoods,avoidFoods)
- const dinner=rankFood(['protein','carb','meal','recovery'],favorites,recentFoods,avoidFoods)
- const recovery=rankFood(['recovery','evening'],favorites,recentFoods,avoidFoods)
-
- if(!hasTraining){
-  slots.push(
-   {id:'0930-shake',time:'9:30 AM',label:'Protein anchor',detail:shake,reason:'Rest day: keep protein steady without forcing extra ride fuel.'},
-   {id:'1100-snack',time:'11:00 AM',label:'Mid-morning snack',detail:snack,reason:'A small protein-forward snack fits the lower workload.'},
-   {id:'1330-lunch',time:'1:30 PM',label:'Lunch',detail:lunch,reason:'Moderate carbohydrate portion because there is no scheduled training demand.'},
-   {id:'1900-dinner',time:'7:00 PM',label:'Dinner',detail:dinner,reason:'Normal recovery meal, not a carb-load meal.'},
-   {id:'2030-recovery',time:'8:30 PM',label:'Evening recovery',detail:recovery,reason:'Keep the established evening recovery routine.'},
-  )
- } else if(early){
-  slots.push(
-   {id:'pre-training',time:shiftTime(trainingTime,-45),label:hasRide?'Pre-ride fuel':'Pre-training fuel',detail:pre,reason:'Training is early, so the first food of the day needs to be easy to digest.'},
-  )
-  if(hasRide&&longestRide>=60)slots.push({id:'during-ride',time:'During training',label:'Ride fuel + hydration',detail:longOrHard?'Electrolytes plus 30–45 g carbohydrate per hour':'Electrolytes plus about 20–30 g carbohydrate during the session',reason:'Fueling scales with ride duration and intensity.'})
-  slots.push(
-   {id:'post-training',time:shiftTime(trainingTime,longestRide||60),label:'Post-training recovery',detail:shake,reason:'Protein moves earlier because the ride happens before the normal 9:30 slot.'},
-   {id:'1100-snack',time:'11:00 AM',label:'Recovery snack',detail:snack,reason:'Replenish after the early session without overloading one meal.'},
-   {id:'1330-lunch',time:'1:30 PM',label:'Lunch',detail:lunch,reason:'Keep carbohydrates in because recovery continues after training.'},
-   {id:'1900-dinner',time:'7:00 PM',label:'Dinner',detail:dinner,reason:'Complete recovery with a normal protein + carbohydrate meal.'},
-   {id:'2030-recovery',time:'8:30 PM',label:'Evening recovery',detail:recovery,reason:'Keep the established evening recovery routine.'},
-  )
- } else if(midday){
-  const postRideMinutes=start+Math.max(75,longestRide||60)
-  slots.push(
-   {id:'0930-shake',time:'9:30 AM',label:'Protein shake',detail:shake,reason:'Keep the morning light enough to ride comfortably while still starting protein early.'},
-   {id:'pre-training',time:shiftTime(trainingTime,-45),label:hasRide?'Pre-ride fuel':'Pre-training fuel',detail:pre,reason:'Placed about 45 minutes before training so the final pre-session food stays easy to digest.'},
-  )
-  if(hasRide&&longestRide>=60)slots.push({id:'during-ride',time:'During training',label:'Ride fuel + hydration',detail:longOrHard?'Electrolytes plus 30–45 g carbohydrate per hour':'Electrolytes plus about 20–30 g carbohydrate during the session',reason:'Ride fueling is added because today has enough cycling volume to justify it.'})
-  slots.push(
-   {id:'post-training-lunch',time:fmt(postRideMinutes+15),label:'Post-ride lunch',detail:lunch,reason:'Lunch moves after the ride so recovery food replaces the normal mid-morning snack instead of colliding with pre-ride fuel.'},
-   {id:'afternoon-snack',time:'3:30 PM',label:'Afternoon snack',detail:snack,reason:'Use this only if appetite or recovery needs call for it after lunch.'},
-   {id:'1900-dinner',time:'7:00 PM',label:'Dinner',detail:dinner,reason:longOrHard?'Use a full carbohydrate serving to complete recovery from the day’s workload.':'Protein + carbohydrate for recovery without unnecessary extra volume.'},
-   {id:'2030-recovery',time:'8:30 PM',label:'Evening recovery',detail:recovery,reason:'Finish the day with the established recovery routine.'},
-  )
- } else {
-  slots.push(
-   {id:'0930-shake',time:'9:30 AM',label:'Protein shake',detail:shake,reason:'Start protein early without making the morning too heavy.'},
-   {id:'1100-snack',time:'11:00 AM',label:'Mid-morning snack',detail:snack,reason:moderateRide?'Protein + carbohydrate now helps avoid playing catch-up before the ride.':'Protein-forward snack to support later training.'},
-   {id:'1330-lunch',time:'1:30 PM',label:'Lunch',detail:lunch,reason:longOrHard?'Keep a full carbohydrate serving because today carries meaningful training load.':'Keep a normal carbohydrate serving because training is scheduled.'},
-   {id:'pre-training',time:shiftTime(trainingTime,-45),label:hasRide?'Pre-ride fuel':'Pre-training fuel',detail:pre,reason:'Placed about 45 minutes before the scheduled session so fuel timing follows the calendar.'},
-  )
-  if(hasRide&&longestRide>=60)slots.push({id:'during-ride',time:'During training',label:'Ride fuel + hydration',detail:longOrHard?'Electrolytes plus 30–45 g carbohydrate per hour':'Electrolytes plus about 20–30 g carbohydrate during the session',reason:'Ride fueling is added only because today has enough cycling volume to justify it.'})
-  slots.push(
-   {id:'dinner',time:shiftTime(trainingTime,Math.max(90,longestRide+30)),label:'Dinner / recovery meal',detail:dinner,reason:longOrHard?'Use a full carbohydrate serving to replace training fuel.':'Protein + carbohydrate for recovery without unnecessary extra volume.'},
-   {id:'2030-recovery',time:'8:30 PM',label:'Evening recovery',detail:recovery,reason:'Finish the day with the established recovery routine.'},
-  )
- }
-
+ const dayClass=longOrHard?'HIGH':moderateRide?'RIDE':hasTraining?'STANDARD':'RECOVERY'
+ const sharedPlan=mealPlanForDay({
+  dayClass,
+  trainingTime,
+  appetite,
+  lockedDinner,
+  favorites,
+  recentFoods,
+  avoidFoods,
+ })
+ const slots:PlanSlot[]=sharedPlan.map(item=>({
+  id:item.id,
+  time:item.time,
+  label:item.label,
+  detail:item.recipe.name,
+  reason:item.rationale,
+  priority:item.priority,
+ }))
  const trainingSummary=hasTraining?active.map(item=>`${item.title??item.type} · ${item.durationMinutes??0} min`).join(' + '):'Rest / recovery day'
  const loadLabel=!hasTraining?'REST DAY':longOrHard?'HIGH FUEL DAY':hasRide?'RIDE FUEL DAY':'TRAINING DAY'
  return {slots,trainingSummary,loadLabel}
@@ -156,6 +123,8 @@ export default function NutritionScreen({career,onBack}:{career:CloudCareerSnaps
  const [favorites,setFavorites]=useState<string[]>([])
  const [avoidFoods,setAvoidFoods]=useState<string[]>([])
  const [recentFoods,setRecentFoods]=useState<string[]>([])
+ const [appetite,setAppetite]=useState<AppetiteLevel>('NORMAL')
+ const [lockedDinner,setLockedDinner]=useState('')
  const [favoriteDraft,setFavoriteDraft]=useState('')
  const [avoidDraft,setAvoidDraft]=useState('')
  const [goalLowLb,setGoalLowLb]=useState('')
@@ -165,7 +134,7 @@ export default function NutritionScreen({career,onBack}:{career:CloudCareerSnaps
  const [hydrated,setHydrated]=useState(false)
  const todayLabel=useMemo(()=>new Intl.DateTimeFormat('en-US',{weekday:'long',month:'short',day:'numeric'}).format(new Date()),[])
  const trainingTime=trainingTimes[today]??DEFAULT_TRAINING_TIME
- const todayPlan=useMemo(()=>buildTodayPlan(career,trainingTime,favorites,recentFoods,avoidFoods),[career,trainingTime,favorites,recentFoods,avoidFoods])
+ const todayPlan=useMemo(()=>buildTodayPlan(career,trainingTime,favorites,recentFoods,avoidFoods,appetite,lockedDinner),[career,trainingTime,favorites,recentFoods,avoidFoods,appetite,lockedDinner])
  const assignments=career?.alpha4025?.trainingPlan?.weeks.flatMap(w=>w.assignments)??[]
  const activeToday=assignments.filter(item=>item.date===today&&(item.status==='PLANNED'||item.status==='REPLACED')&&Number(item.durationMinutes??0)>0)
  const tomorrowDate=new Date();tomorrowDate.setDate(tomorrowDate.getDate()+1);const tomorrowKey=[tomorrowDate.getFullYear(),String(tomorrowDate.getMonth()+1).padStart(2,'0'),String(tomorrowDate.getDate()).padStart(2,'0')].join('-')
@@ -175,8 +144,8 @@ export default function NutritionScreen({career,onBack}:{career:CloudCareerSnaps
  const tomorrowMinutes=activeTomorrow.reduce((sum,item)=>sum+Number(item.durationMinutes??0),0)
  const fueling=evaluateFueling({weightKg:career?.rider.weightKg,goalLowKg:goalLowLb?Number(goalLowLb)/2.20462:career?.nutrition?.goalWeightLowKg,goalHighKg:goalHighLb?Number(goalHighLb)/2.20462:career?.nutrition?.goalWeightHighKg,trainingMinutes,rideMinutes,demanding:activeToday.some(item=>item.demandingCycling===true),tomorrowTrainingMinutes:tomorrowMinutes})
 
- useEffect(()=>{AsyncStorage.getItem(STORAGE_KEY).then(raw=>{if(raw){try{const saved=JSON.parse(raw) as NutritionStore;setDayMeals(saved.todayMeals??[]);setWeekMeals({...emptyWeek(),...(saved.weekMeals??{})});setShopping(saved.shopping??[]);setCompletedPlanIds(saved.completedPlanIds??[]);setTrainingTimes(saved.trainingTimes??{});setFavorites(saved.favorites??[]);setAvoidFoods(saved.avoidFoods??[]);setRecentFoods(saved.recentFoods??[]);setGoalLowLb(saved.goalLowLb??'');setGoalHighLb(saved.goalHighLb??'')}catch{}}setHydrated(true)})},[])
- useEffect(()=>{if(!hydrated)return;AsyncStorage.setItem(STORAGE_KEY,JSON.stringify({todayMeals:dayMeals,weekMeals,shopping,completedPlanIds,trainingTimes,favorites,avoidFoods,recentFoods,goalLowLb,goalHighLb}))},[hydrated,dayMeals,weekMeals,shopping,completedPlanIds,trainingTimes,favorites,avoidFoods,recentFoods,goalLowLb,goalHighLb])
+ useEffect(()=>{AsyncStorage.getItem(STORAGE_KEY).then(raw=>{if(raw){try{const saved=JSON.parse(raw) as NutritionStore;setDayMeals(saved.todayMeals??[]);setWeekMeals({...emptyWeek(),...(saved.weekMeals??{})});setShopping(saved.shopping??[]);setCompletedPlanIds(saved.completedPlanIds??[]);setTrainingTimes(saved.trainingTimes??{});setFavorites(saved.favorites??[]);setAvoidFoods(saved.avoidFoods??[]);setRecentFoods(saved.recentFoods??[]);setAppetite(saved.appetite??'NORMAL');setLockedDinner(saved.lockedDinner??'');setGoalLowLb(saved.goalLowLb??'');setGoalHighLb(saved.goalHighLb??'')}catch{}}setHydrated(true)})},[])
+ useEffect(()=>{if(!hydrated)return;AsyncStorage.setItem(STORAGE_KEY,JSON.stringify({todayMeals:dayMeals,weekMeals,shopping,completedPlanIds,trainingTimes,favorites,avoidFoods,recentFoods,appetite,lockedDinner,goalLowLb,goalHighLb}))},[hydrated,dayMeals,weekMeals,shopping,completedPlanIds,trainingTimes,favorites,avoidFoods,recentFoods,appetite,lockedDinner,goalLowLb,goalHighLb])
 
  const addMeal=()=>{const name=mealName.trim();if(!name)return;setDayMeals(items=>[...items,{id:String(Date.now()),name,notes:mealNotes.trim()}]);setRecentFoods(items=>[name,...items.filter(item=>normalize(item)!==normalize(name))].slice(0,20));setMealName('');setMealNotes('')}
  const addWeekMeal=()=>{const name=weekDraft.trim();if(!name)return;setWeekMeals(current=>({...current,[selectedDay]:[...(current[selectedDay]??[]),{id:String(Date.now()),name,notes:weekNotes.trim()}]}));setWeekDraft('');setWeekNotes('')}
@@ -218,6 +187,16 @@ export default function NutritionScreen({career,onBack}:{career:CloudCareerSnaps
   <Section title="TODAY'S FOOD PLAN" subtitle={todayLabel} open={open==='day'} onPress={()=>setOpen(open==='day'?null:'day')}>
    <View style={s.trainingCard}><Text style={s.trainingLabel}>{todayPlan.loadLabel}</Text><Text style={s.trainingTitle}>{todayPlan.trainingSummary}</Text></View>
 
+   <View style={s.jimmyPlanner}>
+    <Text style={s.subhead}>JIMMY'S PLAN FOR TODAY</Text>
+    <Text style={s.helper}>Set appetite, expected training time, and a dinner that is already decided. Jimmy plans the rest of the day around them.</Text>
+    <View style={s.appetiteRow}>
+     {(['LOW','NORMAL','HUNGRY'] as AppetiteLevel[]).map(level=><Pressable key={level} onPress={()=>setAppetite(level)} style={[s.appetiteChip,appetite===level&&s.appetiteChipActive]}><Text style={[s.appetiteText,appetite===level&&s.appetiteTextActive]}>{level==='LOW'?'LOW APPETITE':level}</Text></Pressable>)}
+    </View>
+    <TextInput style={s.input} value={lockedDinner} onChangeText={setLockedDinner} placeholder="Locked dinner, if already decided" placeholderTextColor="#6f6f6f"/>
+    {appetite==='LOW'&&<Text style={s.guidance}>Low-appetite mode: smaller, lighter daytime fuel while ride fuel and recovery stay protected.</Text>}
+   </View>
+
    {todayPlan.trainingSummary!=='Rest / recovery day'&&<View style={s.timeCard}>
     <View style={{flex:1}}><Text style={s.trainingLabel}>PLANNED TRAINING TIME</Text><Text style={s.helper}>Nutrition timing moves with this time.</Text></View>
     <TextInput style={s.timeInput} value={trainingTime} onChangeText={value=>setTrainingTimes(current=>({...current,[today]:value}))} placeholder="17:00" placeholderTextColor="#777" keyboardType="numbers-and-punctuation"/>
@@ -228,7 +207,7 @@ export default function NutritionScreen({career,onBack}:{career:CloudCareerSnaps
      const done=completedPlanIds.includes(slot.id)
      return <Pressable key={slot.id} style={[s.planSlot,done&&s.planSlotDone]} onPress={()=>togglePlan(slot.id)}>
       <View style={s.check}><Text style={s.checkText}>{done?'✓':'○'}</Text></View>
-      <View style={s.planCopy}><Text style={s.planTime}>{slot.time}</Text><Text style={s.planTitle}>{slot.label}</Text><Text style={s.planDetail}>{slot.detail}</Text><Text style={s.reason}>{slot.reason}</Text></View>
+      <View style={s.planCopy}><Text style={s.planTime}>{slot.time}</Text><Text style={s.planTitle}>{slot.label}</Text><Text style={s.planDetail}>{slot.detail}</Text><Text style={s.reason}>{slot.reason}</Text>{slot.priority&&<Text style={s.priority}>{slot.priority==='RIDE_FUEL'?'PROTECTED RIDE FUEL':slot.priority==='OPTIONAL'?'OPTIONAL IF APPETITE ALLOWS':'CORE FUEL'}</Text>}</View>
      </Pressable>
     })}
    </View>
@@ -289,5 +268,5 @@ const s=StyleSheet.create({
  timeCard:{flexDirection:'row',gap:12,alignItems:'center',padding:14,borderRadius:14,backgroundColor:'#101010',borderWidth:1,borderColor:'#333'},timeInput:{width:88,backgroundColor:'#0b0b0b',borderWidth:1,borderColor:'#3a3a3a',borderRadius:10,padding:11,color:'#fff',fontWeight:'900',textAlign:'center'},
  planList:{gap:8},planSlot:{flexDirection:'row',gap:12,padding:14,borderRadius:14,backgroundColor:'#101010',borderWidth:1,borderColor:'#2f2f2f'},planSlotDone:{opacity:.55},check:{width:28},checkText:{color:'#ff8b3d',fontSize:24,fontWeight:'900'},planCopy:{flex:1},planTime:{color:'#ff8b3d',fontWeight:'900',fontSize:12},planTitle:{color:'#fff',fontWeight:'900',fontSize:16,marginTop:2},planDetail:{color:'#d0d0d0',fontSize:14,lineHeight:20,marginTop:3},reason:{color:'#777',fontSize:12,lineHeight:17,marginTop:5,fontStyle:'italic'},
  subhead:{color:'#fff',fontWeight:'900',fontSize:14,letterSpacing:.8,marginTop:6},helper:{color:'#888',fontSize:13,lineHeight:18},form:{gap:10},input:{backgroundColor:'#0f0f0f',borderWidth:1,borderColor:'#333',borderRadius:12,padding:13,color:'#fff',fontSize:16},notes:{minHeight:70,textAlignVertical:'top'},primary:{backgroundColor:'#ff6a00',padding:14,borderRadius:12,alignItems:'center'},primaryText:{color:'#fff',fontWeight:'900'},empty:{color:'#777',fontStyle:'italic'},row:{paddingVertical:10,borderTopWidth:1,borderTopColor:'#262626'},rowTitle:{color:'#fff',fontWeight:'800',fontSize:15},rowSub:{color:'#939393',fontSize:13,marginTop:3},inline:{flexDirection:'row',gap:8},add:{backgroundColor:'#ff6a00',paddingHorizontal:18,borderRadius:12,justifyContent:'center'},dayTabs:{gap:7,paddingVertical:2},dayTab:{paddingVertical:8,paddingHorizontal:12,borderRadius:999,borderWidth:1,borderColor:'#414141'},dayTabActive:{backgroundColor:'#ff6a00',borderColor:'#ff6a00'},dayTabText:{color:'#aaa',fontWeight:'800'},dayTabTextActive:{color:'#fff'},selectedDay:{color:'#ff8b3d',fontWeight:'900',fontSize:17},
- chips:{flexDirection:'row',flexWrap:'wrap',gap:7},chip:{paddingVertical:7,paddingHorizontal:10,borderRadius:999,borderWidth:1,borderColor:'#494949'},chipText:{color:'#bbb',fontWeight:'700',fontSize:12},fuelSummary:{padding:15,borderRadius:16,backgroundColor:'#111318',borderWidth:1,borderColor:'#4b2b17',gap:8},fuelQuestion:{color:'#fff',fontSize:18,fontWeight:'900',lineHeight:24},guidance:{color:'#aaa',fontSize:13,lineHeight:18},goalRow:{flexDirection:'row',gap:8},fridgeCard:{padding:16,borderRadius:18,backgroundColor:'#111318',borderWidth:1,borderColor:'#3d3d3d',gap:10},fridgeResults:{gap:8}
+ chips:{flexDirection:'row',flexWrap:'wrap',gap:7},chip:{paddingVertical:7,paddingHorizontal:10,borderRadius:999,borderWidth:1,borderColor:'#494949'},chipText:{color:'#bbb',fontWeight:'700',fontSize:12},fuelSummary:{padding:15,borderRadius:16,backgroundColor:'#111318',borderWidth:1,borderColor:'#4b2b17',gap:8},fuelQuestion:{color:'#fff',fontSize:18,fontWeight:'900',lineHeight:24},guidance:{color:'#aaa',fontSize:13,lineHeight:18},goalRow:{flexDirection:'row',gap:8},jimmyPlanner:{gap:9,padding:13,borderRadius:14,backgroundColor:'#12100e',borderWidth:1,borderColor:'#4b2b18'},appetiteRow:{flexDirection:'row',gap:7,flexWrap:'wrap'},appetiteChip:{paddingVertical:8,paddingHorizontal:10,borderRadius:999,borderWidth:1,borderColor:'#454545'},appetiteChipActive:{backgroundColor:'#ff6a00',borderColor:'#ff6a00'},appetiteText:{color:'#aaa',fontSize:10,fontWeight:'900'},appetiteTextActive:{color:'#111'},priority:{color:'#ff8b3d',fontSize:9,fontWeight:'900',letterSpacing:.8,marginTop:4},fridgeCard:{padding:16,borderRadius:18,backgroundColor:'#111318',borderWidth:1,borderColor:'#3d3d3d',gap:10},fridgeResults:{gap:8}
 })
