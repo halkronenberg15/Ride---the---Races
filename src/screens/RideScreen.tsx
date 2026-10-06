@@ -1097,19 +1097,32 @@ function StandardRideScreen({
                   <svg data-profile-view={profileView.mode} viewBox={profileViewBox} preserveAspectRatio="none" style={{ width: '100%', height: '100%', display: 'block', overflow: 'visible' }}>
                     <defs>
                       <linearGradient id="liveMountainFill" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="0%" stopColor="rgba(244,106,0,0.62)" />
-                        <stop offset="100%" stopColor="rgba(244,106,0,0.05)" />
+                        <stop offset="0%" stopColor="rgba(255,126,38,0.82)" />
+                        <stop offset="48%" stopColor="rgba(244,106,0,0.34)" />
+                        <stop offset="100%" stopColor="rgba(244,106,0,0.035)" />
                       </linearGradient>
+                      <linearGradient id="profileBeam" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="rgba(255,255,255,0)" />
+                        <stop offset="42%" stopColor="rgba(255,255,255,.42)" />
+                        <stop offset="100%" stopColor="rgba(255,117,24,.08)" />
+                      </linearGradient>
+                      <filter id="profileGlow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="1.6" result="blur" />
+                        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                      </filter>
                       <clipPath id="completedStageClip">
                         <rect x="0" y="0" width={riderMarkerX} height="100" />
                       </clipPath>
                     </defs>
-                    <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="rgba(244,106,0,0.42)" />
-                    <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="rgba(92,92,92,.88)" clipPath="url(#completedStageClip)" />
-                    <polyline points={profilePoints.join(' ')} fill="none" stroke="rgba(255,174,96,0.98)" strokeWidth="2.4" vectorEffect="non-scaling-stroke" />
+                    <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="url(#liveMountainFill)" />
+                    <polygon points={`0,100 ${profilePoints.join(' ')} 100,100`} fill="rgba(62,67,73,.76)" clipPath="url(#completedStageClip)" />
+                    <polyline points={profilePoints.join(' ')} fill="none" stroke="rgba(255,126,38,.34)" strokeWidth="7" opacity=".52" vectorEffect="non-scaling-stroke" filter="url(#profileGlow)" />
+                    <polyline points={profilePoints.join(' ')} fill="none" stroke="rgba(255,220,190,.98)" strokeWidth="2.2" vectorEffect="non-scaling-stroke" filter="url(#profileGlow)" />
                     <CourseFinishMarker4023 y={finishProfileY}/>
                     {(stage.isTraining?trainingMarkerPositions(segments).slice(1,-1).map((position,index)=>({key:index,x:position*100})):timeline.segmentStarts.slice(1).map(start=>({key:start,x:timeline.roadSnapshot(start).courseProgress*100}))).map(marker => <line key={marker.key} x1={marker.x} x2={marker.x} y1="88" y2="100" stroke="rgba(255,255,255,.5)" vectorEffect="non-scaling-stroke" />)}
-                    <line x1={riderMarkerX} x2={riderMarkerX} y1="2" y2="98" stroke="rgba(255,255,255,0.68)" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
+                    <rect x={Math.max(0,riderMarkerX-.65)} y="0" width="1.3" height="100" fill="url(#profileBeam)" opacity=".55" />
+                    <line x1={riderMarkerX} x2={riderMarkerX} y1="2" y2="98" stroke="rgba(255,255,255,.9)" strokeDasharray="2.5 4" vectorEffect="non-scaling-stroke" />
+                    <circle cx={riderMarkerX} cy={riderMarkerY} r="1.8" fill="#fff" stroke="rgba(255,117,24,.95)" strokeWidth=".9" vectorEffect="non-scaling-stroke" />
                   </svg>
                   <CourseFinishLabel4023 y={finishProfileY}/>
                   <CourseEndpointMarkers4023 progress={coursePosition.fullProfileCoordinate}/>
