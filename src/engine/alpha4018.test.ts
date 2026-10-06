@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { tour2026, toRaceStage, vuelta2026 } from '../data/professionalRaces.ts'
+import { toRaceStage, vuelta2026 } from '../data/professionalRaces.ts'
+import { tour2026 } from '../data/tour2026.ts'
 import { applyDurationSelection, courseDurationOptions, durationSelectionForStage, DURATION_MODES, stageDurationPlan } from './durationEngine.ts'
 import { createStageTimeline } from './stageEngine.ts'
 import { applyTerrainModifier } from './terrainModifier.ts'
