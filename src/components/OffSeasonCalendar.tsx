@@ -8,6 +8,8 @@ import { buildPostRideReport } from '../engine/postRideReport4026.ts'
 const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const monthName = (year: number, month: number) => new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(Date.UTC(year, month, 1)))
 const shortLabel = (assignment: CalendarAssignment) => assignment.type === 'CYCLING' || assignment.type === 'ASSESSMENT' ? 'Ride' : assignment.type === 'STRENGTH' ? 'Strength' : assignment.type === 'MOBILITY' ? 'Mobility' : 'Rest'
+type RecoveryActivity={id:string;date:string;kind:string;minutes:number;notes?:string}
+const RECOVERY_KEY='rtr-web-recovery-activities-v1'
 
 export default function OffSeasonCalendar({ plan, today, rideHistory, ftp, activeOutdoorAssignmentId, onStartWorkout, onStartOutdoor, onMove, onChange, onSwitchSetting,onOpenStrength }: { plan: TrainingPlan; today: string; rideHistory:RideMetricEntry[]; ftp:number|null; activeOutdoorAssignmentId:string|null; onStartWorkout: (workoutId: string, assignmentId: string) => void; onStartOutdoor: (assignmentId: string, resume: boolean) => void; onMove:(assignmentId:string,date:string)=>void; onChange:(assignmentId:string,workoutId:string)=>void; onSwitchSetting:(assignmentId:string)=>void; onOpenStrength:(assignmentId:string)=>void }) {
   const assignments = plan.weeks.flatMap(week => week.assignments)
@@ -21,9 +23,19 @@ export default function OffSeasonCalendar({ plan, today, rideHistory, ftp, activ
   const [activeMonthIndex,setActiveMonthIndex]=useState(initialMonthIndex)
   const [selectedDate, setSelectedDate] = useState<string | null>(() => byDate.has(today) ? today : assignments.find(item => item.status === 'PLANNED')?.date ?? null)
   const [moveDate,setMoveDate]=useState(''),[changeId,setChangeId]=useState('')
+  const [recoveryActivities,setRecoveryActivities]=useState<RecoveryActivity[]>([])
+  const [recoveryKind,setRecoveryKind]=useState('Steam / Sauna')
+  const [recoveryMinutes,setRecoveryMinutes]=useState('')
+  const [recoveryNotes,setRecoveryNotes]=useState('')
+  useEffect(()=>{try{const raw=localStorage.getItem(RECOVERY_KEY);if(raw)setRecoveryActivities(JSON.parse(raw) as RecoveryActivity[])}catch{}},[])
+  useEffect(()=>{localStorage.setItem(RECOVERY_KEY,JSON.stringify(recoveryActivities))},[recoveryActivities])
   const visibleForDate = (date:string) => { const items=byDate.get(date)??[]; return items.some(item=>item.durationMinutes>0)?items.filter(item=>item.durationMinutes>0):items }
   const selectedAssignments = selectedDate ? visibleForDate(selectedDate) : []
   const selectedWeek = plan.weeks.find(week => week.assignments.some(item => item.date === selectedDate))
+  const recoveryForSelected=selectedDate?recoveryActivities.filter(item=>item.date===selectedDate):[]
+  const recoveryDay=selectedAssignments.some(item=>item.type==='REST'||item.type==='MOBILITY'||/recovery|rest/i.test(item.title??''))
+  const addRecovery=()=>{if(!selectedDate)return;const minutes=Math.max(0,Number(recoveryMinutes)||0);setRecoveryActivities(items=>[...items,{id:selectedDate+'-'+Date.now(),date:selectedDate,kind:recoveryKind,minutes,notes:recoveryNotes.trim()||undefined}]);setRecoveryMinutes('');setRecoveryNotes('')}
+  const removeRecovery=(id:string)=>setRecoveryActivities(items=>items.filter(item=>item.id!==id))
   useEffect(() => { if (!selectedDate) return; const index=months.findIndex(({key})=>selectedDate.startsWith(key)); if(index>=0)setActiveMonthIndex(index) }, [selectedDate,months])
 
   const assignmentDetails = (selected: CalendarAssignment) => {
@@ -62,6 +74,16 @@ export default function OffSeasonCalendar({ plan, today, rideHistory, ftp, activ
       <header className="training-day-detail-heading"><div><h2>Training day</h2>{selectedWeek && <p><strong>{selectedWeek.camp}</strong> · {selectedWeek.focus}{selectedWeek.recoveryWeek ? ' · Recovery week' : ''}</p>}</div><strong>{selectedAssignments.reduce((sum,item)=>sum+item.durationMinutes,0)} min total</strong></header>
       {selectedAssignments.length > 1 && <p className="training-double-note"><strong>Double-session day:</strong> {selectedAssignments.map(item => shortLabel(item)).join(' + ')}. These sessions are intentionally scheduled on the same date and are not treated as a conflict.</p>}
       <div className="training-session-list">{selectedAssignments.map(assignmentDetails)}</div>
+      {recoveryDay&&<section className="web-recovery-workspace">
+        <div className="section-title-row"><div><p className="eyebrow">RECOVERY ACTIVITIES</p><h3>Active recovery, zero training load</h3><p>Log what you actually did without converting recovery work into training stress.</p></div><span className="recovery-zero-badge">0 LOAD</span></div>
+        <div className="web-recovery-form">
+          <label>Activity<select value={recoveryKind} onChange={event=>setRecoveryKind(event.target.value)}><option>Steam / Sauna</option><option>Mobility</option><option>Easy Walk</option><option>Hydration / Electrolytes</option><option>Sleep / Recovery Focus</option></select></label>
+          <label>Minutes<input type="number" min="0" value={recoveryMinutes} onChange={event=>setRecoveryMinutes(event.target.value)}/></label>
+          <label className="recovery-notes">Notes<input value={recoveryNotes} onChange={event=>setRecoveryNotes(event.target.value)} placeholder="Rounds, hydration, how you felt…"/></label>
+          <button type="button" className="primary-cta" onClick={addRecovery}>Add recovery activity</button>
+        </div>
+        {recoveryForSelected.length>0&&<div className="web-recovery-log">{recoveryForSelected.map(item=><article key={item.id}><div><strong>{item.kind}{item.minutes?' · '+item.minutes+' min':''}</strong>{item.notes&&<span>{item.notes}</span>}</div><button type="button" onClick={()=>removeRecovery(item.id)}>Remove</button></article>)}</div>}
+      </section>}
     </article>
 
   const activeMonth=months[activeMonthIndex]??months[0]
@@ -88,7 +110,8 @@ export default function OffSeasonCalendar({ plan, today, rideHistory, ftp, activ
         const partial=dayAssignments.some(item=>item.status==='PARTIAL')
         const statusClass=dayAssignments.length===0?'':partial?'partial':completeCount===dayAssignments.length?'completed':'planned'
         const labels=dayAssignments.map(shortLabel)
-        return <div className={`calendar-date training-date${date===today?' is-today':''}${dayAssignments.length?' has-assignment':''}`} key={date}>
+        const hasRecoveryLog=recoveryActivities.some(item=>item.date===date)
+        return <div className={`calendar-date training-date${date===today?' is-today':''}${dayAssignments.length?' has-assignment':''}${hasRecoveryLog?' has-recovery-log':''}`} key={date}>
           {dayAssignments.length?<button type="button" className={`training-day-button training-${statusClass}${selectedDate===date?' is-selected':''}`} aria-pressed={selectedDate===date} aria-label={`${date}: ${dayAssignments.map(item=>item.title).join(', ')}. View training day`} onClick={()=>setSelectedDate(date)}><span className="training-day-number">{day}</span><span className="training-day-type">{labels.join(' + ')}</span><span className="training-day-status">{completeCount===dayAssignments.length?'✓':partial?'◐':dayAssignments.length>1?String(dayAssignments.length):''}</span></button>:<span className="training-empty-date">{day}</span>}
         </div>
       })}</div>
