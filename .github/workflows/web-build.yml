@@ -17,4 +17,17 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run build
+      - name: Run web build
+        shell: bash
+        run: |
+          set +e
+          OUTPUT="$(npm run build 2>&1)"
+          STATUS=$?
+          {
+            echo "## npm run build"
+            echo '~~~text'
+            echo "$OUTPUT"
+            echo '~~~'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "$OUTPUT"
+          exit $STATUS
