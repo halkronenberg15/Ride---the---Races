@@ -24,4 +24,16 @@ export function ProfileDetail4022(props:{state:ProfileViewState;event?:RaceSitua
  return h('section',{className:`profile-detail-4022${staging?' staging-detail':''}`,'aria-label':'Profile Detail'},h('div',{className:'detail-gradient-summary'},effort?tag('EFFORT',effort):null,tag(staging?'CURRENT TERRAIN':'CURRENT',`${currentGradient.toFixed(1)}% ${currentGradient>.3?'UP':currentGradient<-.3?'DOWN':'FLAT'}`),tag('RESISTANCE',resistance),changeDistance===null?null:tag(staging?'GATE CHANGE':changeDistance==='CHANGE NOW'?'CHANGE':'CHANGE IN',changeDistance==='CHANGE NOW'?'NOW':changeDistance),tag('POSITION',context),staging?tag('FIRST RACING SECTION',firstRacingSection??nextName):tag('NEXT',`${nextName}${nextGradient===null?'':` · ${nextGradient.toFixed(1)}%`}`)))
 }
 export function ChaseDecisionCard({event,responseRemaining,preview,onAccept,onHold,actionLabel='CHASE'}:{event:RaceSituation;responseRemaining:number;preview:{power:string;cadence:string;resistance:string;start:string};onAccept:()=>void;onHold:()=>void;actionLabel?:'CHASE'|'ATTACK'}){return h('aside',{className:'chase-decision-card','aria-label':`${actionLabel} preview`},h('p',{className:'eyebrow'},`${actionLabel} · DECIDE 0:${String(Math.max(0,Math.ceil(responseRemaining))).padStart(2,'0')}`),h('h3',null,event.caption),h('div',null,tag('POWER',preview.power),tag('CADENCE',preview.cadence),tag('RESISTANCE',preview.resistance),tag('EFFORT',`${event.effortDurationSeconds}s`)),h('footer',null,h('button',{type:'button',onClick:onAccept},actionLabel),h('button',{type:'button',onClick:onHold},'HOLD POSITION')))}
-export function TacticalStatusStrip({state,remaining,action='CHASE'}:{state:'ACTIVE'|'RETURNING';remaining:number;action?:'ATTACK'|'CHASE'}){return h('div',{className:'tactical-status-strip',role:'status'},`${state==='ACTIVE'?`${action} ACTIVE`:'RETURNING TO PELOTON'} · ${Math.max(0,Math.ceil(remaining))}s`)}
+export function TacticalStatusStrip({state,remaining,action='CHASE'}:{state:'ACTIVE'|'RETURNING';remaining:number;action?:'ATTACK'|'CHASE'}){
+ const label=state==='ACTIVE'?`${action} ACTIVE`:'RETURNING TO PELOTON'
+ return h('div',{className:`tactical-status-strip broadcast-tactical ${state.toLowerCase()}`,role:'status'},
+  h('div',{className:'tactical-strip-copy'},h('small',null,'RACE STATE'),h('strong',null,label),h('span',null,`${Math.max(0,Math.ceil(remaining))}s`)),
+  h('div',{className:'tactical-chase-line','aria-hidden':'true'},
+   h('span',{className:'tactical-pack'},'P'),
+   h('i',{className:'tactical-road-line'}),
+   h('span',{className:`tactical-rider-dot ${action.toLowerCase()}`},'YOU'),
+   h('i',{className:'tactical-road-line target-line'}),
+   h('span',{className:'tactical-target'},state==='RETURNING'?'P':action==='ATTACK'?'ROAD':'T')
+  )
+ )
+}
