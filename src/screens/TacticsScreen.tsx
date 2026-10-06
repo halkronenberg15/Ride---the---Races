@@ -25,6 +25,7 @@ type TacticsScreenProps = {
 function TacticsScreen({ stageNumber, stageData, onBack, onStartRide,backLabel }: TacticsScreenProps) {
   const { career } = useCareer()
   const [durationMode,setDurationMode]=useState<DurationMode>(career.settings.preferredRideDurationMode)
+  const [intel,setIntel]=useState<'PLAN'|'COURSE'|'FINAL'|'CLIMBS'|'NOTES'>('PLAN')
   const stage = useMemo(() => stageData ?? getRaceStage(stageNumber), [stageNumber, stageData])
   const durationPlan=useMemo(()=>stageDurationPlan(stage),[stage])
   const durationOptions=useMemo(()=>courseDurationOptions(stage),[stage])
@@ -46,18 +47,42 @@ function TacticsScreen({ stageNumber, stageData, onBack, onStartRide,backLabel }
     <section className="tactics-screen race-briefing-screen">
       <button type="button" onClick={onBack}>← {backLabel??'Team Bus'}</button>
 
-      <header className="compact-page-header">
-        <p className="eyebrow">TEAM LORIOT • {stage.isTraining ? 'TODAY’S SESSION' : `STAGE ${stage.number}`}</p>
-        <h1>{stage.isTraining ? 'Training Ride Briefing' : 'Race Briefing'}</h1>
-        <p>{stage.route} • {stage.trainingMode==='TIME_BASED'?`${minutes} minute time-based workout`:`${stage.distanceKm.toFixed(1)} km / ${kmToMi(stage.distanceKm).toFixed(1)} mi`}</p>
-        <strong>SELECTED COURSE DURATION: {minutes} MIN</strong>
+      <header className="compact-page-header web-race-briefing-hero">
+        <div className="web-race-briefing-copy">
+          <p className="eyebrow">TEAM LORIOT • {stage.isTraining ? 'TODAY’S SESSION' : `STAGE ${stage.number}`}</p>
+          <h1>{stage.isTraining ? 'Training Ride Briefing' : stage.route}</h1>
+          <p>{stage.isTraining?stage.route:`${stage.theme} · ${stage.distanceKm.toFixed(1)} km / ${kmToMi(stage.distanceKm).toFixed(1)} mi`}</p>
+          <strong>SELECTED COURSE DURATION: {minutes} MIN</strong>
+        </div>
+        {!stage.isTraining&&<div className="web-race-briefing-stats">
+          <span><small>DISTANCE</small><strong>{kmToMi(stage.distanceKm).toFixed(0)} mi</strong></span>
+          <span><small>CLIMBING</small><strong>{stage.elevationM.toLocaleString()} m</strong></span>
+          <span><small>RIDE TIME</small><strong>{minutes} min</strong></span>
+        </div>}
       </header>
 
-      <section className="briefing-board">
+      <section className="briefing-board web-briefing-board">
         <div className="briefing-mission">
           <p className="eyebrow">TODAY'S MISSION</p>
           <h2>{stage.objective}</h2>
         </div>
+
+        {!stage.isTraining&&<section className="web-route-intelligence">
+          <div className="web-route-intel-tabs">
+            <button type="button" className={intel==='PLAN'?'active':''} onClick={()=>setIntel('PLAN')}><span>⚡</span><strong>STAGE PLAN</strong><small>Overview · Key points</small></button>
+            <button type="button" className={intel==='COURSE'?'active':''} onClick={()=>setIntel('COURSE')}><span>≈</span><strong>COURSE</strong><small>Profile · Rhythm</small></button>
+            <button type="button" className={intel==='FINAL'?'active':''} onClick={()=>setIntel('FINAL')}><span>↵</span><strong>FINAL KM</strong><small>Finish · Positioning</small></button>
+            <button type="button" className={intel==='CLIMBS'?'active':''} onClick={()=>setIntel('CLIMBS')}><span>△</span><strong>CLIMBS</strong><small>Targets · Strategy</small></button>
+            <button type="button" className={intel==='NOTES'?'active':''} onClick={()=>setIntel('NOTES')}><span>▤</span><strong>RACE NOTES</strong><small>Fueling · Reminders</small></button>
+          </div>
+          <article className="web-route-intel-panel">
+            {intel==='PLAN'&&<><p className="eyebrow">STAGE PLAN</p><h3>{stage.objective}</h3><ul>{sessionGoals.map(item=><li key={item}>{item}</li>)}</ul></>}
+            {intel==='COURSE'&&<><p className="eyebrow">COURSE</p><h3>{stage.theme}</h3><p>{stage.profileVerified?'Official course profile loaded.':'Course profile is still being audited.'}</p><p>{stage.distanceKm.toFixed(1)} km · {stage.elevationM.toLocaleString()} m climbing</p></>}
+            {intel==='FINAL'&&<><p className="eyebrow">FINAL KM</p><h3>{briefingSegments.at(-1)?.name??'Finish'}</h3><p>{briefingSegments.at(-1)?.description??briefingSegments.at(-1)?.objective??'Stay controlled into the finish.'}</p></>}
+            {intel==='CLIMBS'&&<><p className="eyebrow">CLIMBS</p><h3>{decisiveSegment.name}</h3><p>{decisiveTarget.power} · {decisiveTarget.cadence} · {decisiveTarget.resistance}</p></>}
+            {intel==='NOTES'&&<><p className="eyebrow">RACE NOTES</p><h3>Execution reminders</h3><ul><li>Fuel the workload before chasing weight loss.</li><li>Respect the prescribed target before adding resistance.</li><li>Use Jimmy cues as guidance, not permission to attack every rise.</li></ul></>}
+          </article>
+        </section>}
 
         {!stage.isTraining&&durationResult&&<WorkoutAllocation totalSeconds={durationResult.map.totalDurationSeconds} raceSeconds={durationResult.map.raceDurationSeconds} cooldownSeconds={durationResult.map.cooldownSeconds}/>}
         {preRacePlan&&<div className="pre-race-briefing" aria-label="Unnumbered pre-race staging"><strong>PRE-RACE WARM-UP · {Math.round(preRacePlan.warmupSeconds/60)}:{String(preRacePlan.warmupSeconds%60).padStart(2,'0')}</strong><span>KILOMETRE ZERO · 0:{String(preRacePlan.kilometreZeroSeconds).padStart(2,'0')}</span></div>}
