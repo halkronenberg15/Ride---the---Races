@@ -337,7 +337,11 @@ function StandardRideScreen({
     if (event.type === 'summit-minute') return 'Approximately one minute to the summit. Hold your rhythm over the crest.'
     if (event.type === 'summit') return 'Summit. Good work. Ride through the crest before you recover.'
     if (event.type === 'descent') return 'Descent now. Release the pressure, stay smooth, and drink.'
-    if (event.type === 'recovery') return 'Recovery sector. Breathe, drink, and reset for the next instruction.'
+    if (event.type === 'recovery') {
+      if(stage.isTraining&&/cooldown|cool down/i.test(`${eventSegment.name} ${eventSegment.type}`))return 'Work is done. Cooldown now. Ease the gear, breathe, and start recovery.'
+      if(stage.isTraining)return 'Recovery. Gear down, breathe, and drink if you need it.'
+      return 'Recovery sector. Breathe, drink, and reset for the next instruction.'
+    }
     if (event.type === 'finish-approach') return 'One minute to the stage finish. Stay composed and finish the plan.'
     if (event.type === 'finish') return 'Across the line. Stage complete.'
     return `${eventSegment.name}. ${eventSegment.description}`
