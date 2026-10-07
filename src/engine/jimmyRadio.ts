@@ -24,6 +24,24 @@ export function jimmyTransitionCue(secondsRemaining:number,nextTitle?:string,nex
  return null
 }
 
+export function jimmyTrainingTransitionCue(args:{secondsRemaining:number;currentTitle:string;currentType?:string;nextTitle?:string;nextType?:string;nextZone?:string}){
+ const {secondsRemaining,currentTitle,currentType='',nextTitle,nextType='',nextZone=''}=args
+ if(!nextTitle)return null
+ const currentRecovery=/recovery|easy|cooldown|cool down/i.test(`${currentTitle} ${currentType}`)
+ const nextCooldown=/cooldown|cool down/i.test(`${nextTitle} ${nextType}`)
+ if(secondsRemaining===30){
+  if(nextCooldown)return 'Thirty seconds. Finish this section clean. Cooldown is next.'
+  if(currentRecovery)return `Thirty seconds. Start bringing cadence back. ${nextTitle} next.`
+  return `Thirty seconds. ${nextTitle} next.`
+ }
+ if(secondsRemaining===10){
+  if(nextCooldown)return 'Ten seconds. Finish the work clean.'
+  return isHardWorkZone(nextZone)?'Ten seconds. Find your gear and get ready.':'Ten seconds. Prepare for the next section.'
+ }
+ if(secondsRemaining===3)return `Three, two, one. ${nextTitle}.`
+ return null
+}
+
 /** Ambient radio is deliberately sparse. Course/tactical events provide the texture. */
 export function jimmyAmbientDelay(seed:number,context:JimmyRadioContext='TRAINING'){
  const n=Math.abs(Math.floor(seed))
