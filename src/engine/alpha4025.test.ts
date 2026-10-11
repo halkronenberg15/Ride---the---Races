@@ -24,3 +24,6 @@ test('Hal Sep 30 plan is upgraded in place to the 75-minute climbing session',()
 
 
 test('existing Hal profiles receive the Sep 30 adaptation during migration',()=>{const plan=generatePlan(HAL_INPUT,HAL_GOALS);const source={schemaVersion:6,onboardingComplete:true,rider:{name:'Hal',number:15,ftp:229},alpha4025:{...emptyAlpha4025(),trainingPlan:plan,intake:HAL_INPUT,questionnaire:HAL_GOALS,developmentProfile:createDevelopmentProfile(HAL_INPUT)}} as never;const migrated=migrateCareer(source);const ride=migrated.alpha4025.trainingPlan!.weeks[1].assignments.find(a=>a.id==='w2-d3')!;assert.equal(ride.workoutId,'tempo-climb-75');assert.equal(ride.durationMinutes,75)})
+
+
+test('Hal Oct 11 Sunday endurance is extended to 120 minutes without changing Strength B',()=>{const state=ensureHalOffSeasonPlan(emptyAlpha4025()),items=state.trainingPlan!.weeks.flatMap(w=>w.assignments).filter(a=>a.date==='2026-10-11'),ride=items.find(a=>a.type==='CYCLING')!,strength=items.find(a=>a.type==='STRENGTH')!;assert.equal(ride.workoutId,'indoor-endurance-120');assert.equal(ride.durationMinutes,120);assert.equal(ride.intensity,'EASY');assert.equal(strength.title,'Strength B')})
