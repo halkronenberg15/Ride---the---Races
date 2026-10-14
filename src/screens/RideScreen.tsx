@@ -12,7 +12,7 @@ import { jeanCue, jeanMode } from '../engine/jeanDirector'
 import { canUseJimmyVoice, speakAsJimmy } from '../services/jimmyVoice'
 import { createJeanEvent, JeanEventBus } from '../engine/jeanEvents'
 import { CLICK_IN_CUE, PRE_RIDE_COUNTDOWN } from '../engine/preRide'
-import { jimmyAmbientDelay, jimmySpeechAllowed, type JimmyRadioPriority } from '../engine/jimmyRadio'
+import { jimmyAmbientDelay, jimmySpeechAllowed, jimmyTrainingTransitionCue, type JimmyRadioPriority } from '../engine/jimmyRadio'
 import { raceIdentities } from '../data/raceLibrary'
 import { isIndividualTimeTrial, officialSegments, ttStartSnapshot } from '../engine/startArchitecture'
 import { applyDurationSelection, durationSelectionForStage, type DurationSelection } from '../engine/durationEngine'
@@ -479,14 +479,40 @@ function StandardRideScreen({
   }, [sprintPhase?.name, isRunning])
 
   useEffect(() => {
-    if (!isRunning) return
+    if (!isRunning || stage.isTraining) return
     const event = engine.events.find((item) => item === 'final-30')
     if (!event) return
     const cueKey = `${engine.segmentIndex}-${event}`
     if (lastSpokenCue.current === cueKey) return
     lastSpokenCue.current = cueKey
     deliverCue({id:`final-${stage.number}-${engine.segmentIndex}-${event}`,message:jeanCue(mode,event),validFrom:elapsedSeconds,expiresAt:elapsedSeconds+2,priority:'course',canonicalProgress:engine.courseProgress,source:'final',explicitlyAuthoredTerrain:explicitlyAuthoredTerrain(currentSegment)})
-  }, [engine.events, engine.segmentIndex, isRunning, mode])
+  }, [engine.events, engine.segmentIndex, isRunning, mode, stage.isTraining])
+
+  useEffect(() => {
+    if(!isRunning||!stage.isTraining||!upNext||nextSectionIndex>=segments.length)return
+    const remaining=Math.ceil(segmentRemaining)
+    if(![30,10,3].includes(remaining))return
+    const next=segments[nextSectionIndex]
+    const message=jimmyTrainingTransitionCue({
+      secondsRemaining:remaining,
+      currentTitle:currentSegment.name,
+      currentType:currentSegment.type,
+      nextTitle:next.name,
+      nextType:next.type,
+      nextZone:next.zone,
+    })
+    if(!message)return
+    deliverCue({
+      id:`training-transition-${stage.number}-${engine.segmentIndex}-${remaining}`,
+      message,
+      validFrom:elapsedSeconds,
+      expiresAt:elapsedSeconds+2,
+      priority:'course',
+      canonicalProgress:engine.courseProgress,
+      source:'timeline',
+      explicitlyAuthoredTerrain:explicitlyAuthoredTerrain(next),
+    })
+  },[isRunning,stage.isTraining,segmentRemaining,engine.segmentIndex,nextSectionIndex,upNext?.name,currentSegment.name,currentSegment.type,segments,elapsedSeconds,engine.courseProgress,stage.number])
 
   useEffect(() => {
     const previous = previousCoachingElapsed.current
@@ -525,18 +551,55 @@ function StandardRideScreen({
 
     const announcementTimer = window.setTimeout(() => {
       const at=timeline.segmentStarts[segmentData.index]
-      deliverCue({id:`section-${stage.number}-${segmentData.index}`,message:`${currentSegment.name}. ${currentSegment.description}`,validFrom:at,expiresAt:at+5,priority:'course',canonicalProgress:engine.courseProgress,source:'timeline',explicitlyAuthoredTerrain:explicitlyAuthoredTerrain(currentSegment)})
+      const trainingRecovery=stage.isTraining&&/recovery|easy/i.test(`${currentSegment.name} ${currentSegment.type}`)
+      const trainingCooldown=stage.isTraining&&/cooldown|cool down/i.test(`${currentSegment.name} ${currentSegment.type}`)
+      const message=trainingCooldown
+        ? 'Work is done. Cooldown now. Ease the gear, breathe, and start recovery.'
+        : trainingRecovery
+          ? 'Recovery. Gear down, breathe, and drink if you need it.'
+          : `${currentSegment.name}. ${currentSegment.description}`
+      deliverCue({id:`section-${stage.number}-${segmentData.index}`,message,validFrom:at,expiresAt:at+5,priority:'course',canonicalProgress:engine.courseProgress,source:'timeline',explicitlyAuthoredTerrain:explicitlyAuthoredTerrain(currentSegment)})
     }, 0)
 
     return () => window.clearTimeout(announcementTimer)
   }, [
     currentSegment.description,
     currentSegment.name,
+    currentSegment.type,
     isRunning,
     segmentData.index,
     coachingTimeline,
     timeline.segmentStarts,
   ])
+
+  useEffect(() => {
+    if(!isRunning||!stage.isTraining||workoutId!=='vuelta-calar-alto-75')return
+    const second=Math.floor(segmentData.elapsedInSegment)
+    const segmentName=currentSegment.name
+    let message:string|null=null
+    let cueId:string|null=null
+    if(/warm-up/i.test(segmentName)&&second===120){
+      message='Three climbs, three different jobs. Climb one establishes the rhythm. Climb two tightens the screws. Climb three is the test. We build this ride one mountain at a time.'
+      cueId='calar-briefing'
+    }else if(/Climb 1/i.test(segmentName)&&second===360){
+      message='Halfway up climb one. Stay in the lower-middle of the range. Smooth torque, quiet shoulders, and keep this almost suspiciously manageable.'
+      cueId='calar-climb1-half'
+    }else if(/Climb 2/i.test(segmentName)&&second===360){
+      message='Halfway up climb two. Tighten the screws now. Same cadence discipline, more pressure through the pedals, still fully controlled.'
+      cueId='calar-climb2-half'
+    }else if(/Climb 3/i.test(segmentName)&&second===240){
+      message='Four minutes in. If the legs and heart rate are behaving, start building. This is the test, not a death march.'
+      cueId='calar-climb3-build'
+    }else if(/Climb 3/i.test(segmentName)&&second===600){
+      message='Two minutes. Cadence first. If the legs are still underneath you, start squeezing the power.'
+      cueId='calar-climb3-two'
+    }else if(/Climb 3/i.test(segmentName)&&second===690){
+      message='Thirty seconds. Hold the shape. No grinding. Finish over the summit.'
+      cueId='calar-climb3-thirty'
+    }
+    if(!message||!cueId)return
+    deliverCue({id:`${cueId}-${stage.number}`,message,validFrom:elapsedSeconds,expiresAt:elapsedSeconds+3,priority:'course',canonicalProgress:engine.courseProgress,source:'fixed',explicitlyAuthoredTerrain:true})
+  },[isRunning,stage.isTraining,workoutId,segmentData.elapsedInSegment,currentSegment.name,elapsedSeconds,engine.courseProgress,stage.number])
 
   useEffect(() => {
     if (

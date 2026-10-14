@@ -27,3 +27,6 @@ test('existing Hal profiles receive the Sep 30 adaptation during migration',()=>
 
 
 test('Hal Oct 11 Sunday endurance is extended to 120 minutes without changing Strength B',()=>{const state=ensureHalOffSeasonPlan(emptyAlpha4025()),items=state.trainingPlan!.weeks.flatMap(w=>w.assignments).filter(a=>a.date==='2026-10-11'),ride=items.find(a=>a.type==='CYCLING')!,strength=items.find(a=>a.type==='STRENGTH')!;assert.equal(ride.workoutId,'indoor-endurance-120');assert.equal(ride.durationMinutes,120);assert.equal(ride.intensity,'EASY');assert.equal(strength.title,'Strength B')})
+
+
+test('Hal Oct 14 Wednesday quality progresses to Calar Alto 75',()=>{const state=ensureHalOffSeasonPlan(emptyAlpha4025()),items=state.trainingPlan!.weeks.flatMap(w=>w.assignments).filter(a=>a.date==='2026-10-14'),ride=items.find(a=>a.type==='CYCLING')!;assert.equal(ride.workoutId,'vuelta-calar-alto-75');assert.equal(ride.durationMinutes,75);assert.equal(ride.intensity,'HARD');assert.deepEqual(ride.powerTarget,{minimum:179,maximum:202});assert.match(ride.primary,/three 12-minute climbs/i)})
