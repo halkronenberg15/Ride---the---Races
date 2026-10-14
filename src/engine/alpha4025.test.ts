@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { adaptSunday, applyAssignmentAction, createDevelopmentProfile, emptyAlpha4025, ensureHalOffSeasonPlan, ftpCompanion, generatePlan, HAL_BASELINE, HAL_GOALS, HAL_INPUT, offSeasonJeanMessageAllowed, readinessStatus, recommendCamps, recommendSeries, recordPowerMeterInstallation, STRENGTH_A, STRENGTH_B, validFemmesProductionStage } from './alpha4025.ts'
+import { adaptSunday, applyAssignmentAction, applyHalOct14CalarAlto75, createDevelopmentProfile, emptyAlpha4025, ensureHalOffSeasonPlan, ftpCompanion, generatePlan, HAL_BASELINE, HAL_GOALS, HAL_INPUT, offSeasonJeanMessageAllowed, readinessStatus, recommendCamps, recommendSeries, recordPowerMeterInstallation, STRENGTH_A, STRENGTH_B, validFemmesProductionStage } from './alpha4025.ts'
 import { migrateCareer } from '../state/careerPersistence.ts'
 
 test('series recommendation remains separate, explicit and non-administrative',()=>{assert.equal(recommendSeries('Male'),'Standard RtR');assert.equal(recommendSeries('Female'),'RtR Femmes');assert.equal(recommendSeries('Prefer not to answer'),null);const profile=createDevelopmentProfile({...HAL_INPUT,category:'Female',seriesPreference:'Intro to Cycling',experience:'Beginner'});assert.equal(profile.seriesPathway,'Intro to Cycling');assert.equal(profile.instructionDensity,'HIGH')})
@@ -27,3 +27,6 @@ test('existing Hal profiles receive the Sep 30 adaptation during migration',()=>
 
 
 test('Hal Oct 11 Sunday endurance is extended to 120 minutes without changing Strength B',()=>{const state=ensureHalOffSeasonPlan(emptyAlpha4025()),items=state.trainingPlan!.weeks.flatMap(w=>w.assignments).filter(a=>a.date==='2026-10-11'),ride=items.find(a=>a.type==='CYCLING')!,strength=items.find(a=>a.type==='STRENGTH')!;assert.equal(ride.workoutId,'indoor-endurance-120');assert.equal(ride.durationMinutes,120);assert.equal(ride.intensity,'EASY');assert.equal(strength.title,'Strength B')})
+
+
+test('Hal Oct 14 Wednesday quality progresses to Calar Alto 75',()=>{const state=ensureHalOffSeasonPlan(emptyAlpha4025()),items=state.trainingPlan!.weeks.flatMap(w=>w.assignments).filter(a=>a.date==='2026-10-14'),ride=items.find(a=>a.type==='CYCLING')!;assert.equal(ride.workoutId,'vuelta-calar-alto-75');assert.equal(ride.durationMinutes,75);assert.equal(ride.intensity,'HARD');assert.deepEqual(ride.powerTarget,{minimum:179,maximum:202});assert.match(ride.primary,/three 12-minute climbs/i)})
