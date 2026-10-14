@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { adaptSunday, applyAssignmentAction, applyHalOct14CalarAlto75, createDevelopmentProfile, emptyAlpha4025, ensureHalOffSeasonPlan, ftpCompanion, generatePlan, HAL_BASELINE, HAL_GOALS, HAL_INPUT, offSeasonJeanMessageAllowed, readinessStatus, recommendCamps, recommendSeries, recordPowerMeterInstallation, STRENGTH_A, STRENGTH_B, validFemmesProductionStage } from './alpha4025.ts'
+import { adaptSunday, applyAssignmentAction, createDevelopmentProfile, emptyAlpha4025, ensureHalOffSeasonPlan, ftpCompanion, generatePlan, HAL_BASELINE, HAL_GOALS, HAL_INPUT, offSeasonJeanMessageAllowed, readinessStatus, recommendCamps, recommendSeries, recordPowerMeterInstallation, STRENGTH_A, STRENGTH_B, validFemmesProductionStage } from './alpha4025.ts'
 import { migrateCareer } from '../state/careerPersistence.ts'
 
 test('series recommendation remains separate, explicit and non-administrative',()=>{assert.equal(recommendSeries('Male'),'Standard RtR');assert.equal(recommendSeries('Female'),'RtR Femmes');assert.equal(recommendSeries('Prefer not to answer'),null);const profile=createDevelopmentProfile({...HAL_INPUT,category:'Female',seriesPreference:'Intro to Cycling',experience:'Beginner'});assert.equal(profile.seriesPathway,'Intro to Cycling');assert.equal(profile.instructionDensity,'HIGH')})
