@@ -12,7 +12,7 @@ import { jeanCue, jeanMode } from '../engine/jeanDirector'
 import { canUseJimmyVoice, speakAsJimmy } from '../services/jimmyVoice'
 import { createJeanEvent, JeanEventBus } from '../engine/jeanEvents'
 import { CLICK_IN_CUE, PRE_RIDE_COUNTDOWN } from '../engine/preRide'
-import { jimmyAmbientDelay, jimmySpeechAllowed, type JimmyRadioPriority } from '../engine/jimmyRadio'
+import { jimmyAmbientDelay, jimmySpeechAllowed, jimmyTrainingTransitionCue, type JimmyRadioPriority } from '../engine/jimmyRadio'
 import { raceIdentities } from '../data/raceLibrary'
 import { isIndividualTimeTrial, officialSegments, ttStartSnapshot } from '../engine/startArchitecture'
 import { applyDurationSelection, durationSelectionForStage, type DurationSelection } from '../engine/durationEngine'
@@ -479,14 +479,40 @@ function StandardRideScreen({
   }, [sprintPhase?.name, isRunning])
 
   useEffect(() => {
-    if (!isRunning) return
+    if (!isRunning || stage.isTraining) return
     const event = engine.events.find((item) => item === 'final-30')
     if (!event) return
     const cueKey = `${engine.segmentIndex}-${event}`
     if (lastSpokenCue.current === cueKey) return
     lastSpokenCue.current = cueKey
     deliverCue({id:`final-${stage.number}-${engine.segmentIndex}-${event}`,message:jeanCue(mode,event),validFrom:elapsedSeconds,expiresAt:elapsedSeconds+2,priority:'course',canonicalProgress:engine.courseProgress,source:'final',explicitlyAuthoredTerrain:explicitlyAuthoredTerrain(currentSegment)})
-  }, [engine.events, engine.segmentIndex, isRunning, mode])
+  }, [engine.events, engine.segmentIndex, isRunning, mode, stage.isTraining])
+
+  useEffect(() => {
+    if(!isRunning||!stage.isTraining||!upNext||nextSectionIndex>=segments.length)return
+    const remaining=Math.ceil(segmentRemaining)
+    if(![30,10,3].includes(remaining))return
+    const next=segments[nextSectionIndex]
+    const message=jimmyTrainingTransitionCue({
+      secondsRemaining:remaining,
+      currentTitle:currentSegment.name,
+      currentType:currentSegment.type,
+      nextTitle:next.name,
+      nextType:next.type,
+      nextZone:next.zone,
+    })
+    if(!message)return
+    deliverCue({
+      id:`training-transition-${stage.number}-${engine.segmentIndex}-${remaining}`,
+      message,
+      validFrom:elapsedSeconds,
+      expiresAt:elapsedSeconds+2,
+      priority:'course',
+      canonicalProgress:engine.courseProgress,
+      source:'timeline',
+      explicitlyAuthoredTerrain:explicitlyAuthoredTerrain(next),
+    })
+  },[isRunning,stage.isTraining,segmentRemaining,engine.segmentIndex,nextSectionIndex,upNext?.name,currentSegment.name,currentSegment.type,segments,elapsedSeconds,engine.courseProgress,stage.number])
 
   useEffect(() => {
     const previous = previousCoachingElapsed.current
