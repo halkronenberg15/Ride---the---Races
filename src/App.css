@@ -2395,3 +2395,58 @@ html[data-motion="full"] .broadcast-tactical.active .target-line{animation:tacti
   .broadcast-climb>header{grid-template-columns:minmax(0,1fr) auto}
   .climb-gradient-ribbon{grid-auto-columns:minmax(58px,1fr)}
 }
+
+
+/* Cockpit refinement: familiar cyclist marker + higher-contrast training profiles. */
+.profile-rider .rider-glyph,.climb-rider .rider-glyph{
+  font-size:30px!important;
+  line-height:1;
+  color:initial!important;
+  transform:translateY(-1px);
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.85)) drop-shadow(0 0 5px rgba(255,255,255,.28));
+}
+.profile-rider,.climb-rider{
+  width:42px!important;
+  height:36px!important;
+}
+.profile-rider .rider-marker-halo,.climb-rider .rider-marker-halo{
+  width:30px!important;
+  height:30px!important;
+  opacity:.82;
+}
+.cockpit-training .live-profile-wrap{
+  min-height:112px;
+  background:
+    radial-gradient(circle at 62% 42%,color-mix(in srgb,var(--cockpit-accent) 13%,transparent),transparent 34%),
+    linear-gradient(180deg,rgba(255,255,255,.045),transparent 48%),
+    #080a0d;
+  box-shadow:inset 0 -34px 58px rgba(0,0,0,.36),0 9px 28px rgba(0,0,0,.26);
+}
+.cockpit-training .live-profile-wrap svg polyline:first-of-type{
+  stroke:rgba(255,106,0,.72)!important;
+  stroke-width:9!important;
+  opacity:.66!important;
+}
+.cockpit-training .live-profile-wrap svg polyline:nth-of-type(2){
+  stroke:rgba(255,238,224,1)!important;
+  stroke-width:3.4!important;
+}
+.cockpit-training .live-profile-wrap svg polygon:first-of-type{
+  opacity:.96;
+}
+.cockpit-training .broadcast-climb{
+  border-color:color-mix(in srgb,var(--cockpit-accent) 64%,rgba(255,255,255,.14));
+  box-shadow:inset 0 -38px 70px rgba(0,0,0,.34),0 12px 36px rgba(0,0,0,.3),0 0 24px color-mix(in srgb,var(--cockpit-accent) 10%,transparent);
+}
+.cockpit-training .broadcast-climb .climb-svg-region{
+  min-height:132px;
+}
+.cockpit-training .broadcast-climb .climb-live-grade strong{
+  font-size:1.42rem;
+}
+@media(max-width:520px){
+  .profile-rider .rider-glyph,.climb-rider .rider-glyph{font-size:27px!important}
+  .profile-rider,.climb-rider{width:38px!important;height:33px!important}
+  .cockpit-training .live-profile-wrap{min-height:106px}
+  .cockpit-training .broadcast-climb .climb-svg-region{min-height:124px}
+}
