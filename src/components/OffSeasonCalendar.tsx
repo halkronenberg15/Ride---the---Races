@@ -27,6 +27,11 @@ export default function OffSeasonCalendar({ plan, today, rideHistory, ftp, activ
     for (const assignment of assignments) map.set(assignment.date, [...(map.get(assignment.date) ?? []), assignment])
     return map
   }, [assignments])
+  const weekByDate=useMemo(()=>{
+    const map=new Map<string,TrainingPlan['weeks'][number]>()
+    for(const week of plan.weeks)for(const assignment of week.assignments)map.set(assignment.date,week)
+    return map
+  },[plan.weeks])
   const months=useMemo(()=>planMonths(plan),[plan])
   const initialMonthIndex=Math.max(0,months.findIndex(({key})=>today.startsWith(key)))
   const [activeMonthIndex,setActiveMonthIndex]=useState(initialMonthIndex)
@@ -40,8 +45,8 @@ export default function OffSeasonCalendar({ plan, today, rideHistory, ftp, activ
   useEffect(()=>{localStorage.setItem(RECOVERY_KEY,JSON.stringify(recoveryActivities))},[recoveryActivities])
   const visibleForDate = (date:string) => { const items=byDate.get(date)??[]; return items.some(item=>item.durationMinutes>0)?items.filter(item=>item.durationMinutes>0):items }
   const selectedAssignments = selectedDate ? visibleForDate(selectedDate) : []
-  const selectedWeek = plan.weeks.find(week => week.assignments.some(item => item.date === selectedDate))
-  const currentWeek = plan.weeks.find(week => week.assignments.some(item => item.date === today)) ?? selectedWeek ?? plan.weeks[0]
+  const selectedWeek = selectedDate?weekByDate.get(selectedDate):undefined
+  const currentWeek = weekByDate.get(today) ?? selectedWeek ?? plan.weeks[0]
   const currentBlock = blockVisualForCamp(currentWeek?.camp??'Aerobic Base Camp')
   const recoveryForSelected=selectedDate?recoveryActivities.filter(item=>item.date===selectedDate):[]
   const recoveryDay=selectedAssignments.some(item=>item.type==='REST'||item.type==='MOBILITY'||/recovery|rest/i.test(item.title??''))
@@ -135,7 +140,7 @@ export default function OffSeasonCalendar({ plan, today, rideHistory, ftp, activ
         const statusClass=dayAssignments.length===0?'':partial?'partial':completeCount===dayAssignments.length?'completed':'planned'
         const labels=dayAssignments.map(shortLabel)
         const hasRecoveryLog=recoveryActivities.some(item=>item.date===date)
-        const weekForDate=plan.weeks.find(week=>week.assignments.some(item=>item.date===date))
+        const weekForDate=weekByDate.get(date)
         const block=blockVisualForCamp(weekForDate?.camp??'Aerobic Base Camp')
         return <div className={`calendar-date training-date block-${block.id}${date===today?' is-today':''}${dayAssignments.length?' has-assignment':''}${hasRecoveryLog?' has-recovery-log':''}`} style={{'--block-color':block.color} as CSSProperties} key={date}>
           {dayAssignments.length?<button type="button" className={`training-day-button training-${statusClass}${selectedDate===date?' is-selected':''}`} aria-pressed={selectedDate===date} aria-label={`${date}: ${dayAssignments.map(item=>item.title).join(', ')}. View training day`} onClick={()=>setSelectedDate(date)}><span className="training-day-number">{day}</span><span className="training-day-type">{labels.join(' + ')}</span><span className="training-day-status">{completeCount===dayAssignments.length?'✓':partial?'◐':dayAssignments.length>1?String(dayAssignments.length):''}</span></button>:<span className="training-empty-date">{day}</span>}
