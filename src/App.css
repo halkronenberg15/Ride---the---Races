@@ -2395,3 +2395,87 @@ html[data-motion="full"] .broadcast-tactical.active .target-line{animation:tacti
   .broadcast-climb>header{grid-template-columns:minmax(0,1fr) auto}
   .climb-gradient-ribbon{grid-auto-columns:minmax(58px,1fr)}
 }
+
+
+/* Alpha 4.0.26+: training block campaign-map visuals */
+.training-block-banner{
+  --block-color:#315f9b;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  margin:0 0 12px;
+  padding:16px 18px;
+  border:1px solid color-mix(in srgb,var(--block-color) 72%,#3b3b40);
+  border-left:7px solid var(--block-color);
+  border-radius:16px;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--block-color) 26%,#171719),#171719 68%);
+  box-shadow:0 14px 32px rgba(0,0,0,.22)
+}
+.training-block-banner-main{display:flex;align-items:center;gap:14px;min-width:0}
+.training-block-banner-main h3{margin:0 0 4px;color:#fff;font-size:clamp(1.3rem,4vw,1.8rem)}
+.training-block-banner-main p:last-child{margin:0;color:#c9c9d0}
+.training-block-banner .eyebrow{color:color-mix(in srgb,var(--block-color) 55%,#fff)}
+.training-block-icon{
+  flex:0 0 auto;
+  width:46px;
+  height:46px;
+  display:grid;
+  place-items:center;
+  border:1px solid color-mix(in srgb,var(--block-color) 80%,#fff);
+  border-radius:13px;
+  background:color-mix(in srgb,var(--block-color) 38%,#0f0f10);
+  color:#fff;
+  font-size:1.25rem;
+  font-weight:950
+}
+.week-load-badge{
+  flex:0 0 auto;
+  padding:8px 11px;
+  border-radius:999px;
+  font-size:.68rem;
+  font-weight:950;
+  letter-spacing:.08em
+}
+.week-load-badge.push{border:1px solid #d88a4f;background:#3b2417;color:#ffd2ae}
+.week-load-badge.recovery{border:1px solid #4ca6a0;background:#173330;color:#bdf1eb}
+.training-block-legend{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 12px;
+  margin:0 0 14px;
+  padding:0 2px;
+  color:#aaaab1;
+  font-size:.7rem;
+  font-weight:800
+}
+.training-block-legend span{display:flex;align-items:center;gap:6px}
+.training-block-legend i{width:10px;height:10px;border-radius:3px;background:var(--block-color);box-shadow:0 0 0 1px color-mix(in srgb,var(--block-color) 72%,#fff)}
+.training-date{position:relative;background:color-mix(in srgb,var(--block-color,#96969e) 8%,transparent)}
+.training-date.has-assignment::before{
+  content:"";
+  position:absolute;
+  inset:0 auto 0 0;
+  width:3px;
+  background:var(--block-color,#96969e);
+  opacity:.95;
+  pointer-events:none
+}
+.training-date .training-day-button{
+  border-color:color-mix(in srgb,var(--block-color,#96969e) 65%,#53535a);
+  border-left-color:var(--block-color,#96969e);
+  background:linear-gradient(145deg,color-mix(in srgb,var(--block-color,#96969e) 20%,#26262a),#26262a 70%)
+}
+.training-date .training-completed{border-left-color:#69bca1}
+.training-date .training-partial{border-left-color:#ffc36a}
+.training-date.is-today{box-shadow:inset 0 0 0 2px #f46a00, inset 0 -4px 0 var(--block-color,#96969e)}
+.training-date-details{border-top:4px solid var(--block-color,#3d3d43)}
+@media(max-width:620px){
+  .training-block-banner{align-items:flex-start;flex-direction:column;padding:14px}
+  .week-load-badge{margin-left:60px}
+  .training-block-legend{display:grid;grid-template-columns:1fr 1fr}
+}
+@media(max-width:420px){
+  .training-block-legend{grid-template-columns:1fr}
+  .week-load-badge{margin-left:0}
+}
