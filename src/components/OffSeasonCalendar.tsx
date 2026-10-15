@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { getCalendarMonth } from '../data/seasonCalendar.ts'
 import { planMonths } from '../engine/offSeasonCalendar.ts'
 import { availableRideChanges, canSwitchRideSetting, type CalendarAssignment, type TrainingPlan } from '../engine/alpha4025.ts'
@@ -8,6 +8,15 @@ import { buildPostRideReport } from '../engine/postRideReport4026.ts'
 const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const monthName = (year: number, month: number) => new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(Date.UTC(year, month, 1)))
 const shortLabel = (assignment: CalendarAssignment) => assignment.type === 'CYCLING' || assignment.type === 'ASSESSMENT' ? 'Ride' : assignment.type === 'STRENGTH' ? 'Strength' : assignment.type === 'MOBILITY' ? 'Mobility' : 'Rest'
+type BlockVisual={id:string;label:string;icon:string;color:string}
+const blockVisualForCamp=(camp:string):BlockVisual=>{
+  const value=camp.toLowerCase()
+  if(value.includes('climbing')||value.includes('sustained climbing'))return {id:'climbing',label:'Climbing Block',icon:'▲',color:'#7a2638'}
+  if(value.includes('vo2')||value.includes('threshold'))return {id:'build',label:'Build Block',icon:'⚡',color:'#b4511f'}
+  if(value.includes('event')||value.includes('grand tour'))return {id:'event',label:'Event Preparation',icon:'⚑',color:'#b28b2e'}
+  if(value.includes('recovery')||value.includes('reset'))return {id:'recovery',label:'Recovery / Reset',icon:'◇',color:'#2b7d78'}
+  return {id:'base',label:'Base Block',icon:'●',color:'#315f9b'}
+}
 type RecoveryActivity={id:string;date:string;kind:string;minutes:number;notes?:string}
 const RECOVERY_KEY='rtr-web-recovery-activities-v1'
 
@@ -18,6 +27,11 @@ export default function OffSeasonCalendar({ plan, today, rideHistory, ftp, activ
     for (const assignment of assignments) map.set(assignment.date, [...(map.get(assignment.date) ?? []), assignment])
     return map
   }, [assignments])
+  const weekByDate=useMemo(()=>{
+    const map=new Map<string,TrainingPlan['weeks'][number]>()
+    for(const week of plan.weeks)for(const assignment of week.assignments)map.set(assignment.date,week)
+    return map
+  },[plan.weeks])
   const months=useMemo(()=>planMonths(plan),[plan])
   const initialMonthIndex=Math.max(0,months.findIndex(({key})=>today.startsWith(key)))
   const [activeMonthIndex,setActiveMonthIndex]=useState(initialMonthIndex)
@@ -31,7 +45,9 @@ export default function OffSeasonCalendar({ plan, today, rideHistory, ftp, activ
   useEffect(()=>{localStorage.setItem(RECOVERY_KEY,JSON.stringify(recoveryActivities))},[recoveryActivities])
   const visibleForDate = (date:string) => { const items=byDate.get(date)??[]; return items.some(item=>item.durationMinutes>0)?items.filter(item=>item.durationMinutes>0):items }
   const selectedAssignments = selectedDate ? visibleForDate(selectedDate) : []
-  const selectedWeek = plan.weeks.find(week => week.assignments.some(item => item.date === selectedDate))
+  const selectedWeek = selectedDate?weekByDate.get(selectedDate):undefined
+  const currentWeek = weekByDate.get(today) ?? selectedWeek ?? plan.weeks[0]
+  const currentBlock = blockVisualForCamp(currentWeek?.camp??'Aerobic Base Camp')
   const recoveryForSelected=selectedDate?recoveryActivities.filter(item=>item.date===selectedDate):[]
   const recoveryDay=selectedAssignments.some(item=>item.type==='REST'||item.type==='MOBILITY'||/recovery|rest/i.test(item.title??''))
   const addRecovery=()=>{if(!selectedDate)return;const minutes=Math.max(0,Number(recoveryMinutes)||0);setRecoveryActivities(items=>[...items,{id:selectedDate+'-'+Date.now(),date:selectedDate,kind:recoveryKind,minutes,notes:recoveryNotes.trim()||undefined}]);setRecoveryMinutes('');setRecoveryNotes('')}
@@ -69,7 +85,8 @@ export default function OffSeasonCalendar({ plan, today, rideHistory, ftp, activ
     </article>
   }
 
-  const details = selectedDate && selectedAssignments.length > 0 && <article className="dashboard-card training-date-details" id="training-date-details" aria-live="polite">
+  const selectedBlock=blockVisualForCamp(selectedWeek?.camp??'Aerobic Base Camp')
+  const details = selectedDate && selectedAssignments.length > 0 && <article className="dashboard-card training-date-details" style={{'--block-color':selectedBlock.color} as CSSProperties} id="training-date-details" aria-live="polite">
       <p className="eyebrow">{selectedDate} · {selectedAssignments[0]?.day} · Week {selectedWeek?.number}</p>
       <header className="training-day-detail-heading"><div><h2>Training day</h2>{selectedWeek && <p><strong>{selectedWeek.camp}</strong> · {selectedWeek.focus}{selectedWeek.recoveryWeek ? ' · Recovery week' : ''}</p>}</div><strong>{selectedAssignments.reduce((sum,item)=>sum+item.durationMinutes,0)} min total</strong></header>
       {selectedAssignments.length > 1 && <p className="training-double-note"><strong>Double-session day:</strong> {selectedAssignments.map(item => shortLabel(item)).join(' + ')}. These sessions are intentionally scheduled on the same date and are not treated as a conflict.</p>}
@@ -94,6 +111,18 @@ export default function OffSeasonCalendar({ plan, today, rideHistory, ftp, activ
 
   return <section className="offseason-calendar" aria-label={`Personalized ${plan.weeks.length}-week training calendar`}>
     <header className="offseason-calendar-heading"><h2>24-week training calendar</h2><p className="calendar-summary">The weekly rhythm stays recognizable, but ride content shifts with the current training block. Monday full rest · Tuesday ride + Strength A · Wednesday primary quality · Thursday block-specific support · Friday recovery · Saturday long ride · Sunday endurance + Strength B. Normal cycling floor: 100 miles/week.</p><details><summary>About this plan</summary><p>{plan.explanation}</p><p>Ride and strength sessions may intentionally share a date. The 100-plus-mile consecutive-day goal remains a later distance-and-recovery milestone; this calendar prescribes time, not guaranteed mileage.</p></details></header>
+    {currentWeek&&<section className="training-block-banner" style={{'--block-color':currentBlock.color} as CSSProperties} aria-label={`Current training block: ${currentBlock.label}`}>
+      <div className="training-block-banner-main"><span className="training-block-icon" aria-hidden="true">{currentBlock.icon}</span><div><p className="eyebrow">YOU ARE HERE · WEEK {currentWeek.number} OF {plan.weeks.length}</p><h3>{currentBlock.label}</h3><p>{currentWeek.camp} · {currentWeek.focus}</p></div></div>
+      <strong className={currentWeek.recoveryWeek?'week-load-badge recovery':'week-load-badge push'}>{currentWeek.recoveryWeek?'RECOVERY WEEK':'BUILD WEEK'}</strong>
+    </section>}
+    <div className="training-block-legend" aria-label="Training block color legend">
+      {[
+        blockVisualForCamp('Aerobic Base Camp'),
+        blockVisualForCamp('Climbing Camp'),
+        blockVisualForCamp('VO2max & Durability Camp'),
+        blockVisualForCamp('Event Durability Camp')
+      ].map(item=><span key={item.id} style={{'--block-color':item.color} as CSSProperties}><i aria-hidden="true"/>{item.label}</span>)}
+    </div>
     <div className="offseason-month-toolbar">
       <button type="button" onClick={()=>setActiveMonthIndex(index=>Math.max(0,index-1))} disabled={activeMonthIndex===0} aria-label="Previous training month">‹</button>
       <label>Month<select value={activeMonthIndex} onChange={event=>setActiveMonthIndex(Number(event.target.value))}>{months.map((item,index)=><option key={item.key} value={index}>{monthName(item.year,item.month)}</option>)}</select></label>
@@ -111,7 +140,9 @@ export default function OffSeasonCalendar({ plan, today, rideHistory, ftp, activ
         const statusClass=dayAssignments.length===0?'':partial?'partial':completeCount===dayAssignments.length?'completed':'planned'
         const labels=dayAssignments.map(shortLabel)
         const hasRecoveryLog=recoveryActivities.some(item=>item.date===date)
-        return <div className={`calendar-date training-date${date===today?' is-today':''}${dayAssignments.length?' has-assignment':''}${hasRecoveryLog?' has-recovery-log':''}`} key={date}>
+        const weekForDate=weekByDate.get(date)
+        const block=blockVisualForCamp(weekForDate?.camp??'Aerobic Base Camp')
+        return <div className={`calendar-date training-date block-${block.id}${date===today?' is-today':''}${dayAssignments.length?' has-assignment':''}${hasRecoveryLog?' has-recovery-log':''}`} style={{'--block-color':block.color} as CSSProperties} key={date}>
           {dayAssignments.length?<button type="button" className={`training-day-button training-${statusClass}${selectedDate===date?' is-selected':''}`} aria-pressed={selectedDate===date} aria-label={`${date}: ${dayAssignments.map(item=>item.title).join(', ')}. View training day`} onClick={()=>setSelectedDate(date)}><span className="training-day-number">{day}</span><span className="training-day-type">{labels.join(' + ')}</span><span className="training-day-status">{completeCount===dayAssignments.length?'✓':partial?'◐':dayAssignments.length>1?String(dayAssignments.length):''}</span></button>:<span className="training-empty-date">{day}</span>}
         </div>
       })}</div>
