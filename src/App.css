@@ -2529,3 +2529,34 @@ html[data-motion="full"] .broadcast-tactical.active .target-line{animation:tacti
 .shopping-list-grid label span{display:grid;gap:2px}
 .shopping-list-grid small{color:#9b9ba3}
 @media(max-width:620px){.nutrition-discovery-header{align-items:stretch}.nutrition-discovery-tabs{display:grid;grid-template-columns:repeat(3,1fr)}.recipe-card-rail{grid-auto-columns:82vw}}
+
+
+/* Nutrition discovery v2 */
+.recipe-card-art{width:100%;border:0;border-radius:0;cursor:pointer}
+.recipe-title-button{padding:0;border:0;background:transparent;color:#fff;text-align:left;font:inherit;font-weight:800;font-size:1.02rem;cursor:pointer}
+.weekly-day-stack{display:grid;gap:12px}
+.weekly-day-card{display:grid;gap:10px;padding:13px;border:1px solid #37373d;border-radius:16px;background:#17171b}
+.weekly-day-card>header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:8px;border-bottom:1px solid #303036}
+.weekly-day-card>header div{display:grid;gap:2px}
+.weekly-day-card>header small,.weekly-day-card>header span{color:#9c9ca4}
+.weekly-day-card>header span{max-width:65%;font-size:.78rem;text-align:right}
+.weekly-day-meals{display:grid;gap:7px}
+.weekly-meal-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;padding:10px;border:1px solid #303036;border-radius:12px;background:#202025;color:#fff;text-align:left}
+.weekly-meal-copy{display:grid;gap:2px}
+.weekly-meal-copy>small{color:#8e8e97;text-transform:uppercase;letter-spacing:.05em}
+.weekly-meal-copy>span{color:#bcbcc3;font-size:.82rem}
+.weekly-meal-copy>em{color:#9e9ea7;font-size:.78rem;font-style:normal;line-height:1.35}
+.portion-chip{padding:5px 7px;border-radius:999px;background:#303036;color:#d8d8dd;font-size:.72rem;font-weight:800}
+.recipe-detail-backdrop{position:fixed;inset:0;z-index:1200;display:grid;align-items:end;justify-items:center;background:rgba(0,0,0,.7);padding:16px}
+.recipe-detail-panel{position:relative;width:min(680px,100%);max-height:min(88vh,780px);overflow:auto;padding:18px;border:1px solid #414148;border-radius:22px 22px 14px 14px;background:#17171b;box-shadow:0 24px 70px rgba(0,0,0,.45)}
+.recipe-detail-close{position:absolute;top:12px;right:12px;z-index:2;width:36px;height:36px;border-radius:999px;border:1px solid #4a4a50;background:#222228;color:#fff;font-size:1.4rem}
+.recipe-detail-hero{display:grid;place-items:center;height:180px;margin:-18px -18px 16px;border-radius:22px 22px 0 0;background:radial-gradient(circle at 30% 25%,rgba(255,255,255,.13),transparent 45%),linear-gradient(135deg,#315f9b,#7a2638);font-size:5rem}
+.recipe-detail-panel h3{margin:4px 0 10px}
+.recipe-detail-macros{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+.recipe-detail-macros span{display:grid;gap:2px;padding:9px;border:1px solid #34343a;border-radius:10px;color:#a6a6ae;font-size:.76rem}
+.recipe-detail-macros strong{color:#fff;font-size:1rem}
+.recipe-detail-panel section ul{display:grid;gap:5px;padding:0;margin:8px 0;list-style:none}
+.recipe-detail-panel section li{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid #2f2f34}
+.recipe-detail-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.recipe-detail-actions button.saved{background:#7a2638;color:#fff;border-color:#9a4154}
+@media(max-width:620px){.weekly-day-card>header{display:grid}.weekly-day-card>header span{max-width:none;text-align:left}.weekly-meal-row{grid-template-columns:auto minmax(0,1fr)}.portion-chip{grid-column:2;justify-self:start}.recipe-detail-actions{grid-template-columns:1fr}.recipe-detail-backdrop{padding:0}.recipe-detail-panel{border-radius:22px 22px 0 0;max-height:92vh}}
