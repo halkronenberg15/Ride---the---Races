@@ -30,6 +30,8 @@ type CareerContextValue = {
   addNutritionTemplate:(template:NutritionMealTemplate)=>void
   importNutritionData:(entries:NutritionEntry[],templates:NutritionMealTemplate[])=>void
   updateNutritionProfile:(patch:Partial<CareerState['nutrition']>)=>void
+  toggleSavedRecipe:(recipeId:string)=>void
+  recordRecipeCooked:(recipeId:string,rating?:1|2|3|4|5)=>void
   updateRider: (rider: Partial<CareerState['rider']>) => void
   completeOnboarding: (rider: CareerState['rider'],intro?:{answers:IntroCyclingAnswers;plan:IntroCyclingPlan}|null) => void
   completeIntroRide:(rideId:string)=>void
@@ -100,6 +102,8 @@ export function CareerProvider({ children }: { children: React.ReactNode }) {
     addNutritionTemplate(template){setCareer(current=>({...current,nutrition:{...current.nutrition,mealTemplates:[template,...current.nutrition.mealTemplates.filter(item=>item.id!==template.id)]}}))},
     importNutritionData(entries,templates){setCareer(current=>{const existingEntryIds=new Set(current.nutrition.entries.map(item=>item.id)),existingTemplateIds=new Set(current.nutrition.mealTemplates.map(item=>item.id));return {...current,nutrition:{...current.nutrition,entries:[...current.nutrition.entries,...entries.filter(item=>!existingEntryIds.has(item.id))].sort((a,b)=>b.date.localeCompare(a.date)||b.loggedAt.localeCompare(a.loggedAt)),mealTemplates:[...current.nutrition.mealTemplates,...templates.filter(item=>!existingTemplateIds.has(item.id))]}}})},
     updateNutritionProfile(patch){setCareer(current=>({...current,nutrition:{...current.nutrition,...patch}}))},
+    toggleSavedRecipe(recipeId){setCareer(current=>{const existing=current.nutrition.recipePreferences.find(item=>item.recipeId===recipeId);return {...current,nutrition:{...current.nutrition,recipePreferences:existing?current.nutrition.recipePreferences.filter(item=>item.recipeId!==recipeId):[{recipeId,savedAt:new Date().toISOString(),timesPlanned:0,timesCooked:0},...current.nutrition.recipePreferences]}}})},
+    recordRecipeCooked(recipeId,rating){setCareer(current=>{const now=new Date().toISOString(),existing=current.nutrition.recipePreferences.find(item=>item.recipeId===recipeId),next=existing?current.nutrition.recipePreferences.map(item=>item.recipeId===recipeId?{...item,timesCooked:item.timesCooked+1,...(rating?{rating}:{}),savedAt:item.savedAt||now}:item):[{recipeId,savedAt:now,timesPlanned:0,timesCooked:1,...(rating?{rating}:{})},...current.nutrition.recipePreferences];return {...current,nutrition:{...current.nutrition,recipePreferences:next}}})},
     updateRider(rider) {
       setCareer((current) => ({ ...current, rider: { ...current.rider, ...rider } }))
     },
