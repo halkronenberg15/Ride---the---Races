@@ -33,3 +33,26 @@ test('Hal Oct 14 Wednesday quality progresses to Calar Alto 75',()=>{const state
 
 
 test('persisted Hal plan migration applies Oct 14 Calar Alto progression',()=>{const existing=ensureHalOffSeasonPlan(emptyAlpha4025()); const legacyPlan=existing.trainingPlan!; const source={schemaVersion:6,onboardingComplete:true,rider:{name:'Hal',number:15,ftp:229},alpha4025:{...existing,trainingPlan:legacyPlan}} as never; const migrated=migrateCareer(source); const ride=migrated.alpha4025.trainingPlan!.weeks.flatMap(w=>w.assignments).find(a=>a.date==='2026-10-14'&&a.type==='CYCLING')!; assert.equal(ride.workoutId,'vuelta-calar-alto-75'); assert.equal(ride.durationMinutes,75)})
+
+
+test('Hal Oct 19-25 is a recovery and absorption week with short Z1/Z2 rides plus upper body and core',()=>{
+ const state=ensureHalOffSeasonPlan(emptyAlpha4025())
+ const week=state.trainingPlan!.weeks.find(w=>w.startsOn==='2026-10-19')!
+ assert.equal(week.camp,'Recovery & Reset Camp')
+ assert.equal(week.recoveryWeek,true)
+ const rides=week.assignments.filter(a=>a.type==='CYCLING')
+ assert.deepEqual(rides.map(a=>a.durationMinutes),[30,45,30,90,30])
+ assert.ok(rides.every(a=>a.intensity==='RECOVERY'||a.intensity==='EASY'))
+ const strength=week.assignments.filter(a=>a.type==='STRENGTH')
+ assert.deepEqual(strength.map(a=>a.title),['Upper Body + Core A','Upper Body + Core B','Upper Body + Core C'])
+ assert.ok(strength.every(a=>/upper body and core only/i.test(a.primary)))
+})
+
+test('Hal Oct 26 remains a recovery transition and climbing starts Tuesday Oct 27',()=>{
+ const state=ensureHalOffSeasonPlan(emptyAlpha4025())
+ const monday=state.trainingPlan!.weeks.flatMap(w=>w.assignments).find(a=>a.date==='2026-10-26'&&a.type==='REST')!
+ const tuesday=state.trainingPlan!.weeks.flatMap(w=>w.assignments).find(a=>a.date==='2026-10-27'&&a.type==='CYCLING')!
+ assert.equal(monday.camp,'Recovery & Reset Camp')
+ assert.match(monday.title,/transition/i)
+ assert.match(tuesday.camp,/Climbing Camp/)
+})
