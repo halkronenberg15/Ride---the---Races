@@ -6,6 +6,7 @@ import { rideFuelPrescription } from '../engine/fuelCommandEngine.ts'
 import { buildMenuHorizon, mealPlanForDay, type AppetiteLevel, type MealHorizon } from '../engine/mealPlanningEngine.ts'
 import { useCareer } from '../state/CareerContext.tsx'
 import type { NutritionEntry, NutritionMealTemplate, NutritionMealType } from '../types/career.ts'
+import NutritionDiscoveryPlanner from '../components/NutritionDiscoveryPlanner.tsx'
 
 type Props={
  onBack:()=>void
@@ -102,6 +103,7 @@ export default function MissionFranceCommandCenter({onBack,onOpenHealth,onOpenRi
    <div className="nutrition-fuel-grid"><article><small>DAY CLASS</small><strong>{fueling.dayClass}</strong></article><article><small>PROTEIN</small><strong>{fueling.proteinStatus}</strong><span>{fueling.proteinTargetG?fueling.proteinTargetG.join('–')+' g target':'Add current weight'}</span></article><article><small>CARBS</small><strong>{fueling.carbStatus}</strong><span>{fueling.carbTargetG?fueling.carbTargetG.join('–')+' g target':'Add current weight'}</span></article><article><small>WEIGHT PHASE</small><strong>{fueling.weightPhase}</strong></article></div>
    <div className="nutrition-goal-row"><label>Goal low (lb)<input type="number" value={goalLowLb} onChange={event=>setGoalLowLb(event.target.value)}/></label><label>Goal high (lb)<input type="number" value={goalHighLb} onChange={event=>setGoalHighLb(event.target.value)}/></label><button type="button" onClick={saveWeightGoals}>Save goal range</button></div>
    <div className="fuel-guidance">{fueling.guidance.map(item=><p key={item}>{item}</p>)}</div>
+   <NutritionDiscoveryPlanner />
    <section className="jimmy-meal-planner">
     <div className="section-title-row"><div><p className="eyebrow">JIMMY'S PLAN FOR TODAY</p><h3>Plan around appetite, training and dinner</h3><p>Tell Jimmy when you expect to train, how appetite feels today, and whether dinner is already decided.</p></div><span className="stage-chip">{fueling.dayClass} DAY</span></div>
     <div className="jimmy-planner-controls">
