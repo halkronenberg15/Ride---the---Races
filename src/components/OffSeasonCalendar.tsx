@@ -141,7 +141,7 @@ export default function OffSeasonCalendar({ plan, today, rideHistory, ftp, activ
         const labels=dayAssignments.map(shortLabel)
         const hasRecoveryLog=recoveryActivities.some(item=>item.date===date)
         const weekForDate=weekByDate.get(date)
-        const block=blockVisualForCamp(weekForDate?.camp??'Aerobic Base Camp')
+        const block=blockVisualForCamp(dayAssignments[0]?.camp??weekForDate?.camp??'Aerobic Base Camp')
         return <div className={`calendar-date training-date block-${block.id}${date===today?' is-today':''}${dayAssignments.length?' has-assignment':''}${hasRecoveryLog?' has-recovery-log':''}`} style={{'--block-color':block.color} as CSSProperties} key={date}>
           {dayAssignments.length?<button type="button" className={`training-day-button training-${statusClass}${selectedDate===date?' is-selected':''}`} aria-pressed={selectedDate===date} aria-label={`${date}: ${dayAssignments.map(item=>item.title).join(', ')}. View training day`} onClick={()=>setSelectedDate(date)}><span className="training-day-number">{day}</span><span className="training-day-type">{labels.join(' + ')}</span><span className="training-day-status">{completeCount===dayAssignments.length?'✓':partial?'◐':dayAssignments.length>1?String(dayAssignments.length):''}</span></button>:<span className="training-empty-date">{day}</span>}
         </div>
