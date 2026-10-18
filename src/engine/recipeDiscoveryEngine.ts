@@ -1,5 +1,7 @@
 import type { CalendarAssignment } from './alpha4025.ts'
 
+export type PlannedMealType='Breakfast'|'Lunch'|'Dinner'
+
 export type RecipeCatalogItem={
  id:string
  name:string
@@ -15,11 +17,17 @@ export type RecipeCatalogItem={
 }
 
 export type WeeklyMealSlot={
+ id:string
  date:string
  day:string
+ mealType:PlannedMealType
  recipe:RecipeCatalogItem
  reason:string
  trainingLabel:string
+ portionMultiplier:number
+ adaptedProteinG:number
+ adaptedCarbsG:number
+ adaptedCalories:number
 }
 
 export type ShoppingItem={
@@ -35,13 +43,14 @@ export const RECIPE_CATALOG:RecipeCatalogItem[]=[
  {id:'rtr-chicken-pasta',name:'Tomato Chicken Angel Hair',mealType:'Dinner',minutes:35,proteinG:44,carbsG:78,calories:660,tags:['high-carb','recovery','italian'],art:'🍝',source:'RTR',ingredients:[{name:'Chicken breast',quantity:6,unit:'oz'},{name:'Angel hair pasta',quantity:3,unit:'oz dry'},{name:'Tomato sauce',quantity:1,unit:'cup'},{name:'Mushrooms',quantity:1,unit:'cup'}]},
  {id:'rtr-fajita-bowl',name:'Chicken Fajita Rice Bowl',mealType:'Dinner',minutes:30,proteinG:41,carbsG:68,calories:610,tags:['high-protein','high-carb','batch'],art:'🥘',source:'RTR',ingredients:[{name:'Chicken thighs',quantity:6,unit:'oz'},{name:'Cooked rice',quantity:1,unit:'cup'},{name:'Bell peppers',quantity:1,unit:'cup'},{name:'Onion',quantity:.5,unit:'cup'}]},
  {id:'rtr-brisket-bowl',name:'Brisket Tzatziki Rice Bowl',mealType:'Dinner',minutes:20,proteinG:38,carbsG:62,calories:720,tags:['beef','recovery','comfort'],art:'🥙',source:'RTR',ingredients:[{name:'Brisket',quantity:6,unit:'oz'},{name:'Cooked rice',quantity:1,unit:'cup'},{name:'Tzatziki',quantity:2,unit:'oz'},{name:'Feta',quantity:1.5,unit:'oz'}]},
+ {id:'rtr-steak-potato',name:'Steak, Potato & Green Beans',mealType:'Dinner',minutes:35,proteinG:45,carbsG:55,calories:650,tags:['protein','recovery','comfort'],art:'🥔',source:'RTR',ingredients:[{name:'Sirloin steak',quantity:6,unit:'oz'},{name:'Potatoes',quantity:10,unit:'oz'},{name:'Green beans',quantity:1.5,unit:'cups'}]},
+ {id:'rtr-chicken-meatballs',name:'Chicken Meatballs, Rice & Gravy',mealType:'Dinner',minutes:40,proteinG:39,carbsG:63,calories:590,tags:['batch','recovery','comfort'],art:'🍲',source:'RTR',ingredients:[{name:'Chicken meatballs',quantity:6,unit:'oz'},{name:'Cooked rice',quantity:1,unit:'cup'},{name:'Mixed vegetables',quantity:1,unit:'cup'},{name:'Gravy',quantity:.5,unit:'cup'}]},
  {id:'rtr-yogurt-granola',name:'Yogurt, Granola & Blueberries',mealType:'Breakfast',minutes:5,proteinG:20,carbsG:42,calories:340,tags:['quick','light','breakfast'],art:'🫐',source:'RTR',ingredients:[{name:'Plain yogurt',quantity:1,unit:'cup'},{name:'Granola',quantity:.25,unit:'cup'},{name:'Blueberries',quantity:.5,unit:'cup'}]},
  {id:'rtr-egg-wrap',name:'Cheesy Egg Breakfast Wrap',mealType:'Breakfast',minutes:15,proteinG:28,carbsG:30,calories:420,tags:['protein','breakfast','easy'],art:'🌯',source:'RTR',ingredients:[{name:'Eggs',quantity:3,unit:'each'},{name:'Wrap',quantity:1,unit:'each'},{name:'Shredded cheese',quantity:.25,unit:'cup'}]},
- {id:'rtr-chicken-rice-lunch',name:'Simple Chicken & Rice',mealType:'Lunch',minutes:20,proteinG:40,carbsG:58,calories:520,tags:['pre-ride','easy','high-protein'],art:'🍚',source:'RTR',ingredients:[{name:'Chicken breast',quantity:5,unit:'oz'},{name:'Cooked rice',quantity:1,unit:'cup'},{name:'Vegetables',quantity:1,unit:'cup'}]},
- {id:'rtr-steak-potato',name:'Steak, Potato & Green Beans',mealType:'Dinner',minutes:35,proteinG:45,carbsG:55,calories:650,tags:['protein','recovery','comfort'],art:'🥔',source:'RTR',ingredients:[{name:'Sirloin steak',quantity:6,unit:'oz'},{name:'Potatoes',quantity:10,unit:'oz'},{name:'Green beans',quantity:1.5,unit:'cups'}]},
- {id:'rtr-turkey-sandwich',name:'Turkey Rye Recovery Sandwich',mealType:'Lunch',minutes:10,proteinG:34,carbsG:44,calories:430,tags:['quick','lunch','recovery'],art:'🥪',source:'RTR',ingredients:[{name:'Turkey breast',quantity:5,unit:'oz'},{name:'Rye bread',quantity:2,unit:'slices'},{name:'Cheese',quantity:1,unit:'slice'},{name:'Lettuce',quantity:1,unit:'cup'}]},
  {id:'rtr-peanut-butter-oats',name:'Peanut Butter Banana Oats',mealType:'Breakfast',minutes:10,proteinG:24,carbsG:66,calories:510,tags:['pre-ride','high-carb','breakfast'],art:'🥜',source:'RTR',ingredients:[{name:'Oats',quantity:.75,unit:'cup'},{name:'Banana',quantity:1,unit:'each'},{name:'Peanut butter',quantity:2,unit:'tbsp'},{name:'Milk',quantity:1,unit:'cup'}]},
- {id:'rtr-chicken-meatballs',name:'Chicken Meatballs, Rice & Gravy',mealType:'Dinner',minutes:40,proteinG:39,carbsG:63,calories:590,tags:['batch','recovery','comfort'],art:'🍲',source:'RTR',ingredients:[{name:'Chicken meatballs',quantity:6,unit:'oz'},{name:'Cooked rice',quantity:1,unit:'cup'},{name:'Mixed vegetables',quantity:1,unit:'cup'},{name:'Gravy',quantity:.5,unit:'cup'}]},
+ {id:'rtr-chicken-rice-lunch',name:'Simple Chicken & Rice',mealType:'Lunch',minutes:20,proteinG:40,carbsG:58,calories:520,tags:['pre-ride','easy','high-protein'],art:'🍚',source:'RTR',ingredients:[{name:'Chicken breast',quantity:5,unit:'oz'},{name:'Cooked rice',quantity:1,unit:'cup'},{name:'Vegetables',quantity:1,unit:'cup'}]},
+ {id:'rtr-turkey-sandwich',name:'Turkey Rye Recovery Sandwich',mealType:'Lunch',minutes:10,proteinG:34,carbsG:44,calories:430,tags:['quick','lunch','recovery'],art:'🥪',source:'RTR',ingredients:[{name:'Turkey breast',quantity:5,unit:'oz'},{name:'Rye bread',quantity:2,unit:'slices'},{name:'Cheese',quantity:1,unit:'slice'},{name:'Lettuce',quantity:1,unit:'cup'}]},
+ {id:'rtr-beef-rice-lunch',name:'Lean Beef Rice Lunch Bowl',mealType:'Lunch',minutes:20,proteinG:38,carbsG:62,calories:560,tags:['high-protein','high-carb','pre-ride'],art:'🍛',source:'RTR',ingredients:[{name:'Lean ground beef',quantity:5,unit:'oz'},{name:'Cooked rice',quantity:1,unit:'cup'},{name:'Mixed vegetables',quantity:1,unit:'cup'}]},
 ]
 
 const dayName=(iso:string)=>new Intl.DateTimeFormat('en-US',{weekday:'short'}).format(new Date(iso+'T12:00:00'))
@@ -54,33 +63,64 @@ const trainingFor=(assignments:CalendarAssignment[],date:string)=>{
  return {minutes,rideMinutes,demanding,label:items.length?items.map(item=>item.title).join(' + '):'Rest / recovery'}
 }
 
-const scoreRecipe=(recipe:RecipeCatalogItem,training:{rideMinutes:number;demanding:boolean},dayIndex:number)=>{
- let score=0
+const scoreRecipe=(recipe:RecipeCatalogItem,training:{rideMinutes:number;demanding:boolean},mealType:PlannedMealType,dayIndex:number,saved:Set<string>)=>{
+ let score=saved.has(recipe.id)?10:0
  if(training.rideMinutes>=75&&recipe.tags.includes('high-carb'))score+=8
- if(training.demanding&&recipe.tags.includes('recovery'))score+=7
- if(training.rideMinutes===0&&recipe.carbsG<=65)score+=3
+ if(training.demanding&&recipe.tags.includes('recovery'))score+=6
+ if(mealType==='Breakfast'&&training.rideMinutes>=75&&recipe.tags.includes('pre-ride'))score+=7
+ if(mealType==='Lunch'&&training.rideMinutes>0&&recipe.tags.includes('pre-ride'))score+=5
+ if(training.rideMinutes===0&&recipe.carbsG<=60)score+=3
  if(dayIndex>=4&&recipe.tags.includes('batch'))score+=2
  if(recipe.tags.includes('high-protein'))score+=2
  return score
 }
 
-export function buildWeeklyMealPlan(args:{
- startDate:string
- assignments:CalendarAssignment[]
- savedRecipeIds:string[]
-}):WeeklyMealSlot[]{
- const saved=RECIPE_CATALOG.filter(item=>args.savedRecipeIds.includes(item.id))
- const pool=saved.length?saved:RECIPE_CATALOG
- return Array.from({length:7},(_,index)=>{
+const portionFor=(mealType:PlannedMealType,training:{rideMinutes:number;demanding:boolean})=>{
+ if(training.rideMinutes>=120)return mealType==='Dinner'?1.2:1.1
+ if(training.rideMinutes>=75)return mealType==='Dinner'?1.15:mealType==='Breakfast'?1.1:1.05
+ if(training.demanding)return mealType==='Dinner'?1.1:1.05
+ if(training.rideMinutes===0)return mealType==='Dinner'?.9:.95
+ return 1
+}
+
+const reasonFor=(mealType:PlannedMealType,training:{rideMinutes:number;demanding:boolean})=>{
+ if(training.rideMinutes>=120)return mealType==='Dinner'?'Larger recovery portion restores carbohydrate after the long ride.':'Slightly larger portion supports the long endurance workload.'
+ if(training.rideMinutes>=75)return mealType==='Breakfast'?'Carbohydrate-forward breakfast supports the longer ride.':mealType==='Dinner'?'Recovery portion is increased to refill carbohydrate without cutting protein.':'Balanced fuel supports the longer session.'
+ if(training.demanding)return 'Quality-day portion protects carbohydrate around the work and keeps protein steady.'
+ if(training.rideMinutes>0)return 'Balanced portion supports the easy training day without turning it into a high-fuel day.'
+ return 'Recovery-day portion keeps protein present while moderating carbohydrate demand.'
+}
+
+export function buildWeeklyMealPlan(args:{startDate:string;assignments:CalendarAssignment[];savedRecipeIds:string[]}):WeeklyMealSlot[]{
+ const saved=new Set(args.savedRecipeIds)
+ const mealTypes:PlannedMealType[]=['Breakfast','Lunch','Dinner']
+ const slots:WeeklyMealSlot[]=[]
+ for(let index=0;index<7;index++){
   const date=new Date(args.startDate+'T12:00:00')
   date.setDate(date.getDate()+index)
   const iso=date.toISOString().slice(0,10)
   const training=trainingFor(args.assignments,iso)
-  const ranked=[...pool].sort((a,b)=>scoreRecipe(b,training,index)-scoreRecipe(a,training,index))
-  const recipe=ranked[index%Math.max(1,Math.min(4,ranked.length))]??RECIPE_CATALOG[0]
-  const reason=training.rideMinutes>=75?'Higher-carbohydrate meal supports the longer ride and recovery.':training.demanding?'Recovery-focused meal after the quality workload.':training.rideMinutes>0?'Balanced meal supports light training without overfeeding the session.':'Protein-forward meal with moderate carbohydrate for recovery.'
-  return {date:iso,day:dayName(iso),recipe,reason,trainingLabel:training.label}
- })
+  for(const mealType of mealTypes){
+   const pool=RECIPE_CATALOG.filter(item=>item.mealType===mealType)
+   const ranked=[...pool].sort((a,b)=>scoreRecipe(b,training,mealType,index,saved)-scoreRecipe(a,training,mealType,index,saved))
+   const recipe=ranked[index%Math.max(1,Math.min(3,ranked.length))]??pool[0]
+   const portionMultiplier=portionFor(mealType,training)
+   slots.push({
+    id:iso+'-'+mealType.toLowerCase(),
+    date:iso,
+    day:dayName(iso),
+    mealType,
+    recipe,
+    reason:reasonFor(mealType,training),
+    trainingLabel:training.label,
+    portionMultiplier,
+    adaptedProteinG:Math.round(recipe.proteinG*portionMultiplier),
+    adaptedCarbsG:Math.round(recipe.carbsG*portionMultiplier),
+    adaptedCalories:Math.round(recipe.calories*portionMultiplier),
+   })
+  }
+ }
+ return slots
 }
 
 export function buildShoppingList(plan:WeeklyMealSlot[]):ShoppingItem[]{
@@ -88,9 +128,10 @@ export function buildShoppingList(plan:WeeklyMealSlot[]):ShoppingItem[]{
  for(const slot of plan){
   for(const ingredient of slot.recipe.ingredients){
    const key=ingredient.name.toLowerCase()+'|'+ingredient.unit
+   const quantity=ingredient.quantity*slot.portionMultiplier
    const prior=map.get(key)
-   if(prior){prior.quantity+=ingredient.quantity;prior.recipes.push(slot.recipe.name)}
-   else map.set(key,{name:ingredient.name,quantity:ingredient.quantity,unit:ingredient.unit,recipes:[slot.recipe.name]})
+   if(prior){prior.quantity+=quantity;prior.recipes.push(slot.recipe.name)}
+   else map.set(key,{name:ingredient.name,quantity,unit:ingredient.unit,recipes:[slot.recipe.name]})
   }
  }
  return [...map.values()].sort((a,b)=>a.name.localeCompare(b.name))
