@@ -2493,3 +2493,39 @@ html[data-motion="full"] .broadcast-tactical.active .target-line{animation:tacti
 .fuel-window-grid p,.fuel-command-note{margin:0;color:#b8b8bf;line-height:1.45}
 .fuel-command-note{padding-top:6px;border-top:1px solid #34343a}
 @media(max-width:620px){.fuel-command-summary{grid-template-columns:1fr}.fuel-command-panel{padding:13px}}
+
+
+/* Recipe discovery, weekly meal planning, and shopping */
+.nutrition-discovery-shell{display:grid;gap:16px;margin:20px 0;padding-top:18px;border-top:1px solid #35353b}
+.nutrition-discovery-header{display:flex;gap:16px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
+.nutrition-discovery-header h3,.weekly-meal-plan h4,.nutrition-shopping-list h4{margin:2px 0 6px}
+.nutrition-discovery-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.nutrition-discovery-tabs button,.recipe-category-row button{border:1px solid #3a3a40;background:#202024;color:#cfcfd4;border-radius:999px;padding:8px 12px}
+.nutrition-discovery-tabs button.active,.recipe-category-row button.active{background:#f2f2f4;color:#111;border-color:#f2f2f4;font-weight:800}
+.recipe-search input{width:min(100%,520px);padding:12px 14px;border-radius:14px;border:1px solid #3b3b40;background:#151518;color:#fff;font:inherit}
+.recipe-category-row{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.recipe-category-row::-webkit-scrollbar{display:none}
+.recipe-card-rail{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(230px,280px);gap:12px;overflow-x:auto;padding:2px 2px 10px;scroll-snap-type:x proximity}
+.recipe-discovery-card{overflow:hidden;border:1px solid #37373c;border-radius:18px;background:#1a1a1e;scroll-snap-align:start}
+.recipe-card-art{display:grid;place-items:center;aspect-ratio:4/3;background:radial-gradient(circle at 30% 25%,rgba(255,255,255,.12),transparent 45%),linear-gradient(135deg,#315f9b,#7a2638)}
+.recipe-card-art span{font-size:4.3rem;filter:drop-shadow(0 8px 12px rgba(0,0,0,.25))}
+.recipe-card-body{display:grid;gap:8px;padding:13px}
+.recipe-card-body h4{margin:0;font-size:1.02rem}
+.recipe-card-body p{margin:0;color:#b9b9c0;font-size:.9rem}
+.recipe-card-meta,.recipe-card-actions{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.recipe-card-meta{color:#96969f;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em}
+.recipe-tag-row{display:flex;gap:5px;flex-wrap:wrap}
+.recipe-tag-row small{padding:4px 7px;border-radius:999px;background:#29292e;color:#c5c5ca}
+.recipe-card-actions button{flex:1}
+.recipe-card-actions button.saved{background:#7a2638;color:#fff;border-color:#9a4154}
+.weekly-meal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:9px}
+.weekly-meal-grid article{display:grid;gap:7px;padding:12px;border:1px solid #37373d;border-radius:14px;background:#1b1b1f}
+.weekly-meal-grid header{display:flex;justify-content:space-between;gap:8px}
+.weekly-meal-grid header small,.weekly-meal-grid>article>small{color:#96969f}
+.weekly-meal-grid p{margin:0;color:#b9b9c0;font-size:.85rem;line-height:1.4}
+.meal-plan-art{font-size:2rem}
+.shopping-list-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px}
+.shopping-list-grid label{display:flex;align-items:center;gap:10px;padding:11px;border:1px solid #35353a;border-radius:12px;background:#1a1a1e}
+.shopping-list-grid label span{display:grid;gap:2px}
+.shopping-list-grid small{color:#9b9ba3}
+@media(max-width:620px){.nutrition-discovery-header{align-items:stretch}.nutrition-discovery-tabs{display:grid;grid-template-columns:repeat(3,1fr)}.recipe-card-rail{grid-auto-columns:82vw}}
