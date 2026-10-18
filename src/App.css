@@ -2479,3 +2479,17 @@ html[data-motion="full"] .broadcast-tactical.active .target-line{animation:tacti
   .training-block-legend{grid-template-columns:1fr}
   .week-load-badge{margin-left:0}
 }
+
+
+/* Web-first Fuel Command Center */
+.fuel-command-panel{display:grid;gap:12px;margin:16px 0;padding:16px;border:1px solid #3b3b42;border-radius:16px;background:linear-gradient(145deg,rgba(49,95,155,.16),rgba(20,20,22,.96))}
+.fuel-command-panel h3{margin:2px 0 4px;color:#fff}
+.fuel-command-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.fuel-command-summary span,.fuel-window-grid article{display:grid;gap:4px;padding:11px;border:1px solid #36363c;border-radius:12px;background:rgba(255,255,255,.035)}
+.fuel-command-summary small,.fuel-window-grid small{color:#9a9aa2;font-size:.68rem;letter-spacing:.07em;text-transform:uppercase}
+.fuel-command-summary strong,.fuel-window-grid strong{color:#fff}
+.fuel-window-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.fuel-window-grid span{color:#d5d5da;font-weight:800}
+.fuel-window-grid p,.fuel-command-note{margin:0;color:#b8b8bf;line-height:1.45}
+.fuel-command-note{padding-top:6px;border-top:1px solid #34343a}
+@media(max-width:620px){.fuel-command-summary{grid-template-columns:1fr}.fuel-command-panel{padding:13px}}
