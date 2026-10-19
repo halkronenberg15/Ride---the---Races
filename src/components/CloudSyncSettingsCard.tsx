@@ -127,6 +127,6 @@ export default function CloudSyncSettingsCard({career,account}:{career:CareerSta
 
   {status?<p className="selected-file" role="status">{status}</p>:null}
   {error?<p className="transfer-error" role="alert">{error}</p>:null}
-  <small>During the 4.1 migration phase, local browser storage remains authoritative. Cloud data will not replace the local career until restore and conflict handling are validated.</small>
+  <small>During the 4.1 migration phase, local browser storage remains authoritative. Cloud restore only runs after a comparison, explicit confirmation, and an automatic pre-restore local backup.</small>
  </section>
 }
