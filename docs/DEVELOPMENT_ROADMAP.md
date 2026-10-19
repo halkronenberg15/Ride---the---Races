@@ -7,13 +7,13 @@
 - [x] Routine-first nutrition
 - [x] Fueling guardrails
 - [x] Voice food logging foundation
-- [ ] Career repository abstraction
-- [ ] Remove direct career persistence from UI/state consumers
-- [ ] Establish remote persistence schema and migration plan
+- [x] Career repository abstraction
+- [x] Remove direct career persistence from UI/state consumers
+- [x] Establish remote persistence schema and migration plan
 - [ ] Split large feature screens into feature modules where useful
-- [ ] Mark 4.1.0 when the architecture boundary is stable
+- [x] Mark 4.1.0 when the architecture boundary is stable
 
-## Next: Durable Rider Data
+## Current: Durable Rider Data
 
 Create an authenticated remote data model for:
 - rider profile
