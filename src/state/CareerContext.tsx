@@ -2,9 +2,10 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import type { CareerState, EditableRideResult, HealthEntry, IntroCyclingAnswers, IntroCyclingPlan, MeasurementSystem, NutritionEntry, NutritionMealTemplate, RideMetricEntry } from '../types/career'
 import type { Alpha4025State, ExternalCyclingCompletion } from '../engine/alpha4025.ts'
-import { createInitialCareer, equipmentForDevices, migrateCareer, restoreCareerBeforeRender } from './careerPersistence.ts'
+import { equipmentForDevices } from './careerPersistence.ts'
 import { useAuth } from './AuthContext.tsx'
 import { careerStorageKey } from '../services/accountStore.ts'
+import { createLocalCareerRepository } from '../services/careerRepository.ts'
 import { closeSeason } from '../engine/release4024.ts'
 import { fourWeekPreview, hydrateAdaptive, recordExternalOffSeasonCompletion, recordZoneEvidence } from '../engine/adaptiveTraining40251.ts'
 import type { TrainingJournalState } from '../../packages/training-journal/src/index.ts'
@@ -54,21 +55,12 @@ const CareerContext = createContext<CareerContextValue | null>(null)
 export function CareerProvider({ children }: { children: React.ReactNode }) {
   const {account}=useAuth()
   const storageKey=careerStorageKey(account?.id??'anonymous')
-  const [career, setCareer] = useState<CareerState>(() => {
-    try {
-      return restoreCareerBeforeRender(window.localStorage,storageKey,account?.displayName??'')
-    } catch {
-      const raw=window.localStorage.getItem(storageKey)
-      if(raw){
-        try{return migrateCareer(JSON.parse(raw) as Partial<CareerState>)}catch{/* preserve startup access below */}
-      }
-      return {...createInitialCareer(),rider:{...createInitialCareer().rider,name:account?.displayName??''}}
-    }
-  })
+  const repository=useMemo(()=>createLocalCareerRepository(window.localStorage),[])
+  const [career, setCareer] = useState<CareerState>(() => repository.load(storageKey,account?.displayName??''))
 
   useEffect(() => {
-    window.localStorage.setItem(storageKey, JSON.stringify(career))
-  }, [career,storageKey])
+    repository.save(storageKey,career)
+  }, [career,repository,storageKey])
 
   const value = useMemo<CareerContextValue>(() => ({
     career,
