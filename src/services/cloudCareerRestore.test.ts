@@ -15,14 +15,14 @@ function memoryStorage(){
 test('cloud restore preview compares local and remote rider data',()=>{
  const local=createInitialCareer();local.rider.name='Local';local.rider.number=7
  const remote=createInitialCareer();remote.rider.name='Cloud';remote.rider.number=8
- const preview=buildCloudRestorePreview(local,{athleteId:'a',updatedAt:'2026-10-19T18:00:00Z',career:remote})
+ const preview=buildCloudRestorePreview(local,{athleteId:'a',updatedAt:'2026-10-19T18:00:00Z',clientRevision:null,clientSavedAt:null,career:remote})
  assert.equal(preview.identityDiffers,true)
  assert.equal(preview.cloud.riderName,'Cloud')
 })
 
 test('cloud restore refuses replacement without confirmation',()=>{
  const local=createInitialCareer()
- assert.throws(()=>commitCloudCareerRestore({storage:memoryStorage(),storageKey:'career',localCareer:local,cloud:{athleteId:'a',updatedAt:'2026-10-19T18:00:00Z',career:local},confirmed:false}),/explicit confirmation/)
+ assert.throws(()=>commitCloudCareerRestore({storage:memoryStorage(),storageKey:'career',localCareer:local,cloud:{athleteId:'a',updatedAt:'2026-10-19T18:00:00Z',clientRevision:null,clientSavedAt:null,career:local},confirmed:false}),/explicit confirmation/)
 })
 
 test('cloud restore preserves current profile before replacement',()=>{
@@ -30,7 +30,7 @@ test('cloud restore preserves current profile before replacement',()=>{
  const remote=createInitialCareer();remote.rider.name='Cloud'
  const storage=memoryStorage()
  storage.setItem('career',JSON.stringify(local))
- const restored=commitCloudCareerRestore({storage,storageKey:'career',localCareer:local,cloud:{athleteId:'a',updatedAt:'2026-10-19T18:00:00Z',career:remote},confirmed:true,appVersion:'4.1.0-test'})
+ const restored=commitCloudCareerRestore({storage,storageKey:'career',localCareer:local,cloud:{athleteId:'a',updatedAt:'2026-10-19T18:00:00Z',clientRevision:null,clientSavedAt:null,career:remote},confirmed:true,appVersion:'4.1.0-test'})
  assert.equal(restored.rider.name,'Cloud')
  assert.equal(JSON.parse(storage.getItem('career')??'{}').rider.name,'Cloud')
  assert.ok(storage.getItem('career:backups:v1'))
