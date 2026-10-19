@@ -24,8 +24,7 @@ test('device id is stable for a browser storage profile',()=>{
 test('device sync cursor round trips through Supabase REST',async()=>{
  const original=globalThis.fetch
  let saved:Record<string,unknown>|null=null
- globalThis.fetch=async(input,init)=>{
-  const url=String(input)
+ globalThis.fetch=async(_input,init)=>{
   if(init?.method==='POST'){
    saved=(JSON.parse(String(init.body)) as Array<Record<string,unknown>>)[0]??null
    return new Response('',{status:201})
