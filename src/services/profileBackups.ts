@@ -41,6 +41,11 @@ export function snapshotBeforeAppUpdate(storage:Pick<Storage,'getItem'|'setItem'
  catch{throw new Error('Existing rider profile is not valid JSON; update was stopped before modifying profile data.')}
 }
 
+export function snapshotBeforeManualRestore(storage:Pick<Storage,'getItem'|'setItem'>,storageKey:string,careerRaw:string,appVersion:string){
+ try{return makeBackup(storage,storageKey,careerRaw,appVersion,'PRE_RESTORE')}
+ catch{throw new Error('Current rider profile could not be preserved before cloud restore.')}
+}
+
 export function restoreProfileBackup(storage:Pick<Storage,'getItem'|'setItem'>,storageKey:string,backupId:string,currentAppVersion:string){
  const target=readProfileBackups(storage,storageKey).find(item=>item.id===backupId)
  if(!target)throw new Error('The selected automatic backup could not be found.')
