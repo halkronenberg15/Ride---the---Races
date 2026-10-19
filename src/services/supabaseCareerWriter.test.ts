@@ -42,5 +42,25 @@ test('Supabase writer persists revisioned snapshot and normalized career',async(
   const ride=requests.find(item=>item.url.includes('/rides?'))
   assert.ok(ride)
   assert.equal((ride!.body as Array<Record<string,unknown>>)[0]?.legacy_source_id,'ride-1')
+  assert.ok(requests.indexOf(ride!)<requests.indexOf(snapshot!),'normalized rows must persist before the snapshot commit marker')
+ }finally{globalThis.fetch=original}
+})
+
+
+test('Supabase writer does not advance snapshot when normalized persistence fails',async()=>{
+ const original=globalThis.fetch
+ const requests:string[]=[]
+ globalThis.fetch=async input=>{
+  const url=String(input)
+  requests.push(url)
+  if(url.includes('/rides?'))return new Response('normalized failure',{status:500})
+  return new Response('',{status:201})
+ }
+ try{
+  const career=createInitialCareer()
+  career.rideHistory=[{id:'ride-fail',date:'2026-10-19T12:00:00Z',source:'Manual',durationMinutes:45,distanceKm:20}]
+  const writer=createSupabaseCareerWriter(config,session)
+  await assert.rejects(()=>writer.writeProjection('athlete-1',projectCareerForRemote(career)),/Supabase request failed/)
+  assert.equal(requests.some(url=>url.includes('/rider_state?')),false)
  }finally{globalThis.fetch=original}
 })
