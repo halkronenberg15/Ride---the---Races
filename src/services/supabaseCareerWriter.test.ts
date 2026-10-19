@@ -50,7 +50,7 @@ test('Supabase writer persists revisioned snapshot and normalized career',async(
 test('Supabase writer does not advance snapshot when normalized persistence fails',async()=>{
  const original=globalThis.fetch
  const requests:string[]=[]
- globalThis.fetch=async(input,init)=>{
+ globalThis.fetch=async input=>{
   const url=String(input)
   requests.push(url)
   if(url.includes('/rides?'))return new Response('normalized failure',{status:500})
