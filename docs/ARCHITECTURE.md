@@ -1,6 +1,6 @@
 # Ride the Races Architecture
 
-Target release: **4.1.0 Web-First Architecture**
+Current architecture release: **4.1.0 Web-First Architecture**
 
 ## Product boundary
 
@@ -55,12 +55,14 @@ Current provider:
 - synchronous first-render restore
 - migration and backup protection
 
-Planned provider:
-- authenticated account-backed remote persistence
-- multi-device synchronization
-- optimistic local cache
-- conflict-safe writes
-- migration compatibility with existing local careers
+Remote provider foundation:
+- authenticated Supabase account-backed persistence
+- full CareerState cloud snapshots
+- normalized rider, ride, training, nutrition, and readiness tables
+- verified local-to-cloud writes with count checks
+- guarded cloud restore with pre-restore local backups
+- local browser storage retained as the authoritative cache during migration
+- multi-device authoritative sync and conflict resolution remain 4.1.x work
 
 The UI must not care which provider is active.
 
