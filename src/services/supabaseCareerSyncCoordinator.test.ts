@@ -46,7 +46,9 @@ test('verified cloud sync validates snapshot revision and normalized tables',asy
   assert.equal(receipt.revision,careerRevision(career))
   assert.ok(receipt.cloudSavedAt)
   assert.equal(receipt.deviceId,'device-1')
-  assert.equal(cursorBody?.device_id,'device-1')
-  assert.equal(cursorBody?.cursor,receipt.revision)
+  const savedCursor=cursorBody as Record<string,unknown>|null
+  assert.ok(savedCursor)
+  assert.equal(savedCursor['device_id'],'device-1')
+  assert.equal(savedCursor['cursor'],receipt.revision)
  }finally{globalThis.fetch=original}
 })
