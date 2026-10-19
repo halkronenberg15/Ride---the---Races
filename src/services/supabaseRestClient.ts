@@ -2,6 +2,7 @@ import type { SupabasePublicConfig } from './supabaseConfig.ts'
 
 export type SupabaseSession={
  accessToken:string
+ refreshToken?:string
  userId:string
  expiresAt?:number
 }
