@@ -15,7 +15,13 @@ export type SupabaseRequestOptions={
 }
 
 export class SupabaseRestClient{
- constructor(private readonly config:SupabasePublicConfig,private readonly session:SupabaseSession){}
+ private readonly config:SupabasePublicConfig
+ private readonly session:SupabaseSession
+
+ constructor(config:SupabasePublicConfig,session:SupabaseSession){
+  this.config=config
+  this.session=session
+ }
 
  async request<T>(options:SupabaseRequestOptions):Promise<T>{
   const url=new URL(this.config.url+'/rest/v1/'+options.path)
