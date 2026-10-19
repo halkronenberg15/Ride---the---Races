@@ -6,6 +6,7 @@ import { equipmentForDevices } from './careerPersistence.ts'
 import { useAuth } from './AuthContext.tsx'
 import { careerStorageKey } from '../services/accountStore.ts'
 import { createLocalCareerRepository } from '../services/careerRepository.ts'
+import { mirrorCareerToCloudIfConnected, writeCloudMirrorStatus } from '../services/cloudCareerMirror.ts'
 import { closeSeason } from '../engine/release4024.ts'
 import { fourWeekPreview, hydrateAdaptive, recordExternalOffSeasonCompletion, recordZoneEvidence } from '../engine/adaptiveTraining40251.ts'
 import type { TrainingJournalState } from '../../packages/training-journal/src/index.ts'
@@ -61,6 +62,18 @@ export function CareerProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     repository.save(storageKey,career)
   }, [career,repository,storageKey])
+
+  useEffect(() => {
+    const timer=window.setTimeout(()=>{
+      void mirrorCareerToCloudIfConnected(career).then(receipt=>{
+        if(!receipt)return
+        writeCloudMirrorStatus({state:'SUCCESS',at:receipt.syncedAt,message:'Automatic cloud mirror verified.',receipt})
+      }).catch(error=>{
+        writeCloudMirrorStatus({state:'ERROR',at:new Date().toISOString(),message:error instanceof Error?error.message:'Automatic cloud mirror failed.'})
+      })
+    },3000)
+    return()=>window.clearTimeout(timer)
+  },[career])
 
   const value = useMemo<CareerContextValue>(() => ({
     career,
