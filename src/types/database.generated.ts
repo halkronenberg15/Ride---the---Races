@@ -206,7 +206,7 @@ export type Database = {
           carbs_g?: number | null
           date: string
           fluid_oz?: number | null
-          id: string
+          id?: string
           local_id?: string | null
           logged_at: string
           meal_type: string
@@ -259,7 +259,7 @@ export type Database = {
           calories?: number | null
           carbs_g?: number | null
           fluid_oz?: number | null
-          id: string
+          id?: string
           last_used_at?: string | null
           local_id?: string | null
           meal_type: string
@@ -481,7 +481,7 @@ export type Database = {
           notes?: string | null
           race_id?: string | null
           record_version?: number
-          ride_id: string
+          ride_id?: string
           source: string
           stage_number?: number | null
           started_at: string
@@ -601,6 +601,7 @@ export type Database = {
           end_date: string | null
           id: string
           is_active: boolean
+          local_plan_id: string | null
           phase: string | null
           plan: Json
           start_date: string | null
@@ -613,6 +614,7 @@ export type Database = {
           end_date?: string | null
           id?: string
           is_active?: boolean
+          local_plan_id?: string | null
           phase?: string | null
           plan: Json
           start_date?: string | null
@@ -625,6 +627,7 @@ export type Database = {
           end_date?: string | null
           id?: string
           is_active?: boolean
+          local_plan_id?: string | null
           phase?: string | null
           plan?: Json
           start_date?: string | null
