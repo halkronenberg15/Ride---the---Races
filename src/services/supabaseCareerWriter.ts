@@ -21,6 +21,8 @@ export function createSupabaseCareerWriter(config:SupabasePublicConfig,session:S
  const client=new SupabaseRestClient(config,session)
  return {
   async writeProjection(athleteId:string,projection:RemoteCareerProjection){
+   await writeNormalizedCareer(client,athleteId,projection)
+   const savedAt=new Date().toISOString()
    await client.request<void>({
     method:'POST',
     path:'rider_state',
@@ -35,11 +37,10 @@ export function createSupabaseCareerWriter(config:SupabasePublicConfig,session:S
      settings:projection.riderState.settings,
      career_snapshot:projection.careerSnapshot,
      client_revision:careerRevision(projection.careerSnapshot),
-     client_saved_at:new Date().toISOString(),
-     updated_at:new Date().toISOString(),
+     client_saved_at:savedAt,
+     updated_at:savedAt,
     }],
    })
-   await writeNormalizedCareer(client,athleteId,projection)
   },
  }
 }
