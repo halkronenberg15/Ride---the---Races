@@ -8,6 +8,8 @@ import { useCareer } from '../state/CareerContext.tsx'
 import type { NutritionEntry, NutritionMealTemplate, NutritionMealType } from '../types/career.ts'
 import NutritionDiscoveryPlanner from '../components/NutritionDiscoveryPlanner.tsx'
 
+type MissionPage='HOME'|'NUTRITION'|'RIDES'|'COACH'|'READINESS'
+
 type Props={
  onBack:()=>void
  onOpenHealth:()=>void
@@ -24,6 +26,7 @@ export default function MissionFranceCommandCenter({onBack,onOpenHealth,onOpenRi
  const franceDays=Math.max(0,Math.ceil((new Date('2028-07-01T00:00:00').getTime()-Date.now())/86400000))
  const jimmyContext=jimmyCoachContext(career)
  const [jimmyOpen,setJimmyOpen]=useState(false)
+ const [page,setPage]=useState<MissionPage>('HOME')
  const powerToWeight=snapshot.ftp!==null&&snapshot.weightKg?snapshot.ftp/snapshot.weightKg:null
  const [mealType,setMealType]=useState<NutritionMealType>('Snack')
  const [name,setName]=useState('')
@@ -64,95 +67,71 @@ export default function MissionFranceCommandCenter({onBack,onOpenHealth,onOpenRi
  const submit=(event:React.FormEvent)=>{event.preventDefault();const trimmed=name.trim();if(!trimmed)return;addNutritionEntry({id:crypto.randomUUID(),loggedAt:new Date().toISOString(),date:today(),mealType,name:trimmed,calories:calories===''?undefined:Number(calories),proteinG:protein===''?undefined:Number(protein),carbsG:carbs===''?undefined:Number(carbs),fluidOz:fluid===''?undefined:Number(fluid)},remember);setSaved(trimmed);setName('');setCalories('');setProtein('');setCarbs('');setFluid('')}
  const importHistory=async(event:React.ChangeEvent<HTMLInputElement>)=>{const file=event.target.files?.[0];if(!file)return;try{const parsed=JSON.parse(await file.text()) as {entries?:NutritionEntry[];mealTemplates?:NutritionMealTemplate[]};const entries=Array.isArray(parsed.entries)?parsed.entries:[],templates=Array.isArray(parsed.mealTemplates)?parsed.mealTemplates:[];importNutritionData(entries,templates);setImportMessage(`Imported ${entries.length} nutrition entries and ${templates.length} meal templates.`)}catch{setImportMessage('Could not import that nutrition file. Use the Mission France nutrition JSON export format.')}finally{event.target.value=''}}
  return <section className="mission-france-screen">
-  <button type="button" className="back-button" onClick={onBack}>← Team HQ</button>
-  <header className="mission-france-hero">
-   <div className="mission-france-hero-copy"><p className="eyebrow">TEAM LORIOT · MISSION FRANCE 2028</p><h1>Build the rider for July 2028.</h1><p>Training, recovery, body composition, fueling and mountain-readiness evidence in one command center. No invented readiness score.</p></div>
-   <div className="mission-france-countdown"><strong>{franceDays}</strong><span>DAYS TO FRANCE</span><small>{activeToday.length?activeToday.map(item=>item.title??item.type).join(' + '):'Recovery day'}</small></div>
-  </header>
+  <div className="mission-page-topbar">
+   <button type="button" className="back-button" onClick={page==='HOME'?onBack:()=>setPage('HOME')}>{page==='HOME'?'← Team HQ':'← Mission Control'}</button>
+   {page!=='HOME'?<span className="mission-page-title">{page==='NUTRITION'?'Nutrition':page==='RIDES'?'Ride Data':page==='COACH'?'Jimmy Coach':'Readiness'}</span>:null}
+  </div>
 
-  <section className="mission-today-grid" aria-label="Current Mission France evidence">
-   <article className="dashboard-card mission-primary-card"><small>FTP</small><strong>{snapshot.ftp===null?'Not set':snapshot.ftp+' W'}</strong><span>{powerToWeight!==null?powerToWeight.toFixed(2)+' W/kg from current rider weight':'Add current weight to show power-to-weight'}</span></article>
-   <article className="dashboard-card"><small>LAST 7 DAYS</small><strong>{snapshot.rides7} rides · {snapshot.minutes7} min</strong><span>{miles(snapshot.distance7Km).toFixed(1)} mi recorded</span></article>
-   <article className="dashboard-card"><small>LONGEST RIDE</small><strong>{snapshot.longestMinutes?snapshot.longestMinutes+' min':'—'}</strong><span>Recorded RtR ride history</span></article>
-   <article className="dashboard-card"><small>BEST RIDING STREAK</small><strong>{snapshot.backToBack?snapshot.backToBack+' days':'—'}</strong><span>Consecutive days with recorded rides</span></article>
-  </section>
+  {page==='HOME'?<>
+   <header className="mission-france-hero">
+    <div className="mission-france-hero-copy"><p className="eyebrow">TEAM LORIOT · MISSION FRANCE 2028</p><h1>Mission Control</h1><p>One command deck. Open the area you need instead of scrolling through the whole operation.</p></div>
+    <div className="mission-france-countdown"><strong>{franceDays}</strong><span>DAYS TO FRANCE</span><small>{activeToday.length?activeToday.map(item=>item.title??item.type).join(' + '):'Recovery day'}</small></div>
+   </header>
 
-  <section className="dashboard-card mission-ride-history">
-   <div className="section-title-row"><div><p className="eyebrow">RIDE HISTORY</p><h2>Your recorded rides</h2><p>{career.rideHistory.length} rides are stored in RtR.</p></div><button type="button" className="secondary-action" onClick={()=>setRideHistoryOpen(value=>!value)}>{rideHistoryOpen?'Hide rides':'View rides'}</button></div>
-   {rideHistoryOpen&&<div className="mission-ride-list">{career.rideHistory.length===0?<p>No rides logged yet.</p>:career.rideHistory.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(ride=>{const value={...ride,...ride.correctedEntry};return <details key={ride.id} className="mission-ride-item"><summary><strong>{ride.stageName??ride.activityType??'Ride'}</strong><span>{new Date(ride.date).toLocaleDateString()} · {value.durationMinutes} min · {miles(value.distanceKm).toFixed(1)} mi</span></summary><div className="mission-ride-metrics"><span><strong>{value.averagePower??'—'}{value.averagePower?' W':''}</strong>Avg power</span><span><strong>{value.averageHeartRate??'—'}{value.averageHeartRate?' bpm':''}</strong>Avg HR</span><span><strong>{value.averageCadence??'—'}{value.averageCadence?' rpm':''}</strong>Cadence</span><span><strong>{value.totalOutputKj??'—'}{value.totalOutputKj?' kJ':''}</strong>Output</span></div>{value.notes&&<p>{value.notes}</p>}</details>})}<button type="button" className="secondary-action" onClick={onOpenRideData}>Open full ride data history</button></div>}
-  </section>
+   <section className="mission-today-grid" aria-label="Current Mission France evidence">
+    <article className="dashboard-card mission-primary-card"><small>FTP</small><strong>{snapshot.ftp===null?'Not set':snapshot.ftp+' W'}</strong><span>{powerToWeight!==null?powerToWeight.toFixed(2)+' W/kg from current rider weight':'Add current weight to show power-to-weight'}</span></article>
+    <article className="dashboard-card"><small>LAST 7 DAYS</small><strong>{snapshot.rides7} rides · {snapshot.minutes7} min</strong><span>{miles(snapshot.distance7Km).toFixed(1)} mi recorded</span></article>
+    <article className="dashboard-card"><small>LONGEST RIDE</small><strong>{snapshot.longestMinutes?snapshot.longestMinutes+' min':'—'}</strong><span>Recorded RtR ride history</span></article>
+    <article className="dashboard-card"><small>BEST RIDING STREAK</small><strong>{snapshot.backToBack?snapshot.backToBack+' days':'—'}</strong><span>Consecutive days with recorded rides</span></article>
+   </section>
 
-  <section className="dashboard-card mission-daily-command">
-   <div><p className="eyebrow">TODAY</p><h2>What should the Command Center know?</h2><p>Keep the inputs authoritative. Add what actually happened, then let RtR connect the dots.</p></div>
-   <div className="mission-actions">
-    <button type="button" onClick={onOpenHealth}>Update recovery</button>
-    <button type="button" onClick={onOpenRideData}>Log / review ride data</button>
-    <button type="button" onClick={onOpenOffSeason}>Open training plan</button>
-   </div>
-  </section>
+   <nav className="mission-module-grid" aria-label="Mission Control modules">
+    <button type="button" className="mission-module-card nutrition" onClick={()=>setPage('NUTRITION')}><span>🍽️</span><small>FUEL + FOOD</small><strong>Nutrition</strong><p>Fuel Command, recipe discovery, meal planning, shopping and food logging.</p></button>
+    <button type="button" className="mission-module-card training" onClick={onOpenOffSeason}><span>🚴</span><small>TRAINING</small><strong>Training Plan</strong><p>Calendar, current block, workouts and strength assignments.</p></button>
+    <button type="button" className="mission-module-card rides" onClick={()=>setPage('RIDES')}><span>📈</span><small>EVIDENCE</small><strong>Ride Data</strong><p>Recent rides, performance history and the full ride ledger.</p></button>
+    <button type="button" className="mission-module-card recovery" onClick={()=>setPage('READINESS')}><span>💓</span><small>BODY</small><strong>Readiness</strong><p>Recovery inputs and France-readiness evidence.</p></button>
+    <button type="button" className="mission-module-card coach" onClick={()=>setPage('COACH')}><span>🎙️</span><small>TEAM CAR</small><strong>Jimmy</strong><p>Coach context, recommendations and quick decisions.</p></button>
+   </nav>
 
-  <section className="dashboard-card mission-nutrition">
+   <section className="dashboard-card mission-daily-command">
+    <div><p className="eyebrow">TODAY</p><h2>{activeToday.length?activeToday.map(item=>item.title??item.type).join(' + '):'Recovery day'}</h2><p>Open only the workstream you need. Mission Control stays compact.</p></div>
+    <div className="mission-actions"><button type="button" onClick={onOpenHealth}>Update recovery</button><button type="button" onClick={onOpenRideData}>Log / review ride data</button><button type="button" onClick={onOpenOffSeason}>Open training plan</button></div>
+   </section>
+  </>:null}
+
+  {page==='RIDES'?<section className="dashboard-card mission-ride-history mission-page-card">
+   <div className="section-title-row"><div><p className="eyebrow">RIDE HISTORY</p><h2>Your recorded rides</h2><p>{career.rideHistory.length} rides are stored in RtR.</p></div><button type="button" className="secondary-action" onClick={()=>setRideHistoryOpen(value=>!value)}>{rideHistoryOpen?'Collapse rides':'Show recent rides'}</button></div>
+   {rideHistoryOpen?<div className="mission-ride-list">{career.rideHistory.length===0?<p>No rides logged yet.</p>:career.rideHistory.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,12).map(ride=>{const value={...ride,...ride.correctedEntry};return <details key={ride.id} className="mission-ride-item"><summary><strong>{ride.stageName??ride.activityType??'Ride'}</strong><span>{new Date(ride.date).toLocaleDateString()} · {value.durationMinutes} min · {miles(value.distanceKm).toFixed(1)} mi</span></summary><div className="mission-ride-metrics"><span><strong>{value.averagePower??'—'}{value.averagePower?' W':''}</strong>Avg power</span><span><strong>{value.averageHeartRate??'—'}{value.averageHeartRate?' bpm':''}</strong>Avg HR</span><span><strong>{value.averageCadence??'—'}{value.averageCadence?' rpm':''}</strong>Cadence</span><span><strong>{value.totalOutputKj??'—'}{value.totalOutputKj?' kJ':''}</strong>Output</span></div>{value.notes&&<p>{value.notes}</p>}</details>})}</div>:null}
+   <button type="button" className="primary-cta" onClick={onOpenRideData}>Open full ride data history</button>
+  </section>:null}
+
+  {page==='NUTRITION'?<section className="dashboard-card mission-nutrition mission-page-card">
    <div className="section-title-row"><div><p className="eyebrow">NUTRITION · FUELING ENGINE</p><h2>{fueling.question}</h2><p>Training demand sets the fueling floor. Weight loss happens around the work, not by starving the work.</p></div><div className="nutrition-totals"><strong>{Math.round(totals.protein)}g</strong><span>protein</span><strong>{Math.round(totals.carbs)}g</strong><span>carbs</span></div></div>
    <section className="fuel-command-panel" aria-label="Ride fueling prescription">
-    <div className="section-title-row"><div><p className="eyebrow">RIDE FUEL COMMAND</p><h3>{rideFuel.rideMinutes?rideFuel.rideMinutes+' planned ride minutes':'Recovery / no-ride day'}</h3><p>Training-first targets for pre-ride, on-bike, hydration and recovery.</p></div>{rideFuel.rideMinutes>0&&<span className="stage-chip">{rideFuel.carbsPerHour[0]}–{rideFuel.carbsPerHour[1]} g/h</span>}</div>
-    {rideFuel.rideMinutes>0&&<div className="fuel-command-summary"><span><small>RIDE CARBS</small><strong>{rideFuel.rideCarbsTotal[0]}–{rideFuel.rideCarbsTotal[1]} g</strong></span><span><small>FLUID</small><strong>{rideFuel.fluidOzPerHour[0]}–{rideFuel.fluidOzPerHour[1]} oz/h</strong></span><span><small>EFFORT</small><strong>{rideFuel.demanding?'Quality / demanding':'Endurance / easy'}</strong></span></div>}
+    <div className="section-title-row"><div><p className="eyebrow">RIDE FUEL COMMAND</p><h3>{rideFuel.rideMinutes?rideFuel.rideMinutes+' planned ride minutes':'Recovery / no-ride day'}</h3><p>Training-first targets for pre-ride, on-bike, hydration and recovery.</p></div>{rideFuel.rideMinutes>0?<span className="stage-chip">{rideFuel.carbsPerHour[0]}–{rideFuel.carbsPerHour[1]} g/h</span>:null}</div>
+    {rideFuel.rideMinutes>0?<div className="fuel-command-summary"><span><small>RIDE CARBS</small><strong>{rideFuel.rideCarbsTotal[0]}–{rideFuel.rideCarbsTotal[1]} g</strong></span><span><small>FLUID</small><strong>{rideFuel.fluidOzPerHour[0]}–{rideFuel.fluidOzPerHour[1]} oz/h</strong></span><span><small>EFFORT</small><strong>{rideFuel.demanding?'Quality / demanding':'Endurance / easy'}</strong></span></div>:null}
     <div className="fuel-window-grid">{rideFuel.windows.map(window=><article key={window.label}><small>{window.timing}</small><strong>{window.label}</strong><span>{window.target}</span><p>{window.note}</p></article>)}</div>
-    <p className="fuel-command-note"><strong>Recovery:</strong> {rideFuel.recoveryNote}</p>
-    <p className="fuel-command-note"><strong>Tomorrow:</strong> {rideFuel.tomorrowNote}</p>
+    <p className="fuel-command-note"><strong>Recovery:</strong> {rideFuel.recoveryNote}</p><p className="fuel-command-note"><strong>Tomorrow:</strong> {rideFuel.tomorrowNote}</p>
    </section>
    <div className="nutrition-fuel-grid"><article><small>DAY CLASS</small><strong>{fueling.dayClass}</strong></article><article><small>PROTEIN</small><strong>{fueling.proteinStatus}</strong><span>{fueling.proteinTargetG?fueling.proteinTargetG.join('–')+' g target':'Add current weight'}</span></article><article><small>CARBS</small><strong>{fueling.carbStatus}</strong><span>{fueling.carbTargetG?fueling.carbTargetG.join('–')+' g target':'Add current weight'}</span></article><article><small>WEIGHT PHASE</small><strong>{fueling.weightPhase}</strong></article></div>
    <div className="nutrition-goal-row"><label>Goal low (lb)<input type="number" value={goalLowLb} onChange={event=>setGoalLowLb(event.target.value)}/></label><label>Goal high (lb)<input type="number" value={goalHighLb} onChange={event=>setGoalHighLb(event.target.value)}/></label><button type="button" onClick={saveWeightGoals}>Save goal range</button></div>
    <div className="fuel-guidance">{fueling.guidance.map(item=><p key={item}>{item}</p>)}</div>
    <NutritionDiscoveryPlanner />
-   <section className="jimmy-meal-planner">
-    <div className="section-title-row"><div><p className="eyebrow">JIMMY'S PLAN FOR TODAY</p><h3>Plan around appetite, training and dinner</h3><p>Tell Jimmy when you expect to train, how appetite feels today, and whether dinner is already decided.</p></div><span className="stage-chip">{fueling.dayClass} DAY</span></div>
-    <div className="jimmy-planner-controls">
-      <label>Appetite<select value={appetite} onChange={event=>setAppetite(event.target.value as AppetiteLevel)}><option value="LOW">Low</option><option value="NORMAL">Normal</option><option value="HUNGRY">Hungry</option></select></label>
-      <label>Training time<input type="time" value={trainingTime} onChange={event=>setTrainingTime(event.target.value)}/></label>
-      <label className="planner-dinner">Locked dinner<input value={lockedDinner} onChange={event=>setLockedDinner(event.target.value)} placeholder="What is dinner tonight?" /></label>
-    </div>
-    {appetite==='LOW'&&<p className="planner-note"><strong>Low-appetite mode:</strong> Jimmy will favor smaller, lighter and liquid daytime options while protecting ride fuel and recovery.</p>}
+   <section className="jimmy-meal-planner"><div className="section-title-row"><div><p className="eyebrow">JIMMY'S PLAN FOR TODAY</p><h3>Plan around appetite, training and dinner</h3><p>Tell Jimmy when you expect to train, how appetite feels today, and whether dinner is already decided.</p></div><span className="stage-chip">{fueling.dayClass} DAY</span></div>
+    <div className="jimmy-planner-controls"><label>Appetite<select value={appetite} onChange={event=>setAppetite(event.target.value as AppetiteLevel)}><option value="LOW">Low</option><option value="NORMAL">Normal</option><option value="HUNGRY">Hungry</option></select></label><label>Training time<input type="time" value={trainingTime} onChange={event=>setTrainingTime(event.target.value)}/></label><label className="planner-dinner">Locked dinner<input value={lockedDinner} onChange={event=>setLockedDinner(event.target.value)} placeholder="What is dinner tonight?" /></label></div>
+    {appetite==='LOW'?<p className="planner-note"><strong>Low-appetite mode:</strong> Jimmy will favor smaller, lighter and liquid daytime options while protecting ride fuel and recovery.</p>:null}
    </section>
-   <div className="menu-horizon"><div>{(['HOUR','DAY','WEEK','MONTH'] as MealHorizon[]).map(item=><button type="button" key={item} className={menuHorizon===item?'active':''} onClick={()=>setMenuHorizon(item)}>{item}</button>)}</div>{menu.map(section=><article key={section.label}><h3>{section.label}</h3>{section.meals.map(meal=><div key={meal.id} className={`planned-meal meal-priority-${meal.priority.toLowerCase()}`}><strong>{meal.time} · {meal.recipe.name}</strong><span>{meal.rationale}</span><small>{meal.priority==='RIDE_FUEL'?'Protected ride fuel':meal.priority==='OPTIONAL'?'Optional if appetite allows':'Core fuel'}</small></div>)}</article>)}</div>
-   {templates.length>0&&<div className="remembered-meals" aria-label="Remembered meals">{templates.slice(0,8).map(template=><button type="button" key={template.id} onClick={()=>useTemplate(template.id)}><strong>{template.name}</strong><small>{template.proteinG!==undefined?template.proteinG+'g P · ':''}{template.carbsG!==undefined?template.carbsG+'g C · ':''}{template.calories!==undefined?template.calories+' cal':''}</small></button>)}</div>}
-   <form className="nutrition-quick-form" onSubmit={submit}>
-    <label>Meal<select value={mealType} onChange={event=>setMealType(event.target.value as NutritionMealType)}><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option><option>Ride Fuel</option><option>Recovery</option></select></label>
-    <label className="nutrition-name">What did you eat?<input value={name} onChange={event=>setName(event.target.value)} placeholder="e.g. Fajita bowl" /></label>
-    <label>Calories<input type="number" min="0" value={calories} onChange={event=>setCalories(event.target.value)} /></label>
-    <label>Protein g<input type="number" min="0" step="0.1" value={protein} onChange={event=>setProtein(event.target.value)} /></label>
-    <label>Carbs g<input type="number" min="0" step="0.1" value={carbs} onChange={event=>setCarbs(event.target.value)} /></label>
-    <label>Fluid oz<input type="number" min="0" step="0.1" value={fluid} onChange={event=>setFluid(event.target.value)} /></label>
-    <label className="remember-meal"><input type="checkbox" checked={remember} onChange={event=>setRemember(event.target.checked)} /> Remember this meal for one-tap entry</label>
-    <button type="submit" className="primary-cta">Log meal</button>
-   </form>
+   <div className="menu-horizon"><div>{(['HOUR','DAY','WEEK','MONTH'] as MealHorizon[]).map(item=><button type="button" key={item} className={menuHorizon===item?'active':''} onClick={()=>setMenuHorizon(item)}>{item}</button>)}</div>{menu.map(section=><article key={section.label}><h3>{section.label}</h3>{section.meals.map(meal=><div key={meal.id} className={'planned-meal meal-priority-'+meal.priority.toLowerCase()}><strong>{meal.time} · {meal.recipe.name}</strong><span>{meal.rationale}</span><small>{meal.priority==='RIDE_FUEL'?'Protected ride fuel':meal.priority==='OPTIONAL'?'Optional if appetite allows':'Core fuel'}</small></div>)}</article>)}</div>
+   {templates.length>0?<div className="remembered-meals" aria-label="Remembered meals">{templates.slice(0,8).map(template=><button type="button" key={template.id} onClick={()=>useTemplate(template.id)}><strong>{template.name}</strong><small>{template.proteinG!==undefined?template.proteinG+'g P · ':''}{template.carbsG!==undefined?template.carbsG+'g C · ':''}{template.calories!==undefined?template.calories+' cal':''}</small></button>)}</div>:null}
+   <form className="nutrition-quick-form" onSubmit={submit}><label>Meal<select value={mealType} onChange={event=>setMealType(event.target.value as NutritionMealType)}><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option><option>Ride Fuel</option><option>Recovery</option></select></label><label className="nutrition-name">What did you eat?<input value={name} onChange={event=>setName(event.target.value)} placeholder="e.g. Fajita bowl" /></label><label>Calories<input type="number" min="0" value={calories} onChange={event=>setCalories(event.target.value)} /></label><label>Protein g<input type="number" min="0" step="0.1" value={protein} onChange={event=>setProtein(event.target.value)} /></label><label>Carbs g<input type="number" min="0" step="0.1" value={carbs} onChange={event=>setCarbs(event.target.value)} /></label><label>Fluid oz<input type="number" min="0" step="0.1" value={fluid} onChange={event=>setFluid(event.target.value)} /></label><label className="remember-meal"><input type="checkbox" checked={remember} onChange={event=>setRemember(event.target.checked)} /> Remember this meal for one-tap entry</label><button type="submit" className="primary-cta">Log meal</button></form>
    <div className="nutrition-import file-picker"><label htmlFor="nutrition-history-file"><strong>Import nutrition history</strong><small>Select the Mission France nutrition JSON file from Files.</small></label><input id="nutrition-history-file" type="file" accept=".json,application/json,text/json" onChange={importHistory} /></div>
-   {importMessage&&<p className="success-message">{importMessage}</p>}
-   {saved&&<p className="success-message">Logged {saved}. RtR {remember?'remembered it for next time.':'added it to today.'}</p>}
-   {todayEntries.length>0&&<details className="today-food-log"><summary>Today’s food · {todayEntries.length} entries</summary>{todayEntries.map(entry=><div key={entry.id}><strong>{entry.name}</strong><small>{entry.mealType} · {entry.proteinG??'—'}g protein · {entry.carbsG??'—'}g carbs · {entry.calories??'—'} cal</small></div>)}</details>}
-  </section>
+   {importMessage?<p className="success-message">{importMessage}</p>:null}{saved?<p className="success-message">Logged {saved}. RtR {remember?'remembered it for next time.':'added it to today.'}</p>:null}
+   {todayEntries.length>0?<details className="today-food-log"><summary>Today’s food · {todayEntries.length} entries</summary>{todayEntries.map(entry=><div key={entry.id}><strong>{entry.name}</strong><small>{entry.mealType} · {entry.proteinG??'—'}g protein · {entry.carbsG??'—'}g carbs · {entry.calories??'—'} cal</small></div>)}</details>:null}
+  </section>:null}
 
-  <section className="dashboard-card jimmy-coach-card">
-   <div>
-    <p className="eyebrow">JIMMY · AI COACH</p>
-    <h2>Your coach in the team car.</h2>
-    <p>{jimmyCoachOpeningLine(career)}</p>
-   </div>
-   <button type="button" className="primary-cta" onClick={()=>setJimmyOpen(value=>!value)}>{jimmyOpen?'Close Jimmy':'Ask Jimmy'}</button>
-   {jimmyOpen&&<div className="jimmy-coach-panel">
-    <p><strong>Jimmy can already see:</strong> FTP {jimmyContext.ftp??'not set'} W · {jimmyContext.recentRideCount} rides / {jimmyContext.recentMinutes} min in the last 7 days · recovery {jimmyContext.recoveryScore} · fatigue {jimmyContext.fatigue}% · {jimmyContext.nutritionEntriesToday} nutrition entries today.</p>
-    <div className="jimmy-quick-prompts">
-     <button type="button">What should I ride today?</button>
-     <button type="button">How should I fuel today?</button>
-     <button type="button">Strength or recovery?</button>
-     <button type="button">Give me a Mission France pep talk</button>
-    </div>
-    <small>Live conversational AI connection is the next integration step. This preview exposes the context contract Jimmy will use so he does not start from zero.</small>
-   </div>}
-  </section>
+  {page==='COACH'?<section className="dashboard-card jimmy-coach-card mission-page-card"><div><p className="eyebrow">JIMMY · AI COACH</p><h2>Your coach in the team car.</h2><p>{jimmyCoachOpeningLine(career)}</p></div><button type="button" className="primary-cta" onClick={()=>setJimmyOpen(value=>!value)}>{jimmyOpen?'Close Jimmy':'Ask Jimmy'}</button>{jimmyOpen?<div className="jimmy-coach-panel"><p><strong>Jimmy can already see:</strong> FTP {jimmyContext.ftp??'not set'} W · {jimmyContext.recentRideCount} rides / {jimmyContext.recentMinutes} min in the last 7 days · recovery {jimmyContext.recoveryScore} · fatigue {jimmyContext.fatigue}% · {jimmyContext.nutritionEntriesToday} nutrition entries today.</p><div className="jimmy-quick-prompts"><button type="button">What should I ride today?</button><button type="button">How should I fuel today?</button><button type="button">Strength or recovery?</button><button type="button">Give me a Mission France pep talk</button></div><small>Live conversational AI connection is the next integration step.</small></div>:null}</section>:null}
 
-  <section className="mission-pillars">
-   <header><p className="eyebrow">FRANCE READINESS PILLARS</p><h2>Evidence, not a percentage</h2></header>
-   <div className="mission-pillar-grid">{snapshot.pillars.map(pillar=><article className="dashboard-card mission-pillar" key={pillar.id}><small>{pillar.label}</small><strong>{pillar.state}</strong><p>{pillar.evidence}</p></article>)}</div>
-  </section>
+  {page==='READINESS'?<section className="mission-page-stack"><section className="dashboard-card mission-daily-command"><div><p className="eyebrow">RECOVERY + READINESS</p><h2>Keep the body inputs current.</h2><p>Update recovery separately, then Mission Control uses that evidence throughout training and nutrition.</p></div><div className="mission-actions"><button type="button" className="primary-cta" onClick={onOpenHealth}>Update recovery</button></div></section><section className="mission-pillars"><header><p className="eyebrow">FRANCE READINESS PILLARS</p><h2>Evidence, not a percentage</h2></header><div className="mission-pillar-grid">{snapshot.pillars.map(pillar=><article className="dashboard-card mission-pillar" key={pillar.id}><small>{pillar.label}</small><strong>{pillar.state}</strong><p>{pillar.evidence}</p></article>)}</div></section></section>:null}
  </section>
+
 }

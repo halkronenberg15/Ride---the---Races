@@ -2560,3 +2560,24 @@ html[data-motion="full"] .broadcast-tactical.active .target-line{animation:tacti
 .recipe-detail-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
 .recipe-detail-actions button.saved{background:#7a2638;color:#fff;border-color:#9a4154}
 @media(max-width:620px){.weekly-day-card>header{display:grid}.weekly-day-card>header span{max-width:none;text-align:left}.weekly-meal-row{grid-template-columns:auto minmax(0,1fr)}.portion-chip{grid-column:2;justify-self:start}.recipe-detail-actions{grid-template-columns:1fr}.recipe-detail-backdrop{padding:0}.recipe-detail-panel{border-radius:22px 22px 0 0;max-height:92vh}}
+
+
+/* Mission Control page navigation */
+.mission-page-topbar{position:sticky;top:0;z-index:80;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;background:linear-gradient(#101114 72%,rgba(16,17,20,0))}
+.mission-page-title{font-weight:900;letter-spacing:.03em;color:#fff}
+.mission-module-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.mission-module-card{display:grid;align-content:start;gap:7px;min-height:190px;padding:18px;border:1px solid #36363c;border-radius:18px;background:#16171b;color:#fff;text-align:left}
+.mission-module-card:hover{border-color:#ff7a16}
+.mission-module-card>span{font-size:2rem}
+.mission-module-card small{color:#999aa2;font-size:.7rem;letter-spacing:.09em}
+.mission-module-card strong{font-size:1.12rem}
+.mission-module-card p{margin:0;color:#b7b8be;font-size:.86rem;line-height:1.4}
+.mission-module-card.nutrition{background:linear-gradient(145deg,rgba(49,95,155,.18),#16171b)}
+.mission-module-card.training{background:linear-gradient(145deg,rgba(122,38,56,.18),#16171b)}
+.mission-module-card.rides{background:linear-gradient(145deg,rgba(180,81,31,.15),#16171b)}
+.mission-module-card.recovery{background:linear-gradient(145deg,rgba(62,120,95,.15),#16171b)}
+.mission-module-card.coach{background:linear-gradient(145deg,rgba(178,139,46,.15),#16171b)}
+.mission-page-card,.mission-page-stack{min-height:0}
+.mission-page-stack{display:grid;gap:18px}
+@media(max-width:900px){.mission-module-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.mission-module-card{min-height:150px}}
+@media(max-width:560px){.mission-module-grid{grid-template-columns:1fr}.mission-module-card{min-height:0}.mission-page-topbar{padding-top:calc(6px + env(safe-area-inset-top))}}
