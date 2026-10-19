@@ -6,6 +6,7 @@ import { SupabaseRestClient, type SupabaseSession } from './supabaseRestClient.t
 import type { SupabasePublicConfig } from './supabaseConfig.ts'
 import { careerRevision } from './careerRevision.ts'
 import { verifyNormalizedCareer } from './supabaseNormalizedCareerVerifier.ts'
+import { getOrCreateDeviceId, writeDeviceSyncCursor } from './deviceSyncCursor.ts'
 
 type RiderStateRow={career_snapshot:CareerState|null;client_revision:string|null;client_saved_at:string|null}
 
@@ -15,6 +16,7 @@ export type VerifiedCareerSyncReceipt=CareerSyncReceipt&{
  normalizedVerified:true
  revision:string
  cloudSavedAt:string
+ deviceId?:string
 }
 
 export async function syncAndVerifyCareerSnapshot(args:{
@@ -22,6 +24,7 @@ export async function syncAndVerifyCareerSnapshot(args:{
  session:SupabaseSession
  career:CareerState
  now?:string
+ deviceId?:string
 }):Promise<VerifiedCareerSyncReceipt>{
  const client=new SupabaseRestClient(args.config,args.session)
  const athleteId=await resolveSupabaseAthleteId(client)
@@ -46,7 +49,9 @@ export async function syncAndVerifyCareerSnapshot(args:{
  if(!normalized.verified){
   throw new Error('Remote career verification failed: normalized rider tables are missing projected records.')
  }
- return {...receipt,athleteId,verified:true,normalizedVerified:true,revision,cloudSavedAt:remoteRow.client_saved_at}
+ const deviceId=args.deviceId??(typeof localStorage==='undefined'?undefined:getOrCreateDeviceId())
+ if(deviceId)await writeDeviceSyncCursor({client,athleteId,deviceId,revision,updatedAt:remoteRow.client_saved_at})
+ return {...receipt,athleteId,verified:true,normalizedVerified:true,revision,cloudSavedAt:remoteRow.client_saved_at,...(deviceId?{deviceId}:{})}
 }
 
 export const cloudSyncReceiptStorageKey=(accountId:string)=>'ride-the-races-cloud-sync-receipt-v1:'+accountId
