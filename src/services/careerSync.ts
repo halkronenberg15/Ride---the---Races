@@ -9,18 +9,18 @@ export type CareerSyncReceipt={
 }
 
 export type RemoteCareerWriter={
- writeProjection:(userId:string,projection:RemoteCareerProjection)=>Promise<void>
+ writeProjection:(athleteId:string,projection:RemoteCareerProjection)=>Promise<void>
 }
 
 export async function syncCareerToRemote(args:{
- userId:string
+ athleteId:string
  career:CareerState
  writer:RemoteCareerWriter
  now?:string
 }):Promise<CareerSyncReceipt>{
- if(!args.userId)throw new Error('Authenticated user ID is required for remote career sync.')
+ if(!args.athleteId)throw new Error('Authenticated user ID is required for remote career sync.')
  const projection=projectCareerForRemote(args.career)
- await args.writer.writeProjection(args.userId,projection)
+ await args.writer.writeProjection(args.athleteId,projection)
  return {
   version:1,
   syncedAt:args.now??new Date().toISOString(),
