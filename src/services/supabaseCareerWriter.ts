@@ -2,6 +2,7 @@ import type { RemoteCareerProjection } from './careerRemoteProjection.ts'
 import type { RemoteCareerWriter } from './careerSync.ts'
 import { SupabaseRestClient, type SupabaseSession } from './supabaseRestClient.ts'
 import type { SupabasePublicConfig } from './supabaseConfig.ts'
+import { writeNormalizedCareer } from './supabaseNormalizedCareerWriter.ts'
 
 type AthleteProfileRow={athlete_id:string}
 
@@ -35,6 +36,7 @@ export function createSupabaseCareerWriter(config:SupabasePublicConfig,session:S
      updated_at:new Date().toISOString(),
     }],
    })
+   await writeNormalizedCareer(client,athleteId,projection)
   },
  }
 }
