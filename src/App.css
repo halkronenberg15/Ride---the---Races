@@ -2547,7 +2547,7 @@ html[data-motion="full"] .broadcast-tactical.active .target-line{animation:tacti
 .weekly-meal-copy>span{color:#bcbcc3;font-size:.82rem}
 .weekly-meal-copy>em{color:#9e9ea7;font-size:.78rem;font-style:normal;line-height:1.35}
 .portion-chip{padding:5px 7px;border-radius:999px;background:#303036;color:#d8d8dd;font-size:.72rem;font-weight:800}
-.recipe-detail-backdrop{position:fixed;inset:0;z-index:1200;display:grid;align-items:end;justify-items:center;background:rgba(0,0,0,.7);padding:16px}
+.recipe-detail-backdrop{position:fixed;inset:0;z-index:5000;display:grid;align-items:end;justify-items:center;background:rgba(0,0,0,.7);padding:16px}
 .recipe-detail-panel{position:relative;width:min(680px,100%);max-height:min(88vh,780px);overflow:auto;padding:18px;border:1px solid #414148;border-radius:22px 22px 14px 14px;background:#17171b;box-shadow:0 24px 70px rgba(0,0,0,.45)}
 .recipe-detail-close{position:absolute;top:12px;right:12px;z-index:2;width:36px;height:36px;border-radius:999px;border:1px solid #4a4a50;background:#222228;color:#fff;font-size:1.4rem}
 .recipe-detail-hero{display:grid;place-items:center;height:180px;margin:-18px -18px 16px;border-radius:22px 22px 0 0;background:radial-gradient(circle at 30% 25%,rgba(255,255,255,.13),transparent 45%),linear-gradient(135deg,#315f9b,#7a2638);font-size:5rem}

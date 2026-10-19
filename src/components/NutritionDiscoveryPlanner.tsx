@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { RECIPE_CATALOG, buildShoppingList, buildWeeklyMealPlan, type RecipeCatalogItem } from '../engine/recipeDiscoveryEngine.ts'
 import { useCareer } from '../state/CareerContext.tsx'
 
@@ -92,7 +93,7 @@ export default function NutritionDiscoveryPlanner(){
    <div className="shopping-list-grid">{shopping.map(item=><label key={item.name+'-'+item.unit}><input type="checkbox"/><span><strong>{item.name}</strong><small>{Number(item.quantity.toFixed(2))} {item.unit} · {item.recipes.length} uses</small></span></label>)}</div>
   </div>:null}
 
-  {selectedRecipe?<div className="recipe-detail-backdrop" role="presentation" onClick={()=>setSelectedRecipe(null)}>
+  {selectedRecipe?createPortal(<div className="recipe-detail-backdrop" role="presentation" onClick={()=>setSelectedRecipe(null)}>
    <article className="recipe-detail-panel" role="dialog" aria-modal="true" aria-labelledby="recipe-detail-title" onClick={event=>event.stopPropagation()}>
     <button type="button" className="recipe-detail-close" onClick={()=>setSelectedRecipe(null)} aria-label="Close recipe">×</button>
     <div className="recipe-detail-hero" aria-hidden="true">{selectedRecipe.art}</div>
@@ -104,6 +105,6 @@ export default function NutritionDiscoveryPlanner(){
     <p className="planner-note">RtR treats this as the base recipe. The weekly planner can increase or decrease the portion around the day’s training while preserving the meal itself.</p>
     <div className="recipe-detail-actions"><button type="button" className={savedIds.has(selectedRecipe.id)?'saved':''} onClick={()=>toggleSavedRecipe(selectedRecipe.id)}>{savedIds.has(selectedRecipe.id)?'♥ Saved':'♡ Save this meal'}</button><button type="button" onClick={()=>{if(!savedIds.has(selectedRecipe.id))toggleSavedRecipe(selectedRecipe.id);setTab('PLAN');setSelectedRecipe(null)}}>Use in meal plan</button></div>
    </article>
-  </div>:null}
+  </div>,document.body):null}
  </section>
 }
