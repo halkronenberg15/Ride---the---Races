@@ -3,12 +3,14 @@ import { missionFranceSnapshot } from '../engine/missionFrance2028.ts'
 import { jimmyCoachContext, jimmyCoachOpeningLine } from '../engine/jimmyCoach.ts'
 import { evaluateFueling } from '../engine/fuelingEngine.ts'
 import { rideFuelPrescription } from '../engine/fuelCommandEngine.ts'
-import { buildMenuHorizon, mealPlanForDay, type AppetiteLevel, type MealHorizon } from '../engine/mealPlanningEngine.ts'
+import { buildMenuHorizon, mealPlanForDay, type AppetiteLevel, type MealHorizon, type RecipeCandidate } from '../engine/mealPlanningEngine.ts'
+import { applyRoutineMeals, buildFuelingGuardrail } from '../engine/routineFuelingPlanner.ts'
 import { useCareer } from '../state/CareerContext.tsx'
 import type { NutritionEntry, NutritionMealTemplate, NutritionMealType } from '../types/career.ts'
 import NutritionDiscoveryPlanner from '../components/NutritionDiscoveryPlanner.tsx'
 
 type MissionPage='HOME'|'NUTRITION'|'RIDES'|'COACH'|'READINESS'
+type SpeechRecognitionLike={continuous:boolean;interimResults:boolean;lang:string;start:()=>void;stop:()=>void;onresult:null|((event:{results:ArrayLike<{0:{transcript:string}}>;resultIndex:number})=>void);onerror:null|(()=>void);onend:null|(()=>void)}
 
 type Props={
  onBack:()=>void
@@ -42,12 +44,25 @@ export default function MissionFranceCommandCenter({onBack,onOpenHealth,onOpenRi
  const [appetite,setAppetite]=useState<AppetiteLevel>('NORMAL')
  const [trainingTime,setTrainingTime]=useState('17:00')
  const [lockedDinner,setLockedDinner]=useState('')
+ const [routineDinner,setRoutineDinner]=useState('')
+ const [hungerFallback,setHungerFallback]=useState('')
+ const [routineDinnerDays,setRoutineDinnerDays]=useState(5)
+ const [voiceListening,setVoiceListening]=useState(false)
+ const [voiceTranscript,setVoiceTranscript]=useState('')
+ const [voiceMatches,setVoiceMatches]=useState<NutritionMealTemplate[]>([])
+ const [voiceMessage,setVoiceMessage]=useState('')
  const [plannerHydrated,setPlannerHydrated]=useState(false)
  const [goalLowLb,setGoalLowLb]=useState(career.nutrition.goalWeightLowKg?String(Math.round(career.nutrition.goalWeightLowKg*2.20462)):'')
  const [goalHighLb,setGoalHighLb]=useState(career.nutrition.goalWeightHighKg?String(Math.round(career.nutrition.goalWeightHighKg*2.20462)):'')
  const templates=useMemo(()=>[...career.nutrition.mealTemplates].sort((a,b)=>b.timesUsed-a.timesUsed||b.lastUsedAt.localeCompare(a.lastUsedAt)),[career.nutrition.mealTemplates])
- useEffect(()=>{try{const raw=localStorage.getItem('rtr-jimmy-nutrition-settings-v1');if(raw){const saved=JSON.parse(raw) as {appetite?:AppetiteLevel;trainingTime?:string;lockedDinner?:string};setAppetite(saved.appetite??'NORMAL');setTrainingTime(saved.trainingTime??'17:00');setLockedDinner(saved.lockedDinner??'')}}finally{setPlannerHydrated(true)}},[])
- useEffect(()=>{if(plannerHydrated)localStorage.setItem('rtr-jimmy-nutrition-settings-v1',JSON.stringify({appetite,trainingTime,lockedDinner}))},[plannerHydrated,appetite,trainingTime,lockedDinner])
+ const detectedRoutineDinner=useMemo(()=>templates.find(item=>/spaghetti|meat sauce|red sauce|angel hair/i.test(item.name))?.name??'',[templates])
+ const detectedHungerFallback=useMemo(()=>templates.find(item=>/bologna.*rye|bologna sandwich/i.test(item.name))?.name??'',[templates])
+ useEffect(()=>{try{
+  const raw=localStorage.getItem('rtr-jimmy-nutrition-settings-v2')??localStorage.getItem('rtr-jimmy-nutrition-settings-v1')
+  if(raw){const stored=JSON.parse(raw) as {appetite?:AppetiteLevel;trainingTime?:string;lockedDinner?:string;routineDinner?:string;hungerFallback?:string;routineDinnerDays?:number};setAppetite(stored.appetite??'NORMAL');setTrainingTime(stored.trainingTime??'17:00');setLockedDinner(stored.lockedDinner??'');setRoutineDinner(stored.routineDinner??detectedRoutineDinner);setHungerFallback(stored.hungerFallback??detectedHungerFallback);setRoutineDinnerDays(stored.routineDinnerDays??5)}
+  else{setRoutineDinner(detectedRoutineDinner);setHungerFallback(detectedHungerFallback)}
+ }finally{setPlannerHydrated(true)}},[detectedRoutineDinner,detectedHungerFallback])
+ useEffect(()=>{if(plannerHydrated)localStorage.setItem('rtr-jimmy-nutrition-settings-v2',JSON.stringify({appetite,trainingTime,lockedDinner,routineDinner,hungerFallback,routineDinnerDays}))},[plannerHydrated,appetite,trainingTime,lockedDinner,routineDinner,hungerFallback,routineDinnerDays])
  const todayKey=today(),tomorrowDate=new Date();tomorrowDate.setDate(tomorrowDate.getDate()+1);const tomorrowKey=[tomorrowDate.getFullYear(),String(tomorrowDate.getMonth()+1).padStart(2,'0'),String(tomorrowDate.getDate()).padStart(2,'0')].join('-')
  const assignments=career.alpha4025.trainingPlan?.weeks.flatMap(week=>week.assignments)??[]
  const activeToday=assignments.filter(item=>item.date===todayKey&&(item.status==='PLANNED'||item.status==='REPLACED')&&Number(item.durationMinutes??0)>0)
@@ -60,10 +75,28 @@ export default function MissionFranceCommandCenter({onBack,onOpenHealth,onOpenRi
  const totals=todayEntries.reduce((sum,entry)=>({calories:sum.calories+(entry.calories??0),protein:sum.protein+(entry.proteinG??0),carbs:sum.carbs+(entry.carbsG??0),fluid:sum.fluid+(entry.fluidOz??0)}),{calories:0,protein:0,carbs:0,fluid:0})
  const fueling=evaluateFueling({weightKg:career.rider.weightKg,goalLowKg:career.nutrition.goalWeightLowKg,goalHighKg:career.nutrition.goalWeightHighKg,trainingMinutes,rideMinutes,demanding,tomorrowTrainingMinutes:tomorrowMinutes,loggedProteinG:totals.protein,loggedCarbsG:totals.carbs,loggedCalories:totals.calories})
  const rideFuel=rideFuelPrescription({assignments:activeToday,tomorrowAssignments:activeTomorrow,dayClass:fueling.dayClass})
- const plan=mealPlanForDay({dayClass:fueling.dayClass,trainingTime,appetite,lockedDinner,favorites:career.nutrition.favoriteFoods,recentFoods:templates.slice(0,8).map(item=>item.name),avoidFoods:career.nutrition.avoidFoods,userRecipes:templates.map(item=>({id:item.id,name:item.name,mealType:item.mealType,proteinG:item.proteinG,carbsG:item.carbsG,calories:item.calories,tags:['user','saved'],source:'USER' as const}))})
+ const userRecipes:RecipeCandidate[]=useMemo(()=>templates.map(item=>({id:item.id,name:item.name,mealType:item.mealType,proteinG:item.proteinG,carbsG:item.carbsG,calories:item.calories,tags:['user','saved'],source:'USER' as const})),[templates])
+ const guardrail=buildFuelingGuardrail({proteinTargetG:fueling.proteinTargetG,carbTargetG:fueling.carbTargetG,loggedProteinG:totals.protein,loggedCarbsG:totals.carbs,dayClass:fueling.dayClass,tomorrowTrainingMinutes:tomorrowMinutes})
+ const basePlan=mealPlanForDay({dayClass:fueling.dayClass,trainingTime,appetite,lockedDinner,favorites:career.nutrition.favoriteFoods,recentFoods:templates.slice(0,8).map(item=>item.name),avoidFoods:career.nutrition.avoidFoods,userRecipes})
+ const plan=applyRoutineMeals({plan:basePlan,userRecipes,settings:{defaultDinnerName:lockedDinner||routineDinner,hungerFallbackName:hungerFallback,dinnerDaysPerWeek:routineDinnerDays},appetite,guardrail})
  const menu=buildMenuHorizon(menuHorizon,plan)
  const saveWeightGoals=()=>updateNutritionProfile({goalWeightLowKg:goalLowLb?Number(goalLowLb)/2.20462:undefined,goalWeightHighKg:goalHighLb?Number(goalHighLb)/2.20462:undefined})
  const useTemplate=(id:string)=>{const template=templates.find(item=>item.id===id);if(!template)return;setMealType(template.mealType);setName(template.name);setCalories(template.calories?.toString()??'');setProtein(template.proteinG?.toString()??'');setCarbs(template.carbsG?.toString()??'');setFluid(template.fluidOz?.toString()??'');setSaved('')}
+ const startVoiceLog=()=>{
+  const speechWindow=window as unknown as {SpeechRecognition?:new()=>SpeechRecognitionLike;webkitSpeechRecognition?:new()=>SpeechRecognitionLike}
+  const Recognition=speechWindow.SpeechRecognition??speechWindow.webkitSpeechRecognition
+  if(!Recognition){setVoiceMessage('Voice logging is not available in this browser yet. You can still type the same sentence into the food field.');return}
+  const recognition=new Recognition()
+  recognition.continuous=false;recognition.interimResults=false;recognition.lang='en-US'
+  setVoiceListening(true);setVoiceMessage('Listening… say what you ate naturally.')
+  recognition.onresult=(event)=>{const transcript=event.results[event.resultIndex]?.[0]?.transcript?.trim()??'';setVoiceTranscript(transcript);const lower=transcript.toLowerCase();const matches=templates.filter(template=>[template.name,...(template.aliases??[])].some(label=>label.length>=4&&lower.includes(label.toLowerCase())));setVoiceMatches(matches);setVoiceMessage(matches.length?`I matched ${matches.length} remembered food${matches.length===1?'':'s'}. Review before logging.`:'I did not find a remembered-food match. Put the transcript into the form and edit it before logging.')}
+  recognition.onerror=()=>{setVoiceMessage('I could not capture that. Try again or use the food field.')}
+  recognition.onend=()=>setVoiceListening(false)
+  recognition.start()
+ }
+ const logVoiceMatches=()=>{if(!voiceMatches.length)return;const loggedAt=new Date().toISOString();voiceMatches.forEach(template=>addNutritionEntry({id:crypto.randomUUID(),loggedAt,date:today(),mealType:template.mealType,name:template.name,calories:template.calories,proteinG:template.proteinG,carbsG:template.carbsG,fluidOz:template.fluidOz},true));setSaved(voiceMatches.map(item=>item.name).join(', '));setVoiceTranscript('');setVoiceMatches([]);setVoiceMessage('Voice foods logged. Fueling status has been recalculated.')}
+ const useVoiceTranscript=()=>{if(!voiceTranscript)return;setName(voiceTranscript);setVoiceMatches([]);setVoiceMessage('Transcript moved into the food form for review.')}
+
  const submit=(event:React.FormEvent)=>{event.preventDefault();const trimmed=name.trim();if(!trimmed)return;addNutritionEntry({id:crypto.randomUUID(),loggedAt:new Date().toISOString(),date:today(),mealType,name:trimmed,calories:calories===''?undefined:Number(calories),proteinG:protein===''?undefined:Number(protein),carbsG:carbs===''?undefined:Number(carbs),fluidOz:fluid===''?undefined:Number(fluid)},remember);setSaved(trimmed);setName('');setCalories('');setProtein('');setCarbs('');setFluid('')}
  const importHistory=async(event:React.ChangeEvent<HTMLInputElement>)=>{const file=event.target.files?.[0];if(!file)return;try{const parsed=JSON.parse(await file.text()) as {entries?:NutritionEntry[];mealTemplates?:NutritionMealTemplate[]};const entries=Array.isArray(parsed.entries)?parsed.entries:[],templates=Array.isArray(parsed.mealTemplates)?parsed.mealTemplates:[];importNutritionData(entries,templates);setImportMessage(`Imported ${entries.length} nutrition entries and ${templates.length} meal templates.`)}catch{setImportMessage('Could not import that nutrition file. Use the Mission France nutrition JSON export format.')}finally{event.target.value=''}}
  return <section className="mission-france-screen">
