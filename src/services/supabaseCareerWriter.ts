@@ -3,6 +3,7 @@ import type { RemoteCareerWriter } from './careerSync.ts'
 import { SupabaseRestClient, type SupabaseSession } from './supabaseRestClient.ts'
 import type { SupabasePublicConfig } from './supabaseConfig.ts'
 import { writeNormalizedCareer } from './supabaseNormalizedCareerWriter.ts'
+import { careerRevision } from './careerRevision.ts'
 
 type AthleteProfileRow={athlete_id:string}
 
@@ -33,6 +34,8 @@ export function createSupabaseCareerWriter(config:SupabasePublicConfig,session:S
      season:projection.riderState.season,
      settings:projection.riderState.settings,
      career_snapshot:projection.careerSnapshot,
+     client_revision:careerRevision(projection.careerSnapshot),
+     client_saved_at:new Date().toISOString(),
      updated_at:new Date().toISOString(),
     }],
    })

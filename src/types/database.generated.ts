@@ -398,6 +398,8 @@ export type Database = {
         Row: {
           athlete_id: string
           career_snapshot: Json
+          client_revision: string | null
+          client_saved_at: string | null
           equipment: Json
           rider: Json
           schema_version: number
@@ -408,6 +410,8 @@ export type Database = {
         Insert: {
           athlete_id: string
           career_snapshot?: Json
+          client_revision?: string | null
+          client_saved_at?: string | null
           equipment?: Json
           rider?: Json
           schema_version?: number
@@ -418,6 +422,8 @@ export type Database = {
         Update: {
           athlete_id?: string
           career_snapshot?: Json
+          client_revision?: string | null
+          client_saved_at?: string | null
           equipment?: Json
           rider?: Json
           schema_version?: number

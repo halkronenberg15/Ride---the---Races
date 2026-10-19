@@ -6,6 +6,8 @@ import { readSupabasePublicConfig } from '../services/supabaseConfig.ts'
 import { syncAndVerifyCareerSnapshot, type VerifiedCareerSyncReceipt } from '../services/supabaseCareerSyncCoordinator.ts'
 import { readVerifiedCloudCareer, type CloudCareerSnapshot } from '../services/supabaseCloudCareerReader.ts'
 import { buildCloudRestorePreview, commitCloudCareerRestore, type CloudRestorePreview } from '../services/cloudCareerRestore.ts'
+import { readCareerLocalMetadata } from '../services/careerRevision.ts'
+import { reconcileCareerVersions, type CareerReconciliation } from '../services/careerReconciliation.ts'
 
 export default function CloudSyncSettingsCard({career,account}:{career:CareerState;account:RiderAccount}){
  const config=readSupabasePublicConfig()
@@ -20,6 +22,7 @@ export default function CloudSyncSettingsCard({career,account}:{career:CareerSta
  const [cloudSnapshot,setCloudSnapshot]=useState<CloudCareerSnapshot|null>(null)
  const [restorePreview,setRestorePreview]=useState<CloudRestorePreview|null>(null)
  const [restoreConfirmed,setRestoreConfirmed]=useState(false)
+ const [reconciliation,setReconciliation]=useState<CareerReconciliation|null>(null)
 
  const run=async(task:()=>Promise<void>)=>{
   setBusy(true);setError('')
@@ -57,6 +60,7 @@ export default function CloudSyncSettingsCard({career,account}:{career:CareerSta
   if(!snapshot){setCloudSnapshot(null);setRestorePreview(null);setStatus('No cloud career snapshot exists yet. Sync this career first.');return}
   setCloudSnapshot(snapshot)
   setRestorePreview(buildCloudRestorePreview(career,snapshot))
+  setReconciliation(reconcileCareerVersions(career,readCareerLocalMetadata(window.localStorage,careerStorageKey(account.id)),snapshot))
   setRestoreConfirmed(false)
   setStatus('Cloud backup loaded for comparison. Nothing has been replaced.')
  })
@@ -71,7 +75,7 @@ export default function CloudSyncSettingsCard({career,account}:{career:CareerSta
  const disconnect=()=>run(async()=>{
   await signOutSupabase(config,session)
   clearSupabaseSession()
-  setSession(null);setReceipt(null);setCloudSnapshot(null);setRestorePreview(null);setRestoreConfirmed(false);setStatus('Cloud account disconnected from this browser.')
+  setSession(null);setReceipt(null);setCloudSnapshot(null);setRestorePreview(null);setRestoreConfirmed(false);setReconciliation(null);setStatus('Cloud account disconnected from this browser.')
  })
 
  return <section className="settings-card cloud-sync-card" aria-labelledby="cloud-sync-title">
@@ -107,6 +111,7 @@ export default function CloudSyncSettingsCard({career,account}:{career:CareerSta
     <div><dt>Remembered meals</dt><dd>{receipt.counts.nutritionTemplates}</dd></div>
     <div><dt>Training journal</dt><dd>{receipt.counts.trainingJournalEntries}</dd></div>
    </dl>:null}
+   {reconciliation?<p className={reconciliation.state==='MATCHED'?'selected-file':'identity-warning'} role="status"><strong>{reconciliation.state.replace('_',' ')}:</strong> {reconciliation.message}</p>:null}
    {restorePreview?<article className="import-preview cloud-restore-preview">
     <h3>Cloud restore preview</h3>
     <p><strong>Cloud copy:</strong> {new Date(restorePreview.cloudUpdatedAt).toLocaleString()}</p>

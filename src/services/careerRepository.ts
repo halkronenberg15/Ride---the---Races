@@ -1,5 +1,6 @@
 import type { CareerState } from '../types/career.ts'
 import { createInitialCareer, migrateCareer, restoreCareerBeforeRender } from '../state/careerPersistence.ts'
+import { writeCareerLocalMetadata } from './careerRevision.ts'
 
 export type CareerRepositoryMode='LOCAL_BROWSER'|'REMOTE_ACCOUNT'
 
@@ -28,6 +29,7 @@ export function createLocalCareerRepository(storage:Pick<Storage,'getItem'|'setI
   },
   save(storageKey,career){
    storage.setItem(storageKey,JSON.stringify(career))
+   writeCareerLocalMetadata(storage,storageKey,career)
   },
  }
 }
