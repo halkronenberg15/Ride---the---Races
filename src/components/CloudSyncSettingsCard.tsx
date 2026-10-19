@@ -8,6 +8,7 @@ import { readVerifiedCloudCareer, type CloudCareerSnapshot } from '../services/s
 import { buildCloudRestorePreview, commitCloudCareerRestore, type CloudRestorePreview } from '../services/cloudCareerRestore.ts'
 import { readCareerLocalMetadata } from '../services/careerRevision.ts'
 import { reconcileCareerVersions, type CareerReconciliation } from '../services/careerReconciliation.ts'
+import { readCloudStartupStatus } from '../services/cloudStartupReconciliation.ts'
 
 export default function CloudSyncSettingsCard({career,account}:{career:CareerState;account:RiderAccount}){
  const config=readSupabasePublicConfig()
@@ -23,6 +24,7 @@ export default function CloudSyncSettingsCard({career,account}:{career:CareerSta
  const [restorePreview,setRestorePreview]=useState<CloudRestorePreview|null>(null)
  const [restoreConfirmed,setRestoreConfirmed]=useState(false)
  const [reconciliation,setReconciliation]=useState<CareerReconciliation|null>(null)
+ const [startupStatus]=useState(()=>readCloudStartupStatus())
 
  const run=async(task:()=>Promise<void>)=>{
   setBusy(true);setError('')
@@ -130,6 +132,7 @@ export default function CloudSyncSettingsCard({career,account}:{career:CareerSta
    </article>:null}
   </div>}
 
+  {startupStatus?<p className={startupStatus.allowAutomaticMirror?'selected-file':'identity-warning'} role="status"><strong>Startup cloud check:</strong> {startupStatus.message}{startupStatus.allowAutomaticMirror?'':' Automatic mirroring is paused until the local/cloud difference is resolved.'}</p>:null}
   {status?<p className="selected-file" role="status">{status}</p>:null}
   {error?<p className="transfer-error" role="alert">{error}</p>:null}
   <small>During the 4.1 migration phase, local browser storage remains authoritative. Cloud restore only runs after a comparison, explicit confirmation, and an automatic pre-restore local backup.</small>

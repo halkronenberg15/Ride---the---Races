@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components -- Provider and its typed hook form one public state module. */
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { CareerState, EditableRideResult, HealthEntry, IntroCyclingAnswers, IntroCyclingPlan, MeasurementSystem, NutritionEntry, NutritionMealTemplate, RideMetricEntry } from '../types/career'
 import type { Alpha4025State, ExternalCyclingCompletion } from '../engine/alpha4025.ts'
 import { equipmentForDevices } from './careerPersistence.ts'
@@ -7,6 +7,8 @@ import { useAuth } from './AuthContext.tsx'
 import { careerStorageKey } from '../services/accountStore.ts'
 import { createLocalCareerRepository } from '../services/careerRepository.ts'
 import { mirrorCareerToCloudIfConnected, writeCloudMirrorStatus } from '../services/cloudCareerMirror.ts'
+import { evaluateCloudStartup, writeCloudStartupStatus } from '../services/cloudStartupReconciliation.ts'
+import { careerRevision } from '../services/careerRevision.ts'
 import { closeSeason } from '../engine/release4024.ts'
 import { fourWeekPreview, hydrateAdaptive, recordExternalOffSeasonCompletion, recordZoneEvidence } from '../engine/adaptiveTraining40251.ts'
 import type { TrainingJournalState } from '../../packages/training-journal/src/index.ts'
@@ -58,12 +60,33 @@ export function CareerProvider({ children }: { children: React.ReactNode }) {
   const storageKey=careerStorageKey(account?.id??'anonymous')
   const repository=useMemo(()=>createLocalCareerRepository(window.localStorage),[])
   const [career, setCareer] = useState<CareerState>(() => repository.load(storageKey,account?.displayName??''))
+  const startupCareerRef=useRef(career)
+  const lastPersistedRevisionRef=useRef(careerRevision(career))
+  const [startupChecked,setStartupChecked]=useState(false)
+  const [automaticMirrorAllowed,setAutomaticMirrorAllowed]=useState(false)
 
   useEffect(() => {
+    if(!account)return
+    let cancelled=false
+    void evaluateCloudStartup({career:startupCareerRef.current,account,storage:window.localStorage}).then(status=>{
+      if(cancelled)return
+      writeCloudStartupStatus(status)
+      setAutomaticMirrorAllowed(status.allowAutomaticMirror)
+      setStartupChecked(true)
+    })
+    return()=>{cancelled=true}
+  },[account,storageKey])
+
+  useEffect(() => {
+    if(!startupChecked)return
+    const revision=careerRevision(career)
+    if(revision===lastPersistedRevisionRef.current)return
     repository.save(storageKey,career)
-  }, [career,repository,storageKey])
+    lastPersistedRevisionRef.current=revision
+  }, [career,repository,startupChecked,storageKey])
 
   useEffect(() => {
+    if(!startupChecked||!automaticMirrorAllowed)return
     const timer=window.setTimeout(()=>{
       void mirrorCareerToCloudIfConnected(career).then(receipt=>{
         if(!receipt)return
@@ -73,7 +96,7 @@ export function CareerProvider({ children }: { children: React.ReactNode }) {
       })
     },3000)
     return()=>window.clearTimeout(timer)
-  },[career])
+  },[automaticMirrorAllowed,career,startupChecked])
 
   const value = useMemo<CareerContextValue>(() => ({
     career,
