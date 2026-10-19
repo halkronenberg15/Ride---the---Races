@@ -3,6 +3,7 @@ import type { RemoteCareerWriter } from './careerSync.ts'
 import { SupabaseRestClient, type SupabaseSession } from './supabaseRestClient.ts'
 import type { SupabasePublicConfig } from './supabaseConfig.ts'
 import { writeNormalizedCareer } from './supabaseNormalizedCareerWriter.ts'
+import { careerSnapshotRevision } from './careerRevision.ts'
 
 type AthleteProfileRow={athlete_id:string}
 
@@ -20,6 +21,8 @@ export function createSupabaseCareerWriter(config:SupabasePublicConfig,session:S
  const client=new SupabaseRestClient(config,session)
  return {
   async writeProjection(athleteId:string,projection:RemoteCareerProjection){
+   const savedAt=new Date().toISOString()
+   const revision=careerSnapshotRevision(projection.careerSnapshot)
    await client.request<void>({
     method:'POST',
     path:'rider_state',
@@ -33,7 +36,9 @@ export function createSupabaseCareerWriter(config:SupabasePublicConfig,session:S
      season:projection.riderState.season,
      settings:projection.riderState.settings,
      career_snapshot:projection.careerSnapshot,
-     updated_at:new Date().toISOString(),
+     client_revision:revision,
+     client_saved_at:savedAt,
+     updated_at:savedAt,
     }],
    })
    await writeNormalizedCareer(client,athleteId,projection)
