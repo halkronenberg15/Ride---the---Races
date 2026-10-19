@@ -63,7 +63,9 @@ Remote provider foundation:
 - normalized records persist before the full CareerState snapshot; the snapshot acts as the sync commit marker
 - guarded cloud restore with pre-restore local backups
 - local browser storage retained as the authoritative cache during migration
-- multi-device authoritative sync and conflict resolution remain 4.1.x work
+- verified cloud sync writes a per-device revision cursor after snapshot + normalized verification
+- startup reconciliation blocks background mirroring when cloud is newer or diverged
+- multi-device authoritative pull/merge remains 4.1.x work
 
 The UI must not care which provider is active.
 
