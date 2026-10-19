@@ -1,6 +1,7 @@
 import type { CareerState } from '../types/career.ts'
 
 export type RemoteCareerProjection={
+ careerSnapshot:CareerState
  riderState:{
   schemaVersion:number
   rider:CareerState['rider']
@@ -30,6 +31,7 @@ export type RemoteCareerProjection={
 
 export function projectCareerForRemote(career:CareerState):RemoteCareerProjection{
  return {
+  careerSnapshot:career,
   riderState:{
    schemaVersion:career.schemaVersion,
    rider:career.rider,

@@ -31,7 +31,7 @@ export function createSupabaseCareerWriter(config:SupabasePublicConfig,session:S
      equipment:projection.riderState.equipment,
      season:projection.riderState.season,
      settings:projection.riderState.settings,
-     career_snapshot:projection,
+     career_snapshot:projection.careerSnapshot,
      updated_at:new Date().toISOString(),
     }],
    })

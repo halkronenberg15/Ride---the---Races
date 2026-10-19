@@ -1,11 +1,11 @@
 import type { CareerState } from '../types/career.ts'
-import { remoteProjectionCounts, type RemoteCareerProjection } from './careerRemoteProjection.ts'
+import { projectCareerForRemote, remoteProjectionCounts } from './careerRemoteProjection.ts'
 import { syncCareerToRemote, type CareerSyncReceipt } from './careerSync.ts'
 import { createSupabaseCareerWriter, resolveSupabaseAthleteId } from './supabaseCareerWriter.ts'
 import { SupabaseRestClient, type SupabaseSession } from './supabaseRestClient.ts'
 import type { SupabasePublicConfig } from './supabaseConfig.ts'
 
-type RiderStateRow={career_snapshot:RemoteCareerProjection|null}
+type RiderStateRow={career_snapshot:CareerState|null}
 
 export type VerifiedCareerSyncReceipt=CareerSyncReceipt&{
  athleteId:string
@@ -28,7 +28,7 @@ export async function syncAndVerifyCareerSnapshot(args:{
  })
  const remote=rows[0]?.career_snapshot
  if(!remote)throw new Error('Remote career verification failed: rider snapshot was not returned.')
- const remoteCounts=remoteProjectionCounts(remote)
+ const remoteCounts=remoteProjectionCounts(projectCareerForRemote(remote))
  if(JSON.stringify(receipt.counts)!==JSON.stringify(remoteCounts)){
   throw new Error('Remote career verification failed: collection counts do not match the local career.')
  }
