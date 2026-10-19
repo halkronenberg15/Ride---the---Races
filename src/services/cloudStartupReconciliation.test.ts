@@ -6,7 +6,7 @@ import { evaluateCloudStartup } from './cloudStartupReconciliation.ts'
 import { careerStorageKey, type RiderAccount } from './accountStore.ts'
 import { writeCareerLocalMetadata } from './careerRevision.ts'
 
-const account:RiderAccount={id:'acct-1',email:'rider@example.com',displayName:'Rider',role:'rider',programs:[],createdAt:'2026-10-19T00:00:00Z'}
+const account:RiderAccount={id:'acct-1',email:'rider@example.com',displayName:'Rider',role:'rider',passwordHash:'hash',salt:'salt',entitlements:['intro-cycling'],requestedPrograms:[],createdAt:'2026-10-19T00:00:00Z'}
 
 function memoryStorage(){
  const values=new Map<string,string>()
