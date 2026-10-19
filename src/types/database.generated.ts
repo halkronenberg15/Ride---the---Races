@@ -193,6 +193,7 @@ export type Database = {
           date: string
           fluid_oz: number | null
           id: string
+          local_id: string | null
           logged_at: string
           meal_type: string
           metadata: Json
@@ -206,6 +207,7 @@ export type Database = {
           date: string
           fluid_oz?: number | null
           id: string
+          local_id?: string | null
           logged_at: string
           meal_type: string
           metadata?: Json
@@ -219,6 +221,7 @@ export type Database = {
           date?: string
           fluid_oz?: number | null
           id?: string
+          local_id?: string | null
           logged_at?: string
           meal_type?: string
           metadata?: Json
@@ -244,6 +247,7 @@ export type Database = {
           fluid_oz: number | null
           id: string
           last_used_at: string | null
+          local_id: string | null
           meal_type: string
           name: string
           protein_g: number | null
@@ -257,6 +261,7 @@ export type Database = {
           fluid_oz?: number | null
           id: string
           last_used_at?: string | null
+          local_id?: string | null
           meal_type: string
           name: string
           protein_g?: number | null
@@ -270,6 +275,7 @@ export type Database = {
           fluid_oz?: number | null
           id?: string
           last_used_at?: string | null
+          local_id?: string | null
           meal_type?: string
           name?: string
           protein_g?: number | null
@@ -391,6 +397,7 @@ export type Database = {
       rider_state: {
         Row: {
           athlete_id: string
+          career_snapshot: Json
           equipment: Json
           rider: Json
           schema_version: number
@@ -400,6 +407,7 @@ export type Database = {
         }
         Insert: {
           athlete_id: string
+          career_snapshot?: Json
           equipment?: Json
           rider?: Json
           schema_version?: number
@@ -409,6 +417,7 @@ export type Database = {
         }
         Update: {
           athlete_id?: string
+          career_snapshot?: Json
           equipment?: Json
           rider?: Json
           schema_version?: number
@@ -554,6 +563,7 @@ export type Database = {
           date: string
           entry: Json
           id: string
+          local_id: string | null
           updated_at: string
         }
         Insert: {
@@ -562,6 +572,7 @@ export type Database = {
           date: string
           entry: Json
           id?: string
+          local_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -570,6 +581,7 @@ export type Database = {
           date?: string
           entry?: Json
           id?: string
+          local_id?: string | null
           updated_at?: string
         }
         Relationships: [
