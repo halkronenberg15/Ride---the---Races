@@ -2,23 +2,27 @@
 
 Project: **RTR Mission Platform**
 
-This model is designed around account-backed rider data while preserving the current CareerState migration path.
+The live Supabase project already contains the shared athlete identity and ride/event infrastructure created in September 2026. The 4.1 backend work extends that model instead of introducing a second rider identity or duplicate rides table.
 
-## Core tables
+## Existing live foundation
 
-### profiles
-One row per authenticated rider.
+Already present in production Supabase:
 
-- id uuid primary key, references auth.users(id)
-- display_name text
-- role text
-- created_at timestamptz
-- updated_at timestamptz
+- `athlete_profiles` keyed by `athlete_id`, linked to `auth.users` through `user_id`
+- `rides` keyed by `ride_id`, linked to `athlete_profiles.athlete_id`
+- `athlete_events`
+- `processed_events`
+- `sync_cursors`
+- `legacy_profile_imports`
+
+This remains the authoritative identity/sync foundation.
+
+## New 4.1 extension tables
 
 ### rider_state
-Small current-state document for values that are genuinely profile-level.
+One current-state document per athlete for product state that is not yet normalized.
 
-- user_id uuid primary key
+- athlete_id uuid primary key
 - schema_version integer
 - rider jsonb
 - equipment jsonb
@@ -30,7 +34,7 @@ Small current-state document for values that are genuinely profile-level.
 Versioned plans rather than overwriting history.
 
 - id uuid primary key
-- user_id uuid
+- athlete_id uuid
 - start_date date
 - end_date date
 - phase text
@@ -44,24 +48,9 @@ Versioned plans rather than overwriting history.
 Structured journal snapshots/evidence.
 
 - id uuid primary key
-- user_id uuid
+- athlete_id uuid
 - date date
 - entry jsonb
-- created_at timestamptz
-- updated_at timestamptz
-
-### rides
-One row per ride activity.
-
-- id uuid primary key
-- user_id uuid
-- ridden_at timestamptz
-- activity_type text
-- source text
-- duration_minutes integer
-- distance_km numeric
-- metrics jsonb
-- notes text
 - created_at timestamptz
 - updated_at timestamptz
 
@@ -69,7 +58,7 @@ One row per ride activity.
 One row per logged food/drink entry.
 
 - id uuid primary key
-- user_id uuid
+- athlete_id uuid
 - logged_at timestamptz
 - date date
 - meal_type text
@@ -84,7 +73,7 @@ One row per logged food/drink entry.
 Remembered meals and aliases.
 
 - id uuid primary key
-- user_id uuid
+- athlete_id uuid
 - name text
 - meal_type text
 - calories numeric
@@ -98,19 +87,19 @@ Remembered meals and aliases.
 ### recipe_preferences
 Saved/cooked/rated recipe state.
 
-- user_id uuid
+- athlete_id uuid
 - recipe_id text
 - saved_at timestamptz
 - times_planned integer
 - times_cooked integer
 - rating integer
-- primary key (user_id, recipe_id)
+- primary key (athlete_id, recipe_id)
 
 ### readiness_entries
 Recovery/readiness evidence.
 
 - id uuid primary key
-- user_id uuid
+- athlete_id uuid
 - date date
 - entry jsonb
 - created_at timestamptz
@@ -119,7 +108,7 @@ Recovery/readiness evidence.
 Block-to-block comparison records.
 
 - id uuid primary key
-- user_id uuid
+- athlete_id uuid
 - block_key text
 - label text
 - starts_on date
@@ -130,23 +119,29 @@ Block-to-block comparison records.
 
 ## Security
 
-Every rider-owned table uses Row Level Security with:
-```
-auth.uid() = user_id
+Every new athlete-owned table uses Row Level Security by resolving the authenticated Supabase user through `athlete_profiles`:
+
+```sql
+athlete_id in (
+  select ap.athlete_id
+  from public.athlete_profiles ap
+  where ap.user_id = (select auth.uid())
+)
 ```
 
-Profiles use:
-```
-auth.uid() = id
-```
-
-No rider can read or write another rider's private data.
+That keeps ownership aligned with the existing shared-athlete model. No rider can read or write another rider's private rows.
 
 ## Migration strategy
 
-1. User signs into Supabase Auth.
-2. Local CareerState remains authoritative for the first migration session.
-3. Data is decomposed into normalized backend rows.
-4. A migration receipt is stored locally.
-5. Remote data becomes authoritative after row counts and key metrics are verified.
-6. Local storage remains an offline startup cache.
+1. User authenticates through Supabase Auth.
+2. Resolve `athlete_id` from `athlete_profiles.user_id`.
+3. Local CareerState remains authoritative for the first migration session.
+4. Decompose CareerState into the existing `rides` model plus the new training/nutrition/readiness tables.
+5. Compare row counts and key metrics.
+6. Write a migration receipt locally.
+7. Remote data becomes authoritative only after validation succeeds.
+8. Local storage remains a startup/offline cache.
+
+## Important compatibility rule
+
+The repository must not create a parallel identity model. All future remote persistence code should use `athlete_id` as the backend ownership key and resolve it from the authenticated Supabase user.

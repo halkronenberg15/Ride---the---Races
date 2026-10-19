@@ -17,7 +17,7 @@ test('remote projection preserves authoritative rider collections',()=>{
 test('remote sync returns a count receipt after writer succeeds',async()=>{
  const career=createInitialCareer()
  let called=false
- const receipt=await syncCareerToRemote({userId:'user-1',career,now:'2026-10-18T23:00:00Z',writer:{async writeProjection(userId,projection){called=true;assert.equal(userId,'user-1');assert.equal(projection.riderState.schemaVersion,career.schemaVersion)}}})
+ const receipt=await syncCareerToRemote({athleteId:'athlete-1',career,now:'2026-10-18T23:00:00Z',writer:{async writeProjection(athleteId,projection){called=true;assert.equal(athleteId,'athlete-1');assert.equal(projection.riderState.schemaVersion,career.schemaVersion)}}})
  assert.equal(called,true)
  assert.equal(receipt.localSchemaVersion,career.schemaVersion)
  assert.equal(receipt.syncedAt,'2026-10-18T23:00:00Z')
