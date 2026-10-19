@@ -64,6 +64,6 @@ export function remoteProjectionCounts(projection:RemoteCareerProjection){
   nutritionEntries:projection.nutrition.entries.length,
   nutritionTemplates:projection.nutrition.templates.length,
   readinessEntries:projection.readiness.history.length,
-  trainingJournalEntries:Object.keys(projection.trainingJournal.entries??{}).length,
+  trainingJournalEntries:projection.trainingJournal.entries.length,
  }
 }
