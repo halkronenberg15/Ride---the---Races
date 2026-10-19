@@ -15,6 +15,8 @@ type RiderStateRow={
 export type CloudCareerSnapshot={
  athleteId:string
  updatedAt:string
+ clientRevision:string|null
+ clientSavedAt:string|null
  career:CareerState
 }
 
