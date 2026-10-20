@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useCareer } from '../state/CareerContext.tsx'
 import { useAuth } from '../state/AuthContext.tsx'
 import { useActiveRide } from '../state/ActiveRideContext.tsx'
-import { authoritativeReadinessEntry, changePlannedRide, createDevelopmentProfile, currentLocalDate, generatePlan, HAL_GOALS, movePlannedRide, projectReadiness, recommendCamps, switchRideSetting, type GoalsQuestionnaire, type PersonalizationInput, type ReadinessEntry } from '../engine/alpha4025.ts'
+import { applyHalRecoveryAbsorptionMacro, authoritativeReadinessEntry, changePlannedRide, createDevelopmentProfile, currentLocalDate, generatePlan, HAL_GOALS, movePlannedRide, projectReadiness, recommendCamps, switchRideSetting, type GoalsQuestionnaire, type PersonalizationInput, type ReadinessEntry } from '../engine/alpha4025.ts'
 import OffSeasonCalendar from '../components/OffSeasonCalendar.tsx'
 import { assignmentWorkout, buildZoneDevelopment, evaluateDifficulty, fourWeekPreview, halInitialZoneDevelopment, hydrateAdaptive, jeanAdaptiveExplanation, selectCandidate, workoutById } from '../engine/adaptiveTraining40251.ts'
 
@@ -11,6 +11,14 @@ export default function OffSeasonScreen({onBack,onStartWorkout,onStartOutdoor,on
  const {ride}=useActiveRide()
  const {isAuthenticated}=useAuth(),hasAccess=isAuthenticated
  const halCareer=career.rider.name==='Hal'&&career.rider.number===15&&career.rider.ftp===229
+ useEffect(()=>{
+  if(!halCareer||!state.trainingPlan)return
+  const activeWeek=state.trainingPlan.weeks.find(week=>week.assignments.some(item=>item.date===currentLocalDate()))
+  const tuesday=activeWeek?.assignments.filter(item=>item.date==='2026-10-20')??[]
+  const alreadyCorrect=activeWeek?.startsOn==='2026-10-19'&&activeWeek.recoveryWeek&&activeWeek.camp==='Recovery / Absorption Week'&&tuesday.some(item=>item.type==='CYCLING'&&item.durationMinutes===30)&&tuesday.some(item=>item.type==='STRENGTH'&&item.durationMinutes===20)
+  if(alreadyCorrect)return
+  updateAlpha4025(old=>old.trainingPlan?{...old,trainingPlan:applyHalRecoveryAbsorptionMacro(old.trainingPlan)}:old)
+ },[halCareer,state.trainingPlan,updateAlpha4025])
  const localDate=currentLocalDate(),adaptive=hydrateAdaptive(state),zoneDevelopment=adaptive.zoneDevelopment,todayAssignment=state.trainingPlan?.weeks.flatMap(w=>w.assignments).find(a=>a.date===localDate&&(a.type==='CYCLING'||a.type==='ASSESSMENT'))??state.trainingPlan?.weeks.flatMap(w=>w.assignments).find(a=>a.status==='PLANNED'&&(a.type==='CYCLING'||a.type==='ASSESSMENT')&&a.demandingCycling)??null,todayWorkout=todayAssignment?.workoutId?workoutById(todayAssignment.workoutId):todayAssignment?assignmentWorkout(todayAssignment):null
  useEffect(()=>{if(state.trainingPlan&&zoneDevelopment.length===0){const recorded=buildZoneDevelopment(career.trainingHistory.filter(x=>x.completed).map(x=>({workoutId:x.workoutId,date:x.completedAt.slice(0,10),status:'SUCCESS' as const,source:'Completed account-scoped RtR workout'}))),hal=halInitialZoneDevelopment(),initialZoneDevelopment=halCareer?recorded.map(z=>z.level?z:hal.find(h=>h.zone===z.zone)!):recorded,fourWeek=fourWeekPreview(state.trainingPlan);updateAlpha4025(old=>({...old,adaptive:{...hydrateAdaptive(old),zoneDevelopment:initialZoneDevelopment,fourWeekPreview:fourWeek}}))}},[zoneDevelopment.length,career.trainingHistory,halCareer,state.trainingPlan,updateAlpha4025])
  const defaults:PersonalizationInput=state.intake??{category:state.riderCategory??'Prefer not to answer',seriesPreference:state.seriesPreference??'Help me choose',experience:career.rider.experience,ftp:career.rider.ftp,weeklyDays:4,weeklyMinutes:300,longRideDays:['Saturday'],preferredRestDay:'Monday',comfortableMinutes:60,indoorExperience:'Some',outdoorExperience:'Some',equipment:career.rider.devices,outdoorPowerMeter:false,heartRateAvailable:true,cadenceResistanceConfidence:'Growing',shiftingConfidence:'Growing',brakingConfidence:'Growing',outdoorConfidence:'Growing',accommodations:'',painConcerns:'',primaryGoal:'Improve fitness',secondaryGoal:'Ride longer',targetEvent:'',progression:'Balanced',recoveryDays:2,strengthDays:2,role:career.rider.archetype}
