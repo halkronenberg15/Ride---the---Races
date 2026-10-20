@@ -33,3 +33,30 @@ test('Hal Oct 14 Wednesday quality progresses to Calar Alto 75',()=>{const state
 
 
 test('persisted Hal plan migration applies Oct 14 Calar Alto progression',()=>{const existing=ensureHalOffSeasonPlan(emptyAlpha4025()); const legacyPlan=existing.trainingPlan!; const source={schemaVersion:6,onboardingComplete:true,rider:{name:'Hal',number:15,ftp:229},alpha4025:{...existing,trainingPlan:legacyPlan}} as never; const migrated=migrateCareer(source); const ride=migrated.alpha4025.trainingPlan!.weeks.flatMap(w=>w.assignments).find(a=>a.date==='2026-10-14'&&a.type==='CYCLING')!; assert.equal(ride.workoutId,'vuelta-calar-alto-75'); assert.equal(ride.durationMinutes,75)})
+
+
+test('Hal Oct 19 week is the active recovery and absorption week',()=>{
+ const state=ensureHalOffSeasonPlan(emptyAlpha4025())
+ const week=state.trainingPlan!.weeks.find(item=>item.startsOn==='2026-10-19')!
+ assert.equal(week.number,5)
+ assert.equal(week.recoveryWeek,true)
+ assert.equal(week.camp,'Recovery / Absorption Week')
+ const tuesday=week.assignments.filter(item=>item.date==='2026-10-20')
+ const ride=tuesday.find(item=>item.type==='CYCLING')!
+ const strength=tuesday.find(item=>item.type==='STRENGTH')!
+ assert.equal(ride.workoutId,'recovery-spin-30')
+ assert.equal(ride.durationMinutes,30)
+ assert.equal(ride.intensity,'RECOVERY')
+ assert.equal(strength.title,'Recovery Upper Body + Core')
+ assert.equal(strength.durationMinutes,20)
+ assert.doesNotMatch(strength.primary,/goblet squat|split squat|RDL/i)
+})
+
+test('Hal macrocycle uses recovery weeks 5, 10, 15 and 20 with climbing beginning after recovery week',()=>{
+ const state=ensureHalOffSeasonPlan(emptyAlpha4025())
+ const plan=state.trainingPlan!
+ assert.deepEqual(plan.weeks.filter(item=>item.recoveryWeek).map(item=>item.number),[5,10,15,20])
+ assert.equal(plan.weeks[5].startsOn,'2026-10-26')
+ assert.equal(plan.weeks[5].camp,'Climbing Camp')
+ assert.equal(plan.weeks[5].recoveryWeek,false)
+})
