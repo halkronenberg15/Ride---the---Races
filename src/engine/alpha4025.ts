@@ -207,9 +207,52 @@ export function applyHalWeeklyRhythmV2(plan:TrainingPlan):TrainingPlan{
   return {...week,focus:week.recoveryWeek?'Reduced load while preserving the block emphasis and Saturday-long rhythm':phaseFocus,assignments:[preserve(originals,rest),preserve(originals,tueRide),preserve(originals,tueStrengthStable),preserve(originals,quality),preserve(originals,thu),preserve(originals,fri),preserve(originals,saturday),preserve(originals,sun),preserve(originals,sunStrengthStable)]}
  })}
 }
+
+export function applyHalRecoveryAbsorptionMacro(plan:TrainingPlan):TrainingPlan{
+ const recoveryWeeks=new Set([5,10,15,20])
+ const blockForWeek=(week:number)=>{
+  if(week<=4)return {camp:'Aerobic Base Camp',focus:'Base block: steady aerobic volume, strength consistency and controlled quality.'}
+  if(week===5)return {camp:'Recovery / Absorption Week',focus:'Full recovery and absorption after the Base Block. Reduce cycling volume, remove lower-body strength loading and arrive fresh for climbing work.'}
+  if(week<=9)return {camp:'Climbing Camp',focus:'Climbing block: sustained climbing, aerobic torque, mountain simulation and fatigue resistance.'}
+  if(week===10)return {camp:'Recovery / Absorption Week',focus:'Absorb the climbing block with reduced load and no lower-body strength work.'}
+  if(week<=14)return {camp:'VO2max & Durability Camp',focus:'VO2 / Build block: one primary high-aerobic session supported by controlled aerobic work.'}
+  if(week===15)return {camp:'Recovery / Absorption Week',focus:'Absorb the VO2 / Build block with reduced load.'}
+  if(week<=19)return {camp:'Sustained Climbing Camp',focus:'Sustained Power / Threshold block: improve long climbing power and repeatability.'}
+  if(week===20)return {camp:'Recovery / Absorption Week',focus:'Absorb the sustained-power block before event durability work.'}
+  return {camp:'Event Durability Camp',focus:'Event Durability / Grand Tour Prep: multi-day endurance, fueling and fatigue resistance.'}
+ }
+ const recoveryRide=(week:PlanWeek,dayIndex:number,workoutId:string,primary:string,environment:'INDOOR'|'OUTDOOR'|'FLEXIBLE'='FLEXIBLE')=>{
+  const workout=workoutById(workoutId)!
+  const range=workout.ftpRange?{powerTarget:{minimum:Math.round(229*workout.ftpRange[0]),maximum:Math.round(229*workout.ftpRange[1])}}:{}
+  return assignment(week.number,dayIndex,plan.startDate,{type:'CYCLING',workoutId:workout.id,title:workout.title,purpose:workout.purpose,camp:'Recovery / Absorption Week',durationMinutes:workout.durationMinutes,intensity:workout.id==='recovery-spin-30'?'RECOVERY':'EASY',demandingCycling:false,environment,primary,shortened:'Rest if recovery is poor.',indoorAlternative:'Use the matching easy indoor option.',outdoorAlternative:'Easy conversational outdoor spin only.',recoveryAlternative:'Rest.',effort:workout.id==='recovery-spin-30'?'Very easy':'Easy',...range})
+ }
+ const recoveryStrength=(week:PlanWeek,dayIndex:number,minutes:number,optional=false)=>{
+  const base=assignment(week.number,dayIndex,plan.startDate,{type:'STRENGTH',title:'Recovery Upper Body + Core',purpose:'Maintain upper-body and trunk work while removing meaningful lower-body loading during the absorption week.',camp:'Recovery / Absorption Week',durationMinutes:minutes,intensity:'RECOVERY',demandingCycling:false,environment:'INDOOR',primary:(optional?'Optional ':'')+minutes+' minutes upper body + core only: rows, presses, shoulder work, Pallof press, dead bugs, bird dogs and light carries. No goblet squats, split squats or RDLs.',shortened:'One easy upper-body/core round or mobility only.',indoorAlternative:'Primary recovery strength session.',outdoorAlternative:'Not applicable.',recoveryAlternative:'Skip strength and use mobility only.',effort:'Very easy'})
+  return {...base,id:'w'+week.number+'-d'+(dayIndex+1)+'-recovery-strength'}
+ }
+ const preserve=(originals:CalendarAssignment[],next:CalendarAssignment)=>{const prior=originals.find(item=>item.id===next.id);if(!prior)return next;return {...next,status:prior.status,completion:prior.completion,substitution:prior.substitution}}
+ return {...plan,explanation:plan.explanation+' Hal macrocycle uses four build weeks followed by one full recovery / absorption week. Recovery weeks explicitly override the normal 100-mile cycling floor.',weeks:plan.weeks.map(week=>{
+  const block=blockForWeek(week.number)
+  if(week.number!==5)return {...week,camp:block.camp,focus:block.focus,recoveryWeek:recoveryWeeks.has(week.number),assignments:week.assignments.map(item=>({...item,camp:block.camp}))}
+  const originals=week.assignments
+  const rest=assignment(week.number,0,plan.startDate,{type:'REST',title:'Full Rest Day',purpose:'Begin the absorption week with complete recovery.',camp:block.camp,durationMinutes:0,intensity:'RECOVERY',demandingCycling:false,environment:'FLEXIBLE',primary:'No cycling and no strength. Easy walking or mobility only.',shortened:'Rest.',indoorAlternative:'Rest.',outdoorAlternative:'Easy walk only.',recoveryAlternative:'Rest.',effort:'Very easy'})
+  const tueRide=recoveryRide(week,1,'recovery-spin-30','30 minutes Z1 / low Z2. Keep cadence smooth and finish fresher than you started.','INDOOR')
+  const tueStrength=recoveryStrength(week,1,20)
+  const wed=recoveryRide(week,2,'endurance-steady-45','45 minutes easy Z1 / Z2. No climbing pressure, no threshold work and no mileage chasing.','FLEXIBLE')
+  const thu=recoveryRide(week,3,'recovery-spin-30','30 minutes recovery spin only. Keep the load light and conversational.','FLEXIBLE')
+  const thuStrength=recoveryStrength(week,3,20)
+  const fri=assignment(week.number,4,plan.startDate,{type:'REST',title:'Rest / Mobility',purpose:'Continue absorption before the weekend endurance work.',camp:block.camp,durationMinutes:0,intensity:'RECOVERY',demandingCycling:false,environment:'FLEXIBLE',primary:'Rest, mobility, easy walking and recovery work only.',shortened:'Rest.',indoorAlternative:'Mobility only.',outdoorAlternative:'Easy walk.',recoveryAlternative:'Rest.',effort:'Very easy'})
+  const sat=recoveryRide(week,5,'outdoor-endurance-90','75–90 minutes easy endurance, mostly Z2. Stay controlled and do not turn this into a mileage target.','OUTDOOR')
+  const sun=recoveryRide(week,6,'endurance-steady-45','30–45 minutes very easy. This is a freshness check before the climbing block, not a fitness test.','FLEXIBLE')
+  const sunStrength=recoveryStrength(week,6,15,true)
+  const next=[rest,tueRide,tueStrength,wed,thu,thuStrength,fri,sat,sun,sunStrength].map(item=>preserve(originals,item))
+  return {...week,camp:block.camp,focus:block.focus,recoveryWeek:true,assignments:next}
+ })}
+}
+
 export const HAL_SEPT23_PELOTON:ExternalCyclingCompletion={id:'hal-peloton-2026-09-23-tempo-climb',assignmentId:'w1-d3',workoutId:'tempo-climb-45',date:'2026-09-23',source:'Peloton manual external completion',durationSeconds:2700,averagePowerWatts:151,peakPowerWatts:222,averageCadenceRpm:80,averageResistancePercent:45,averageHeartRateBpm:129,maximumHeartRateBpm:142,heartRateDistribution:[{zone:'Z3',seconds:1301,percent:48},{zone:'Z2',seconds:1282,percent:47},{zone:'Z1',seconds:112,percent:4},{zone:'Z4',seconds:0,percent:0},{zone:'Z5',seconds:0,percent:0}],totalOutputKj:406,rpe:4,feedback:'Legs felt strong. The third climbing interval was a decent but controlled effort; the rider intentionally held back to follow the prescription.',outcome:'ON_TARGET',ftpAssessment:false,interpretation:['Completed the original Week 1 Wednesday assignment on target','The intentional warm-up spin-up explains the 222 W peak and is not failed pacing','Not an FTP assessment','No VO2 Max or Anaerobic progression evidence','No bonus workload added; the remaining Week 1 schedule is unchanged']}
 
 /** Restores only missing authoritative plan data; season lifecycle and activity history are never touched. */
-export function ensureHalOffSeasonPlan(state:Alpha4025State):Alpha4025State{const trainingPlan=applyHalOct14CalarAlto75(applyHalWeeklyRhythmV2(applyHalOct4ControlledEndurance60(applyHalSep30Climb75(generatePlan(HAL_INPUT,HAL_GOALS,state.trainingPlan))))),restored:Alpha4025State={...state,riderCategory:state.riderCategory??'Male',seriesPreference:state.seriesPreference??'Standard RtR',seriesConfirmed:state.seriesConfirmed||state.seriesPreference===null,seriesEntitlements:Array.from(new Set([...state.seriesEntitlements,'Standard RtR'])),intake:HAL_INPUT,developmentProfile:createDevelopmentProfile(HAL_INPUT),questionnaire:HAL_GOALS,campRecommendations:recommendCamps(HAL_INPUT,HAL_GOALS),trainingPlan,outdoorActivities:state.outdoorActivities.some(item=>item.id===HAL_BASELINE.id)?state.outdoorActivities:[...state.outdoorActivities,HAL_BASELINE]};return recordExternalOffSeasonCompletion(restored,HAL_SEPT23_PELOTON)}
+export function ensureHalOffSeasonPlan(state:Alpha4025State):Alpha4025State{const trainingPlan=applyHalRecoveryAbsorptionMacro(applyHalOct14CalarAlto75(applyHalWeeklyRhythmV2(applyHalOct4ControlledEndurance60(applyHalSep30Climb75(generatePlan(HAL_INPUT,HAL_GOALS,state.trainingPlan)))))),restored:Alpha4025State={...state,riderCategory:state.riderCategory??'Male',seriesPreference:state.seriesPreference??'Standard RtR',seriesConfirmed:state.seriesConfirmed||state.seriesPreference===null,seriesEntitlements:Array.from(new Set([...state.seriesEntitlements,'Standard RtR'])),intake:HAL_INPUT,developmentProfile:createDevelopmentProfile(HAL_INPUT),questionnaire:HAL_GOALS,campRecommendations:recommendCamps(HAL_INPUT,HAL_GOALS),trainingPlan,outdoorActivities:state.outdoorActivities.some(item=>item.id===HAL_BASELINE.id)?state.outdoorActivities:[...state.outdoorActivities,HAL_BASELINE]};return recordExternalOffSeasonCompletion(restored,HAL_SEPT23_PELOTON)}
 export function currentLocalDate(date=new Date()){return [date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-')}
 export function authoritativeReadinessEntry(entries:ReadinessEntry[],health:{date:string;sleepHours:number;recoveryScore:number;fatigue:number;mood:string}){return entries[0]??legacyHealthReadiness(health)}
