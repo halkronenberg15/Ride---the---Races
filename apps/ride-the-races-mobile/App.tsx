@@ -394,7 +394,7 @@ export default function App(){
   }
 
   if(screen==='training'){
-    return <SafeAreaView style={styles.root}><StatusBar style="light"/><TrainingScreen career={effectiveCareer} onBack={()=>setScreen('home')} onRide={async(assignment,workoutId)=>{if(assignment.workoutId!==workoutId)replaceTrainingAssignment(assignment.id,workoutId);setSelectedTrainingAssignmentId(assignment.id);setSelectedWorkoutId(workoutId);try{await openCanonicalCockpit({kind:'training',workoutId,assignmentId:assignment.id,environment:(assignment.environment??'AUTO') as 'INDOOR'|'OUTDOOR'|'AUTO'})}catch(error){Alert.alert('Could not open cockpit',error instanceof Error?error.message:'Unknown error');setScreen('trainingRide')}} onStrength={(assignment)=>{setSelectedStrengthAssignment(assignment);setScreen('strength')}}/></SafeAreaView>
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><TrainingScreen career={effectiveCareer} onBack={()=>setScreen('home')} onRide={async(assignment,workoutId)=>{if(assignment.workoutId!==workoutId)replaceTrainingAssignment(assignment.id,workoutId);setSelectedTrainingAssignmentId(assignment.id);setSelectedWorkoutId(workoutId);try{await openCanonicalCockpit({kind:'training',workoutId,assignmentId:assignment.id,environment:(assignment.environment??'AUTO') as 'INDOOR'|'OUTDOOR'|'AUTO'})}catch(error){Alert.alert('Web cockpit launch failed',(error instanceof Error?error.message:'Unknown error')+'\n\nThis ride was not started in the native fallback cockpit. Refresh the Expo Go project and retry so RtR uses the canonical web cockpit.')}} onStrength={(assignment)=>{setSelectedStrengthAssignment(assignment);setScreen('strength')}}/></SafeAreaView>
   }
 
   if(screen==='strength'&&selectedStrengthAssignment){
@@ -410,7 +410,7 @@ export default function App(){
   }
 
   if(screen==='briefing'&&selectedStage){
-    return <SafeAreaView style={styles.root}><StatusBar style="light"/><RaceBriefingsScreen stage={selectedStage} onBack={()=>setScreen('library')} onStart={async()=>{try{await openCanonicalCockpit({kind:'race',library:'tour-2026',stageNumber:selectedStage.number,environment:'AUTO'})}catch(error){Alert.alert('Could not open cockpit',error instanceof Error?error.message:'Unknown error');setScreen('structuredRide')}}}/></SafeAreaView>
+    return <SafeAreaView style={styles.root}><StatusBar style="light"/><RaceBriefingsScreen stage={selectedStage} onBack={()=>setScreen('library')} onStart={async()=>{try{await openCanonicalCockpit({kind:'race',library:'tour-2026',stageNumber:selectedStage.number,environment:'AUTO'})}catch(error){Alert.alert('Web cockpit launch failed',(error instanceof Error?error.message:'Unknown error')+'\n\nThis stage was not started in the native fallback cockpit. Refresh the Expo Go project and retry so RtR uses the canonical web cockpit.')}}}/></SafeAreaView>
   }
 
   if(screen==='roadbook'){
