@@ -220,9 +220,49 @@ export const HAL_SEP30_CLIMB_JOURNAL:TrainingJournalEntry={
   updatedAt:'2026-09-30T21:48:00-04:00',
 }
 
+
+export const HAL_SL8_JOURNAL_ENTRIES:TrainingJournalEntry[]=[
+ {
+  schemaVersion:1,sessionKind:'CYCLING',id:'hal-2026-10-24-sl8-test',date:'2026-10-24',title:'SL8 Test Ride · New Smyrna Beach',
+  sources:['Strava screenshot','Rider feedback'],
+  stats:{durationSeconds:2379,distanceKm:17.06,averagePowerWatts:125,ftpWatts:229},
+  fueling:[],
+  feedback:{workBlocks:'CONTROLLED',lateSession:'STEADY',freeText:'First test ride on the S-Works Tarmac SL8. 10.60 mi in 39:39 at 16.0 mph. Strava reported a fastest-ever 5-mile PR by 34 seconds. Strava initially showed the Secteur Sport equipment tag, but rider confirmed this was the new SL8.'},
+  coach:{status:'POSITIVE',summary:'Useful short shakedown baseline for the new SL8.',signals:['10.60 mi','39:39 moving','16.0 mph average','First SL8 ride','Fastest-ever 5-mile Strava PR by 34 seconds'],progressionEvidence:'LOCAL',nextAction:'Use this as a shakedown baseline only; do not infer aerodynamic gain from one short ride.',generatedAt:'2026-10-24T12:30:00-04:00'},
+  createdAt:'2026-10-24T12:30:00-04:00',updatedAt:'2026-10-24T12:30:00-04:00'
+ },
+ {
+  schemaVersion:1,sessionKind:'CYCLING',id:'hal-2026-10-26-marathon-sl8',date:'2026-10-26',title:'Marathon Wind Ride · SL8',
+  sources:['Garmin screenshots','Favero Assioma PRO RS-2','Rider feedback'],
+  stats:{durationSeconds:4021,distanceKm:29.40,totalOutputKj:650,averagePowerWatts:147,peakPowerWatts:737,averageCadenceRpm:69,averageHeartRateBpm:140,maximumHeartRateBpm:168,ftpWatts:229},
+  fueling:[],
+  feedback:{legsAfter:'NOTICEABLE_FATIGUE',workBlocks:'CHALLENGING_WITH_RESERVE',lateSession:'STRONGER',freeText:'Strong head and crosswinds in Marathon. Rider intentionally sprinted to finish, producing the 737 W late peak. Garmin showed 187 W normalized power and 182 W best 20-minute power.'},
+  coach:{status:'POSITIVE',summary:'Wind-loaded aerobic/high-aerobic ride with a distinct finishing sprint.',signals:['18.27 mi','147 W average','187 W NP','737 W finishing peak','140 bpm average HR','48/52 L/R'],progressionEvidence:'LOCAL',nextAction:'Separate the finishing sprint from endurance pacing when evaluating the ride.',generatedAt:'2026-10-26T18:00:00-04:00'},
+  createdAt:'2026-10-26T18:00:00-04:00',updatedAt:'2026-10-26T18:00:00-04:00'
+ },
+ {
+  schemaVersion:1,sessionKind:'CYCLING',id:'hal-2026-10-27-seven-mile-bridge',date:'2026-10-27',title:'Seven Mile Bridge Endurance · SL8',
+  sources:['Garmin screenshots','Favero Assioma PRO RS-2','Rider feedback'],
+  stats:{durationSeconds:6183,distanceKm:48.01,totalOutputKj:1017,averagePowerWatts:154,peakPowerWatts:650,averageCadenceRpm:71,averageHeartRateBpm:139,maximumHeartRateBpm:154,ftpWatts:229},
+  fueling:[{id:'dry-brew-30',minute:30,kind:'OTHER',label:'Dry Brew caffeine bite',calories:35,carbohydrateGrams:4,notes:'100 mg caffeine. Rider initially thought this was a carb+caffeine gummy; treat as caffeine support, not meaningful carbohydrate fueling.'}],
+  feedback:{workBlocks:'CONTROLLED',lateSession:'STEADY',freeText:'29.83 mi Seven Mile Bridge ride in 15-20 mph winds. Garmin showed 175 W NP and 190 W best 20-minute power. Intermittent hand numbness required shaking hands out several times.'},
+  coach:{status:'CAUTION',summary:'Strong windy endurance benchmark with measured outdoor power, but hand numbness is now a fit signal to track.',signals:['29.83 mi','154 W average','175 W NP','139 bpm average HR','71 rpm cadence','15-20 mph winds','Intermittent hand numbness','Garmin saved FTP was 191 W; RtR uses 229 W'],progressionEvidence:'LOCAL',nextAction:'Continue fit observation and do not let Garmin 191 W FTP inflate training-load interpretation.',generatedAt:'2026-10-27T20:00:00-04:00'},
+  createdAt:'2026-10-27T20:00:00-04:00',updatedAt:'2026-10-27T20:00:00-04:00'
+ },
+ {
+  schemaVersion:1,sessionKind:'CYCLING',id:'hal-2026-10-30-bisaddle-baseline',date:'2026-10-30',title:'BiSaddle Baseline 001 · SL8',
+  sources:['Garmin screenshots','Favero Assioma PRO RS-2','Rider feedback'],
+  stats:{durationSeconds:5645,distanceKm:44.26,totalOutputKj:928,averagePowerWatts:155,peakPowerWatts:524,averageCadenceRpm:72,averageHeartRateBpm:134,maximumHeartRateBpm:163,ftpWatts:229},
+  fueling:[],
+  feedback:{workBlocks:'CONTROLLED',lateSession:'STEADY',freeText:'First ride on the BiSaddle EXT Sprint. Saddle felt nice overall but still needs adjustment. Intermittent right-hand numbness required shake-outs. Mild lower-back tightness appeared toward the end. Garmin data included 172 W NP, 179 W best 20-minute power, 48/52 L/R, left PCO +8 mm and right PCO +1 mm. Garmin FTP was corrected to 229 W after this ride.'},
+  coach:{status:'CAUTION',summary:'Promising first BiSaddle ride with good aerobic efficiency, but long-distance comfort is not solved yet.',signals:['27.50 mi','155 W average','172 W NP','134 bpm average HR','72 rpm cadence','Right-hand numbness','Late lower-back tightness','Repeated L PCO +8 mm vs R +1 mm','BiSaddle felt good overall'],progressionEvidence:'REPEATED',nextAction:'Prioritize long-distance comfort. Adjust one saddle variable at a time, keep cockpit unchanged until saddle position stabilizes, and progress symptom-limited rides from 75-90 to 90-105 to 105-120 minutes before larger mileage increases.',generatedAt:'2026-10-30T17:30:00-04:00'},
+  createdAt:'2026-10-30T17:30:00-04:00',updatedAt:'2026-10-30T17:30:00-04:00'
+ }
+]
+
 export function ensureHalSep30TrainingJournal(state:TrainingJournalState){
   let next=state
-  for(const entry of [HAL_SEP29_ENDURANCE_JOURNAL,HAL_SEP29_STRENGTH_A_JOURNAL,HAL_SEP30_CLIMB_JOURNAL]){
+  for(const entry of [HAL_SEP29_ENDURANCE_JOURNAL,HAL_SEP29_STRENGTH_A_JOURNAL,HAL_SEP30_CLIMB_JOURNAL,...HAL_SL8_JOURNAL_ENTRIES]){
     if(!next.entries.some(item=>item.id===entry.id))next=upsertTrainingJournalEntry(next,entry)
   }
   return next
