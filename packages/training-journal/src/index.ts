@@ -56,6 +56,9 @@ export type StrengthSessionLog={
   plan:'STRENGTH_A'|'STRENGTH_B'|'OTHER'
   exercises:StrengthExerciseLog[]
   completedMainWork:boolean
+  totalReps?:number
+  volumeLoadLb?:number
+  activityStrain?:number
 }
 
 export type TrainingJournalEntry={
@@ -260,9 +263,55 @@ export const HAL_SL8_JOURNAL_ENTRIES:TrainingJournalEntry[]=[
  }
 ]
 
+
+export const HAL_NOV3_STRENGTH:TrainingJournalEntry={
+ schemaVersion:1,
+ sessionKind:'STRENGTH',
+ id:'hal-2026-11-03-strength-volume-durability',
+ date:'2026-11-03',
+ title:'Strength · Volume & Durability',
+ sources:['WHOOP Strength Trainer screenshots','Rider correction'],
+ stats:{durationSeconds:2483,calories:246},
+ strength:{
+  plan:'OTHER',
+  completedMainWork:true,
+  totalReps:204,
+  volumeLoadLb:9130,
+  activityStrain:12.6,
+  exercises:[
+   {name:'Elliptical warm-up',setsCompleted:1,targetSets:1,reps:'15:00',status:'COMPLETED'},
+   {name:'Back squat - barbell',setsCompleted:3,targetSets:3,reps:'10 @ 45 lb; 10 @ 65 lb; 10 @ 65 lb',status:'COMPLETED'},
+   {name:'Alternating dumbbell step-up',setsCompleted:3,targetSets:3,reps:'12/leg @ 60 lb each set',status:'COMPLETED'},
+   {name:'Romanian deadlift - dumbbell',setsCompleted:3,targetSets:3,reps:'12 @ 60 lb each set',status:'COMPLETED'},
+   {name:'Bench press - dumbbell',setsCompleted:3,targetSets:3,reps:'12 @ 25 lb each set',status:'COMPLETED'},
+   {name:'Standing band Pallof press',setsCompleted:3,targetSets:3,reps:'10 each set',status:'COMPLETED'},
+  ],
+ },
+ fueling:[],
+ feedback:{legsAfter:'NOTICEABLE_FATIGUE',freeText:'Strength completed before cycling. WHOOP recorded 41:23, 12.6 activity strain, 74% muscular / 26% cardio, 246 calories. Step-ups were corrected from 12 total reps per set to 12 reps per leg for all 3 sets, raising the session to 204 total reps and 9,130 lb volume load.'},
+ coach:{status:'POSITIVE',summary:'Substantial strength session completed before the ride, creating deliberate muscular pre-fatigue for the subsequent aerobic work.',signals:['41:23 strength duration','12.6 WHOOP strain','74% muscular load','204 corrected total reps','9,130 lb corrected volume load','3 x 12/leg step-ups at 60 lb'],progressionEvidence:'LOCAL',nextAction:'Interpret the following ride as aerobic durability on pre-fatigued legs and protect recovery rather than adding extra intensity.',generatedAt:'2026-11-03T18:15:00-05:00'},
+ createdAt:'2026-11-03T18:15:00-05:00',
+ updatedAt:'2026-11-03T18:15:00-05:00',
+}
+
+export const HAL_NOV3_PEL0TON_DURABILITY:TrainingJournalEntry={
+ schemaVersion:1,
+ sessionKind:'CYCLING',
+ id:'hal-2026-11-03-peloton-durability-60',
+ date:'2026-11-03',
+ title:'Aerobic Durability Ride · 60 min',
+ sources:['Peloton screenshots','Rider feedback'],
+ stats:{durationSeconds:3600,distanceKm:30.53,totalOutputKj:537,averagePowerWatts:149,peakPowerWatts:210,averageCadenceRpm:77,averageResistancePercent:46,averageHeartRateBpm:139,maximumHeartRateBpm:154,calories:965,striveScore:75.1,ftpWatts:229},
+ fueling:[],
+ feedback:{legsAfter:'NOTICEABLE_FATIGUE',workBlocks:'CONTROLLED',lateSession:'STEADY',cadenceIntent:'Controlled seated endurance after strength; cadence averaged 77 rpm under pre-fatigue.',freeText:'Ride followed the strength session. HR distribution was 15% Z2, 73% Z3 and 12% Z4. Power remained steady through the sustained middle section, then dropped for cooldown. Average power was about 65% of FTP, but cardiovascular cost was elevated by the preceding strength work.'},
+ coach:{status:'POSITIVE',summary:'Successful strength-to-bike durability session: moderate power was sustained for an hour despite meaningful muscular pre-fatigue.',signals:['60:00 ride','149 W average at 229 W FTP','537 kJ','139 bpm average HR','73% in HR Zone 3','12% in HR Zone 4','77 rpm average cadence','Strength completed immediately beforehand'],progressionEvidence:'LOCAL',nextAction:'Count Nov 3 as one combined high-value durability day, not two independent sessions. Keep the next training exposure aerobic/easy enough to absorb the work.',generatedAt:'2026-11-03T18:16:00-05:00'},
+ createdAt:'2026-11-03T18:16:00-05:00',
+ updatedAt:'2026-11-03T18:16:00-05:00',
+}
+
 export function ensureHalSep30TrainingJournal(state:TrainingJournalState){
   let next=state
-  for(const entry of [HAL_SEP29_ENDURANCE_JOURNAL,HAL_SEP29_STRENGTH_A_JOURNAL,HAL_SEP30_CLIMB_JOURNAL,...HAL_SL8_JOURNAL_ENTRIES]){
+  for(const entry of [HAL_SEP29_ENDURANCE_JOURNAL,HAL_SEP29_STRENGTH_A_JOURNAL,HAL_SEP30_CLIMB_JOURNAL,...HAL_SL8_JOURNAL_ENTRIES,HAL_NOV3_STRENGTH,HAL_NOV3_PEL0TON_DURABILITY]){
     if(!next.entries.some(item=>item.id===entry.id))next=upsertTrainingJournalEntry(next,entry)
   }
   return next
