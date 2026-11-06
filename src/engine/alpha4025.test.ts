@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { adaptSunday, applyAssignmentAction, createDevelopmentProfile, emptyAlpha4025, ensureHalOffSeasonPlan, ftpCompanion, generatePlan, HAL_BASELINE, HAL_GOALS, HAL_INPUT, offSeasonJeanMessageAllowed, readinessStatus, recommendCamps, recommendSeries, recordPowerMeterInstallation, STRENGTH_A, STRENGTH_B, validFemmesProductionStage } from './alpha4025.ts'
+import { adaptSunday, applyAssignmentAction, createDevelopmentProfile, emptyAlpha4025, ensureHalOffSeasonPlan, ftpCompanion, generatePlan, HAL_BASELINE, HAL_GOALS, HAL_INPUT, HAL_SL8_OUTDOOR_ACTIVITIES, mergeHalSL8OutdoorEvidence, offSeasonJeanMessageAllowed, readinessStatus, recommendCamps, recommendSeries, recordPowerMeterInstallation, STRENGTH_A, STRENGTH_B, validFemmesProductionStage } from './alpha4025.ts'
 import { migrateCareer } from '../state/careerPersistence.ts'
 
 test('series recommendation remains separate, explicit and non-administrative',()=>{assert.equal(recommendSeries('Male'),'Standard RtR');assert.equal(recommendSeries('Female'),'RtR Femmes');assert.equal(recommendSeries('Prefer not to answer'),null);const profile=createDevelopmentProfile({...HAL_INPUT,category:'Female',seriesPreference:'Intro to Cycling',experience:'Beginner'});assert.equal(profile.seriesPathway,'Intro to Cycling');assert.equal(profile.instructionDensity,'HIGH')})
@@ -59,4 +59,26 @@ test('Hal macrocycle uses recovery weeks 5, 10, 15 and 20 with climbing beginnin
  assert.equal(plan.weeks[5].startsOn,'2026-10-26')
  assert.equal(plan.weeks[5].camp,'Climbing Camp')
  assert.equal(plan.weeks[5].recoveryWeek,false)
+})
+
+
+test('Hal SL8 evidence merges idempotently with measured outdoor power and fit notes',()=>{
+ const once=mergeHalSL8OutdoorEvidence(emptyAlpha4025())
+ const twice=mergeHalSL8OutdoorEvidence(once)
+ assert.equal(HAL_SL8_OUTDOOR_ACTIVITIES.length,4)
+ assert.equal(once.outdoorActivities.filter(item=>item.id.startsWith('hal-sl8-baseline-')).length,4)
+ assert.equal(twice.outdoorActivities.length,once.outdoorActivities.length)
+ const oct30=once.outdoorActivities.find(item=>item.id==='hal-sl8-baseline-2026-10-30')!
+ assert.equal(oct30.averagePowerWatts,155)
+ assert.match(oct30.saddleDiscomfort??'',/BiSaddle EXT Sprint/)
+ assert.match(oct30.otherDiscomfort??'',/right-hand numbness/i)
+ assert.equal(once.equipmentInstallationDate,'2026-10-24')
+ assert.equal(once.outdoorPowerCalibrationStatus,'COLLECTING')
+})
+
+test('existing Hal career migration receives SL8 rides and October journal evidence',()=>{
+ const source={schemaVersion:6,onboardingComplete:true,rider:{name:'Hal',number:15,ftp:229},alpha4025:{...ensureHalOffSeasonPlan(emptyAlpha4025()),outdoorActivities:[HAL_BASELINE]},trainingJournal:{schemaVersion:1,entries:[]}} as never
+ const migrated=migrateCareer(source)
+ assert.ok(migrated.alpha4025.outdoorActivities.some(item=>item.id==='hal-sl8-baseline-2026-10-30'))
+ assert.ok(migrated.trainingJournal.entries.some(item=>item.id==='hal-2026-10-30-bisaddle-baseline'))
 })

@@ -56,6 +56,9 @@ export type StrengthSessionLog={
   plan:'STRENGTH_A'|'STRENGTH_B'|'OTHER'
   exercises:StrengthExerciseLog[]
   completedMainWork:boolean
+  totalReps?:number
+  volumeLoadLb?:number
+  activityStrain?:number
 }
 
 export type TrainingJournalEntry={
@@ -220,9 +223,95 @@ export const HAL_SEP30_CLIMB_JOURNAL:TrainingJournalEntry={
   updatedAt:'2026-09-30T21:48:00-04:00',
 }
 
+
+export const HAL_SL8_JOURNAL_ENTRIES:TrainingJournalEntry[]=[
+ {
+  schemaVersion:1,sessionKind:'CYCLING',id:'hal-2026-10-24-sl8-test',date:'2026-10-24',title:'SL8 Test Ride · New Smyrna Beach',
+  sources:['Strava screenshot','Rider feedback'],
+  stats:{durationSeconds:2379,distanceKm:17.06,averagePowerWatts:125,ftpWatts:229},
+  fueling:[],
+  feedback:{workBlocks:'CONTROLLED',lateSession:'STEADY',freeText:'First test ride on the S-Works Tarmac SL8. 10.60 mi in 39:39 at 16.0 mph. Strava reported a fastest-ever 5-mile PR by 34 seconds. Strava initially showed the Secteur Sport equipment tag, but rider confirmed this was the new SL8.'},
+  coach:{status:'POSITIVE',summary:'Useful short shakedown baseline for the new SL8.',signals:['10.60 mi','39:39 moving','16.0 mph average','First SL8 ride','Fastest-ever 5-mile Strava PR by 34 seconds'],progressionEvidence:'LOCAL',nextAction:'Use this as a shakedown baseline only; do not infer aerodynamic gain from one short ride.',generatedAt:'2026-10-24T12:30:00-04:00'},
+  createdAt:'2026-10-24T12:30:00-04:00',updatedAt:'2026-10-24T12:30:00-04:00'
+ },
+ {
+  schemaVersion:1,sessionKind:'CYCLING',id:'hal-2026-10-26-marathon-sl8',date:'2026-10-26',title:'Marathon Wind Ride · SL8',
+  sources:['Garmin screenshots','Favero Assioma PRO RS-2','Rider feedback'],
+  stats:{durationSeconds:4021,distanceKm:29.40,totalOutputKj:650,averagePowerWatts:147,peakPowerWatts:737,averageCadenceRpm:69,averageHeartRateBpm:140,maximumHeartRateBpm:168,ftpWatts:229},
+  fueling:[],
+  feedback:{legsAfter:'NOTICEABLE_FATIGUE',workBlocks:'CHALLENGING_WITH_RESERVE',lateSession:'STRONGER',freeText:'Strong head and crosswinds in Marathon. Rider intentionally sprinted to finish, producing the 737 W late peak. Garmin showed 187 W normalized power and 182 W best 20-minute power.'},
+  coach:{status:'POSITIVE',summary:'Wind-loaded aerobic/high-aerobic ride with a distinct finishing sprint.',signals:['18.27 mi','147 W average','187 W NP','737 W finishing peak','140 bpm average HR','48/52 L/R'],progressionEvidence:'LOCAL',nextAction:'Separate the finishing sprint from endurance pacing when evaluating the ride.',generatedAt:'2026-10-26T18:00:00-04:00'},
+  createdAt:'2026-10-26T18:00:00-04:00',updatedAt:'2026-10-26T18:00:00-04:00'
+ },
+ {
+  schemaVersion:1,sessionKind:'CYCLING',id:'hal-2026-10-27-seven-mile-bridge',date:'2026-10-27',title:'Seven Mile Bridge Endurance · SL8',
+  sources:['Garmin screenshots','Favero Assioma PRO RS-2','Rider feedback'],
+  stats:{durationSeconds:6183,distanceKm:48.01,totalOutputKj:1017,averagePowerWatts:154,peakPowerWatts:650,averageCadenceRpm:71,averageHeartRateBpm:139,maximumHeartRateBpm:154,ftpWatts:229},
+  fueling:[{id:'dry-brew-30',minute:30,kind:'OTHER',label:'Dry Brew caffeine bite',calories:35,carbohydrateGrams:4,notes:'100 mg caffeine. Rider initially thought this was a carb+caffeine gummy; treat as caffeine support, not meaningful carbohydrate fueling.'}],
+  feedback:{workBlocks:'CONTROLLED',lateSession:'STEADY',freeText:'29.83 mi Seven Mile Bridge ride in 15-20 mph winds. Garmin showed 175 W NP and 190 W best 20-minute power. Intermittent hand numbness required shaking hands out several times.'},
+  coach:{status:'CAUTION',summary:'Strong windy endurance benchmark with measured outdoor power, but hand numbness is now a fit signal to track.',signals:['29.83 mi','154 W average','175 W NP','139 bpm average HR','71 rpm cadence','15-20 mph winds','Intermittent hand numbness','Garmin saved FTP was 191 W; RtR uses 229 W'],progressionEvidence:'LOCAL',nextAction:'Continue fit observation and do not let Garmin 191 W FTP inflate training-load interpretation.',generatedAt:'2026-10-27T20:00:00-04:00'},
+  createdAt:'2026-10-27T20:00:00-04:00',updatedAt:'2026-10-27T20:00:00-04:00'
+ },
+ {
+  schemaVersion:1,sessionKind:'CYCLING',id:'hal-2026-10-30-bisaddle-baseline',date:'2026-10-30',title:'BiSaddle Baseline 001 · SL8',
+  sources:['Garmin screenshots','Favero Assioma PRO RS-2','Rider feedback'],
+  stats:{durationSeconds:5645,distanceKm:44.26,totalOutputKj:928,averagePowerWatts:155,peakPowerWatts:524,averageCadenceRpm:72,averageHeartRateBpm:134,maximumHeartRateBpm:163,ftpWatts:229},
+  fueling:[],
+  feedback:{workBlocks:'CONTROLLED',lateSession:'STEADY',freeText:'First ride on the BiSaddle EXT Sprint. Saddle felt nice overall but still needs adjustment. Intermittent right-hand numbness required shake-outs. Mild lower-back tightness appeared toward the end. Garmin data included 172 W NP, 179 W best 20-minute power, 48/52 L/R, left PCO +8 mm and right PCO +1 mm. Garmin FTP was corrected to 229 W after this ride.'},
+  coach:{status:'CAUTION',summary:'Promising first BiSaddle ride with good aerobic efficiency, but long-distance comfort is not solved yet.',signals:['27.50 mi','155 W average','172 W NP','134 bpm average HR','72 rpm cadence','Right-hand numbness','Late lower-back tightness','Repeated L PCO +8 mm vs R +1 mm','BiSaddle felt good overall'],progressionEvidence:'REPEATED',nextAction:'Prioritize long-distance comfort. Adjust one saddle variable at a time, keep cockpit unchanged until saddle position stabilizes, and progress symptom-limited rides from 75-90 to 90-105 to 105-120 minutes before larger mileage increases.',generatedAt:'2026-10-30T17:30:00-04:00'},
+  createdAt:'2026-10-30T17:30:00-04:00',updatedAt:'2026-10-30T17:30:00-04:00'
+ }
+]
+
+
+export const HAL_NOV3_STRENGTH:TrainingJournalEntry={
+ schemaVersion:1,
+ sessionKind:'STRENGTH',
+ id:'hal-2026-11-03-strength-volume-durability',
+ date:'2026-11-03',
+ title:'Strength · Volume & Durability',
+ sources:['WHOOP Strength Trainer screenshots','Rider correction'],
+ stats:{durationSeconds:2483,calories:246},
+ strength:{
+  plan:'OTHER',
+  completedMainWork:true,
+  totalReps:204,
+  volumeLoadLb:9130,
+  activityStrain:12.6,
+  exercises:[
+   {name:'Elliptical warm-up',setsCompleted:1,targetSets:1,reps:'15:00',status:'COMPLETED'},
+   {name:'Back squat - barbell',setsCompleted:3,targetSets:3,reps:'10 @ 45 lb; 10 @ 65 lb; 10 @ 65 lb',status:'COMPLETED'},
+   {name:'Alternating dumbbell step-up',setsCompleted:3,targetSets:3,reps:'12/leg @ 60 lb each set',status:'COMPLETED'},
+   {name:'Romanian deadlift - dumbbell',setsCompleted:3,targetSets:3,reps:'12 @ 60 lb each set',status:'COMPLETED'},
+   {name:'Bench press - dumbbell',setsCompleted:3,targetSets:3,reps:'12 @ 25 lb each set',status:'COMPLETED'},
+   {name:'Standing band Pallof press',setsCompleted:3,targetSets:3,reps:'10 each set',status:'COMPLETED'},
+  ],
+ },
+ fueling:[],
+ feedback:{legsAfter:'NOTICEABLE_FATIGUE',freeText:'Strength completed before cycling. WHOOP recorded 41:23, 12.6 activity strain, 74% muscular / 26% cardio, 246 calories. Step-ups were corrected from 12 total reps per set to 12 reps per leg for all 3 sets, raising the session to 204 total reps and 9,130 lb volume load.'},
+ coach:{status:'POSITIVE',summary:'Substantial strength session completed before the ride, creating deliberate muscular pre-fatigue for the subsequent aerobic work.',signals:['41:23 strength duration','12.6 WHOOP strain','74% muscular load','204 corrected total reps','9,130 lb corrected volume load','3 x 12/leg step-ups at 60 lb'],progressionEvidence:'LOCAL',nextAction:'Interpret the following ride as aerobic durability on pre-fatigued legs and protect recovery rather than adding extra intensity.',generatedAt:'2026-11-03T18:15:00-05:00'},
+ createdAt:'2026-11-03T18:15:00-05:00',
+ updatedAt:'2026-11-03T18:15:00-05:00',
+}
+
+export const HAL_NOV3_PEL0TON_DURABILITY:TrainingJournalEntry={
+ schemaVersion:1,
+ sessionKind:'CYCLING',
+ id:'hal-2026-11-03-peloton-durability-60',
+ date:'2026-11-03',
+ title:'Aerobic Durability Ride · 60 min',
+ sources:['Peloton screenshots','Rider feedback'],
+ stats:{durationSeconds:3600,distanceKm:30.53,totalOutputKj:537,averagePowerWatts:149,peakPowerWatts:210,averageCadenceRpm:77,averageResistancePercent:46,averageHeartRateBpm:139,maximumHeartRateBpm:154,calories:965,striveScore:75.1,ftpWatts:229},
+ fueling:[],
+ feedback:{legsAfter:'NOTICEABLE_FATIGUE',workBlocks:'CONTROLLED',lateSession:'STEADY',cadenceIntent:'Controlled seated endurance after strength; cadence averaged 77 rpm under pre-fatigue.',freeText:'Ride followed the strength session. HR distribution was 15% Z2, 73% Z3 and 12% Z4. Power remained steady through the sustained middle section, then dropped for cooldown. Average power was about 65% of FTP, but cardiovascular cost was elevated by the preceding strength work.'},
+ coach:{status:'POSITIVE',summary:'Successful strength-to-bike durability session: moderate power was sustained for an hour despite meaningful muscular pre-fatigue.',signals:['60:00 ride','149 W average at 229 W FTP','537 kJ','139 bpm average HR','73% in HR Zone 3','12% in HR Zone 4','77 rpm average cadence','Strength completed immediately beforehand'],progressionEvidence:'LOCAL',nextAction:'Count Nov 3 as one combined high-value durability day, not two independent sessions. Keep the next training exposure aerobic/easy enough to absorb the work.',generatedAt:'2026-11-03T18:16:00-05:00'},
+ createdAt:'2026-11-03T18:16:00-05:00',
+ updatedAt:'2026-11-03T18:16:00-05:00',
+}
+
 export function ensureHalSep30TrainingJournal(state:TrainingJournalState){
   let next=state
-  for(const entry of [HAL_SEP29_ENDURANCE_JOURNAL,HAL_SEP29_STRENGTH_A_JOURNAL,HAL_SEP30_CLIMB_JOURNAL]){
+  for(const entry of [HAL_SEP29_ENDURANCE_JOURNAL,HAL_SEP29_STRENGTH_A_JOURNAL,HAL_SEP30_CLIMB_JOURNAL,...HAL_SL8_JOURNAL_ENTRIES,HAL_NOV3_STRENGTH,HAL_NOV3_PEL0TON_DURABILITY]){
     if(!next.entries.some(item=>item.id===entry.id))next=upsertTrainingJournalEntry(next,entry)
   }
   return next
